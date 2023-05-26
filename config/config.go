@@ -81,7 +81,7 @@ func NewDefaultConfig() Config {
 	config.CometBFT.ApiURL = "http://localhost:26657"
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
-	config.Ethereum.AssetPoolAddress = "0xf0f0fcda832415b935802c6dad0a6da2c7eaed8f"
+	config.Ethereum.AssetPoolAddress = "0xA226E2A13e07e750EfBD2E5839C5c3Be80fE7D4d"
 	config.Ethereum.AssetAddresses = map[string]string{
 		"vega": "0xcb84d72e61e383767c4dfeb2d8ff7f4fb89abc6e",
 		"usdt": "0xdac17f958d2ee523a2206206994597c13d831ec7",

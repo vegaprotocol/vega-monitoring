@@ -46,7 +46,7 @@ func RunGetBalance(args GetBalanceArgs) error {
 	if len(args.WalletAddress) == 0 {
 		switch ethNetwork {
 		case types.ETHMainnet:
-			args.WalletAddress = "0xf0f0fcda832415b935802c6dad0a6da2c7eaed8f"
+			args.WalletAddress = "0xA226E2A13e07e750EfBD2E5839C5c3Be80fE7D4d"
 		case types.ETHSepolia:
 			args.WalletAddress = "0x2Fe022FFcF16B515A13077e53B0a19b3e3447855"
 		}
