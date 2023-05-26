@@ -2,9 +2,11 @@ package etherscan
 
 import (
 	"github.com/spf13/cobra"
+	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
 
 type EtherscanArgs struct {
+	*rootCmd.RootArgs
 	EthNetwork string
 	apiKey     string
 }

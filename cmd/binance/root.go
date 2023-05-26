@@ -2,9 +2,11 @@ package binance
 
 import (
 	"github.com/spf13/cobra"
+	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
 
 type BinanceArgs struct {
+	*rootCmd.RootArgs
 	ApiURL string
 }
 

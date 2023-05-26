@@ -2,9 +2,11 @@ package coingecko
 
 import (
 	"github.com/spf13/cobra"
+	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
 
 type CoingeckoArgs struct {
+	*rootCmd.RootArgs
 	ApiURL string
 }
 

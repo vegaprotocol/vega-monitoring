@@ -4,9 +4,11 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
 
 type CometArgs struct {
+	*rootCmd.RootArgs
 	ApiURL string
 }
 
