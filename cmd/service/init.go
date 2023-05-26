@@ -10,6 +10,7 @@ import (
 
 type InitArgs struct {
 	*ServiceArgs
+	Force bool
 }
 
 var initArgs InitArgs
@@ -30,12 +31,19 @@ var initCmd = &cobra.Command{
 func init() {
 	ServiceCmd.AddCommand(initCmd)
 	initArgs.ServiceArgs = &serviceArgs
+	initCmd.PersistentFlags().BoolVar(&initArgs.Force, "force", false, "Force creation config file, even it if exists")
 }
 
 func RunInit(args InitArgs) error {
 	log, err := config.GetLogger(args.Debug)
 	if err != nil {
 		return err
+	}
+
+	if !args.Force {
+		if _, err := os.Stat(args.ConfigFilePath); err == nil {
+			return fmt.Errorf("cannot create new config in %s. File aready exists. Use --force to overwrite.", args.ConfigFilePath)
+		}
 	}
 
 	_, err = config.StoreDefaultConfigInFile(args.ConfigFilePath, log)
