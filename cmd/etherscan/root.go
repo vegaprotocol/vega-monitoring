@@ -20,6 +20,7 @@ var EtherscanCmd = &cobra.Command{
 }
 
 func init() {
+	etherscanArgs.RootArgs = &rootCmd.Args
 	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.EthNetwork, "eth-network", "mainnet", "Used with address, specify which Ethereum Network to use")
 	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.apiKey, "api-key", "", "Etherscan API Key")
 }

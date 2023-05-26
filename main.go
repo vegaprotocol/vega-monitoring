@@ -7,6 +7,7 @@ import (
 	"github.com/vegaprotocol/data-metrics-store/cmd/comet"
 	"github.com/vegaprotocol/data-metrics-store/cmd/etherscan"
 	"github.com/vegaprotocol/data-metrics-store/cmd/ethutils"
+	"github.com/vegaprotocol/data-metrics-store/cmd/service"
 )
 
 func main() {
@@ -19,4 +20,5 @@ func init() {
 	rootCmd.RootCmd.AddCommand(ethutils.EthUtilsCmd)
 	rootCmd.RootCmd.AddCommand(binance.BinanceCmd)
 	rootCmd.RootCmd.AddCommand(coingecko.CoingeckoCmd)
+	rootCmd.RootCmd.AddCommand(service.ServiceCmd)
 }

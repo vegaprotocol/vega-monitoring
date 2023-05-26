@@ -21,6 +21,7 @@ var EthUtilsCmd = &cobra.Command{
 }
 
 func init() {
+	ethUtilsArgs.RootArgs = &rootCmd.Args
 	EthUtilsCmd.PersistentFlags().StringVar(&ethUtilsArgs.EthNodeURL, "eth-node", "", "Ethereum Node URL")
 	if err := EthUtilsCmd.MarkPersistentFlagRequired("eth-node"); err != nil {
 		log.Fatalf("%v\n", err)

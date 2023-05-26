@@ -19,5 +19,6 @@ var BinanceCmd = &cobra.Command{
 }
 
 func init() {
+	binanceArgs.RootArgs = &rootCmd.Args
 	BinanceCmd.PersistentFlags().StringVar(&binanceArgs.ApiURL, "api-url", "https://api.binance.com/api/v3", "Binance API URL")
 }
