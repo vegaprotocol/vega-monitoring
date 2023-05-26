@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/comet"
+	"github.com/vegaprotocol/data-metrics-store/clients/comet"
 )
 
 type GetBlockSignersRangeArgs struct {

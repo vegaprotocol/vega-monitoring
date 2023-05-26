@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/vegaprotocol/data-metrics-store/ethutils/IERC20"
+	"github.com/vegaprotocol/data-metrics-store/clients/ethutils/IERC20"
 )
 
 type ERC20Token struct {

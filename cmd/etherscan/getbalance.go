@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/etherscan"
+	"github.com/vegaprotocol/data-metrics-store/clients/etherscan"
 	"github.com/vegaprotocol/data-metrics-store/types"
 )
 

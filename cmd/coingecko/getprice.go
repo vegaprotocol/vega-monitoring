@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/coingecko"
+	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
 )
 
 type GetPriceArgs struct {

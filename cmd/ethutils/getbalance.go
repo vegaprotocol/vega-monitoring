@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/ethutils"
+	"github.com/vegaprotocol/data-metrics-store/clients/ethutils"
 )
 
 type GetBalanceArgs struct {
