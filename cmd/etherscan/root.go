@@ -7,8 +7,8 @@ import (
 
 type EtherscanArgs struct {
 	*rootCmd.RootArgs
-	EthNetwork string
-	apiKey     string
+	ApiURL string
+	ApiKey string
 }
 
 var etherscanArgs EtherscanArgs
@@ -21,6 +21,6 @@ var EtherscanCmd = &cobra.Command{
 
 func init() {
 	etherscanArgs.RootArgs = &rootCmd.Args
-	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.EthNetwork, "eth-network", "mainnet", "Used with address, specify which Ethereum Network to use")
-	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.apiKey, "api-key", "", "Etherscan API Key")
+	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.ApiURL, "api-url", "", "Etherscan API URL")
+	EtherscanCmd.PersistentFlags().StringVar(&etherscanArgs.ApiKey, "api-key", "", "Etherscan API Key")
 }

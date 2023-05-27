@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/etherscan"
-	"github.com/vegaprotocol/data-metrics-store/types"
+	"github.com/vegaprotocol/data-metrics-store/config"
 )
 
 type GetBalanceArgs struct {
@@ -39,29 +39,33 @@ func init() {
 }
 
 func RunGetBalance(args GetBalanceArgs) error {
-	ethNetwork := types.ETHNetwork(args.EthNetwork)
-	if err := ethNetwork.IsValid(); err != nil {
-		return fmt.Errorf("unknown Ethereum Network %s, %w", args.EthNetwork, err)
+	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+	if len(args.ApiURL) == 0 {
+		if cfg != nil {
+			args.ApiURL = cfg.Ethereum.EtherscanURL
+		} else {
+			return fmt.Errorf("Required --api-url flag or config.toml file")
+		}
+	}
+	if len(args.ApiKey) == 0 {
+		args.ApiKey = cfg.Ethereum.EtherscanApiKey
 	}
 	if len(args.WalletAddress) == 0 {
-		switch ethNetwork {
-		case types.ETHMainnet:
-			args.WalletAddress = "0xA226E2A13e07e750EfBD2E5839C5c3Be80fE7D4d"
-		case types.ETHSepolia:
-			args.WalletAddress = "0x2Fe022FFcF16B515A13077e53B0a19b3e3447855"
+		if cfg != nil {
+			args.WalletAddress = cfg.Ethereum.AssetPoolAddress
+		} else {
+			return fmt.Errorf("Required --wallet flag or config.toml file")
 		}
-
 	}
 	if len(args.TokenAddress) == 0 {
-		switch ethNetwork {
-		case types.ETHMainnet:
-			args.TokenAddress = "0xcb84d72e61e383767c4dfeb2d8ff7f4fb89abc6e"
-		case types.ETHSepolia:
-			args.TokenAddress = "0xdf1B0F223cb8c7aB3Ef8469e529fe81E73089BD9"
+		if cfg != nil {
+			args.TokenAddress = cfg.Ethereum.AssetAddresses["vega"]
+		} else {
+			return fmt.Errorf("Required --token flag or config.toml file")
 		}
-
 	}
-	client, err := etherscan.NewEtherscanClient(ethNetwork, args.apiKey)
+
+	client, err := etherscan.NewEtherscanClient(args.ApiURL, args.ApiKey)
 	if err != nil {
 		return err
 	}

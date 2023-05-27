@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/comet"
+	"github.com/vegaprotocol/data-metrics-store/config"
 )
 
 type GetBlockSignersArgs struct {
@@ -41,6 +42,16 @@ func init() {
 }
 
 func RunGetBlockSigners(args GetBlockSignersArgs) error {
+
+	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+	if len(args.ApiURL) == 0 {
+		if cfg != nil {
+			args.ApiURL = cfg.CometBFT.ApiURL
+		} else {
+			return fmt.Errorf("Required --api-url flag or config.toml file")
+		}
+	}
+
 	client := comet.NewCometClient(args.ApiURL)
 
 	blockSignersData, err := client.GetBlockSigners(args.Block)

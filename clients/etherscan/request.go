@@ -9,7 +9,7 @@ import (
 
 func (c *EtherscanClient) sendRequest(args map[string]string, resultPayload any) error {
 	// Prepare URL
-	url := fmt.Sprintf("%s?apikey=%s", c.apiURL, c.apikey)
+	url := fmt.Sprintf("%s?apikey=%s", c.apiURL, c.apiKey)
 	for key, value := range args {
 		url = fmt.Sprintf("%s&%s=%s", url, key, value)
 	}

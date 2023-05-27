@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/ethutils"
+	"github.com/vegaprotocol/data-metrics-store/config"
 )
 
 type GetBalanceArgs struct {
@@ -33,11 +34,34 @@ func init() {
 	EthUtilsCmd.AddCommand(getBalanceCmd)
 	getBalanceArgs.EthUtilsArgs = &ethUtilsArgs
 
-	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.WalletAddress, "wallet", "0xA226E2A13e07e750EfBD2E5839C5c3Be80fE7D4d", "Ethereum address to get balance for")
-	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.TokenAddress, "token", "0xcb84d72e61e383767c4dfeb2d8ff7f4fb89abc6e", "Token address to get balance for")
+	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.WalletAddress, "wallet", "", "Ethereum address to get balance for")
+	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.TokenAddress, "token", "", "Token address to get balance for")
 }
 
 func RunGetBalance(args GetBalanceArgs) error {
+	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+	if len(args.EthNodeURL) == 0 {
+		if cfg != nil && len(cfg.Ethereum.RPCEndpoint) > 0 {
+			args.EthNodeURL = cfg.Ethereum.RPCEndpoint
+		} else {
+			return fmt.Errorf("Required --eth-node flag or config.toml file")
+		}
+	}
+	if len(args.WalletAddress) == 0 {
+		if cfg != nil {
+			args.WalletAddress = cfg.Ethereum.AssetPoolAddress
+		} else {
+			return fmt.Errorf("Required --wallet flag or config.toml file")
+		}
+	}
+	if len(args.TokenAddress) == 0 {
+		if cfg != nil {
+			args.TokenAddress = cfg.Ethereum.AssetAddresses["vega"]
+		} else {
+			return fmt.Errorf("Required --token flag or config.toml file")
+		}
+	}
+
 	client, err := ethutils.NewEthClient(args.EthNodeURL)
 	if err != nil {
 		return err

@@ -1,8 +1,6 @@
 package comet
 
 import (
-	"log"
-
 	"github.com/spf13/cobra"
 	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
@@ -23,7 +21,4 @@ var CometCmd = &cobra.Command{
 func init() {
 	cometArgs.RootArgs = &rootCmd.Args
 	CometCmd.PersistentFlags().StringVar(&cometArgs.ApiURL, "api-url", "", "CometBFT API URL")
-	if err := CometCmd.MarkPersistentFlagRequired("api-url"); err != nil {
-		log.Fatalf("%v\n", err)
-	}
 }

@@ -20,5 +20,5 @@ var CoingeckoCmd = &cobra.Command{
 
 func init() {
 	coingeckoArgs.RootArgs = &rootCmd.Args
-	CoingeckoCmd.PersistentFlags().StringVar(&coingeckoArgs.ApiURL, "api-url", "https://api.coingecko.com/api/v3", "Coingecko API URL")
+	CoingeckoCmd.PersistentFlags().StringVar(&coingeckoArgs.ApiURL, "api-url", "", "Coingecko API URL")
 }

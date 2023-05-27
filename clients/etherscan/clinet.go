@@ -10,14 +10,11 @@ import (
 
 type EtherscanClient struct {
 	apiURL      string
-	apikey      string
+	apiKey      string
 	rateLimiter *rate.Limiter
 }
 
-func NewEtherscanClient(
-	ethNetwork types.ETHNetwork,
-	apikey string,
-) (*EtherscanClient, error) {
+func NewEtherscanClientWithNetwork(ethNetwork types.ETHNetwork, apiKey string) (*EtherscanClient, error) {
 	var apiURL string
 	switch ethNetwork {
 	case types.ETHMainnet:
@@ -28,10 +25,14 @@ func NewEtherscanClient(
 		return nil, fmt.Errorf("failed to get etherscan client, not supported ethereum network %s", ethNetwork)
 	}
 
+	return NewEtherscanClient(apiURL, apiKey)
+}
+
+func NewEtherscanClient(apiURL string, apiKey string) (*EtherscanClient, error) {
 	return &EtherscanClient{
 		apiURL:      apiURL,
-		apikey:      apikey,
-		rateLimiter: etherscanRateLimiter(apikey),
+		apiKey:      apiKey,
+		rateLimiter: etherscanRateLimiter(apiKey),
 	}, nil
 }
 

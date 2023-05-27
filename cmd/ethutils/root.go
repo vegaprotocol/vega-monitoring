@@ -1,8 +1,6 @@
 package ethutils
 
 import (
-	"log"
-
 	"github.com/spf13/cobra"
 	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
 )
@@ -15,7 +13,7 @@ type EthUtilsArgs struct {
 var ethUtilsArgs EthUtilsArgs
 
 var EthUtilsCmd = &cobra.Command{
-	Use:   "eth-utils",
+	Use:   "ethutils",
 	Short: "Interact with Ethereum Node",
 	Long:  `Interact with Ethereum Node`,
 }
@@ -23,7 +21,4 @@ var EthUtilsCmd = &cobra.Command{
 func init() {
 	ethUtilsArgs.RootArgs = &rootCmd.Args
 	EthUtilsCmd.PersistentFlags().StringVar(&ethUtilsArgs.EthNodeURL, "eth-node", "", "Ethereum Node URL")
-	if err := EthUtilsCmd.MarkPersistentFlagRequired("eth-node"); err != nil {
-		log.Fatalf("%v\n", err)
-	}
 }

@@ -24,6 +24,8 @@ type Config struct {
 
 	Ethereum struct {
 		RPCEndpoint      string            `long:"RPCEndpoint"`
+		EtherscanURL     string            `long:"EtherscanURL"`
+		EtherscanApiKey  string            `long:"EtherscanApiKey"`
 		AssetPoolAddress string            `long:"AssetPoolAddress"`
 		AssetAddresses   map[string]string `long:"AssetAddresses"`
 	} `group:"Ethereum" namespace:"ethereum"`
@@ -83,6 +85,8 @@ func NewDefaultConfig() Config {
 	config.CometBFT.ApiURL = "http://localhost:26657"
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
+	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"
+	config.Ethereum.EtherscanApiKey = ""
 	config.Ethereum.AssetPoolAddress = "0xA226E2A13e07e750EfBD2E5839C5c3Be80fE7D4d"
 	config.Ethereum.AssetAddresses = map[string]string{
 		"vega": "0xcb84d72e61e383767c4dfeb2d8ff7f4fb89abc6e",

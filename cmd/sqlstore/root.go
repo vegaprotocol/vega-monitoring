@@ -7,7 +7,6 @@ import (
 
 type SQLStoreArgs struct {
 	*rootCmd.RootArgs
-	ConfigFilePath string
 }
 
 var sqlstoreArgs SQLStoreArgs
@@ -20,5 +19,4 @@ var SQLStoreCmd = &cobra.Command{
 
 func init() {
 	sqlstoreArgs.RootArgs = &rootCmd.Args
-	SQLStoreCmd.PersistentFlags().StringVar(&sqlstoreArgs.ConfigFilePath, "config", "config.toml", "Path to the config file")
 }

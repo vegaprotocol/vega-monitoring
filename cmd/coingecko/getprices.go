@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
+	"github.com/vegaprotocol/data-metrics-store/config"
 )
 
 type GetPriceArgs struct {
@@ -33,10 +34,29 @@ func init() {
 	CoingeckoCmd.AddCommand(getPriceCmd)
 	getPriceArgs.CoingeckoArgs = &coingeckoArgs
 
-	getPriceCmd.PersistentFlags().StringSliceVar(&getPriceArgs.AssetIds, "wallet", []string{"vega-protocol", "tether", "usd-coin"}, "Comma separated list of Coingecko's Asset ids")
+	getPriceCmd.PersistentFlags().StringSliceVar(&getPriceArgs.AssetIds, "asset-ids", nil, "Comma separated list of Coingecko's Asset ids")
 }
 
 func RunGetPrice(args GetPriceArgs) error {
+	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+	if len(args.ApiURL) == 0 {
+		if cfg != nil {
+			args.ApiURL = cfg.Coingecko.ApiURL
+		} else {
+			return fmt.Errorf("Required --api-url flag or config.toml file")
+		}
+	}
+	if args.AssetIds == nil || len(args.AssetIds) == 0 {
+		if cfg != nil {
+			args.AssetIds = []string{}
+			for _, assetId := range cfg.Coingecko.AssetIds {
+				args.AssetIds = append(args.AssetIds, assetId)
+			}
+		} else {
+			return fmt.Errorf("Required --asset-ids flag or config.toml file")
+		}
+	}
+
 	client := coingecko.NewCoingeckoClient(args.ApiURL)
 	prices, err := client.GetAssetPrices(args.AssetIds)
 	if err != nil {
