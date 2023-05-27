@@ -32,11 +32,34 @@ func MigrateToLatestSchema(log *logging.Logger, connConfig vega_sqlstore.Connect
 	db := stdlib.OpenDB(*poolConfig.ConnConfig)
 	defer db.Close()
 
-	log.Info("Checking database version and migrating sql schema to latest version, please wait...")
+	log.Info("Checking database version and Migrating SQL schema to latest version, please wait...")
 	if err = goose.Up(db, SQLMigrationsDir); err != nil {
 		return fmt.Errorf("error migrating sql schema: %w", err)
 	}
-	log.Info("Sql schema migration completed successfully")
+	log.Info("SQL schema Migration completed successfully")
+
+	return nil
+}
+
+func RevertToSchemaVersionZero(log *logging.Logger, connConfig vega_sqlstore.ConnectionConfig) error {
+	goose.SetBaseFS(EmbedMigrations)
+	goose.SetLogger(log.Named("db migration").GooseLogger())
+	goose.SetVerbose(true)
+	goose.SetTableName(GooseDBVersionTableName)
+
+	poolConfig, err := connConfig.GetPoolConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get pool config:%w", err)
+	}
+
+	db := stdlib.OpenDB(*poolConfig.ConnConfig)
+	defer db.Close()
+
+	log.Info("Checking database version and Reverting SQL schema to version 0, please wait...")
+	if err = goose.DownTo(db, SQLMigrationsDir, 0); err != nil {
+		return fmt.Errorf("error migrating SQL schema: %w", err)
+	}
+	log.Info("SQL schema migration completed successfully")
 
 	return nil
 }

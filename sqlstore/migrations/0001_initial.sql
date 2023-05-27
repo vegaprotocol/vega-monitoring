@@ -13,4 +13,4 @@ create index on blocks (height);
 
 -- +goose Down
 
-DROP TABLE IF EXISTS m_blocks
+DROP TABLE IF EXISTS m_blocks;
