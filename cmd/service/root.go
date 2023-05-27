@@ -7,7 +7,7 @@ import (
 
 type ServiceArgs struct {
 	*rootCmd.RootArgs
-	ApiURL string
+	ConfigFilePath string
 }
 
 var serviceArgs ServiceArgs
@@ -20,5 +20,5 @@ var ServiceCmd = &cobra.Command{
 
 func init() {
 	serviceArgs.RootArgs = &rootCmd.Args
-	ServiceCmd.PersistentFlags().StringVar(&serviceArgs.ApiURL, "api-url", "https://api.service.com/api/v3", "Service API URL")
+	ServiceCmd.PersistentFlags().StringVar(&serviceArgs.ConfigFilePath, "config", "config.toml", "Path to the config file")
 }

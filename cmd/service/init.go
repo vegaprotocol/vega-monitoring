@@ -35,18 +35,13 @@ func init() {
 }
 
 func RunInit(args InitArgs) error {
-	log, err := config.GetLogger(args.Debug)
-	if err != nil {
-		return err
-	}
-
 	if !args.Force {
 		if _, err := os.Stat(args.ConfigFilePath); err == nil {
 			return fmt.Errorf("cannot create new config in %s. File aready exists. Use --force to overwrite.", args.ConfigFilePath)
 		}
 	}
 
-	_, err = config.StoreDefaultConfigInFile(args.ConfigFilePath, log)
+	_, err := config.StoreDefaultConfigInFile(args.ConfigFilePath)
 	if err != nil {
 		return err
 	}

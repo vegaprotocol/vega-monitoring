@@ -36,13 +36,9 @@ func init() {
 }
 
 func RunValidateConfig(args ValidateConfigArgs) error {
-	log, err := config.GetLogger(args.Debug)
+	cfg, _, err := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
 	if err != nil {
 		return err
-	}
-	cfg, err := config.ReadConfigAndWatch(args.ConfigFilePath, log)
-	if err != nil {
-		return fmt.Errorf("failed to read config file, %w", err)
 	}
 	if args.Print {
 		byteCfg, err := json.MarshalIndent(cfg, "", "\t")

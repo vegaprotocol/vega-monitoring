@@ -8,8 +8,7 @@ import (
 )
 
 type RootArgs struct {
-	Debug          bool
-	ConfigFilePath string
+	Debug bool
 }
 
 var Args RootArgs
@@ -31,5 +30,4 @@ func Execute() {
 func init() {
 	RootCmd.CompletionOptions.DisableDefaultCmd = true
 	RootCmd.PersistentFlags().BoolVar(&Args.Debug, "debug", false, "Print debug logs")
-	RootCmd.PersistentFlags().StringVar(&Args.ConfigFilePath, "config", "config.toml", "Path to the config file")
 }

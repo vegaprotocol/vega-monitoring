@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 
+	"code.vegaprotocol.io/vega/datanode/sqlstore"
+	"code.vegaprotocol.io/vega/logging"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"github.com/tomwright/dasel"
@@ -39,31 +41,31 @@ type Config struct {
 	} `group:"Sqlstore" namespace:"sqlstore"`
 }
 
-func ReadConfigAndWatch(filePath string, log *zap.Logger) (*Config, error) {
+func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
 	var config Config
 
-	viper.SetConfigFile(filePath)
+	viper.SetConfigFile(configFilePath)
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to read config %s: %w", configFilePath, err)
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to unmarshal config %s: %w", configFilePath, err)
 	}
 
 	viper.OnConfigChange(func(event fsnotify.Event) {
 		if event.Op == fsnotify.Write {
 
 			if err := viper.Unmarshal(&config); err != nil {
-				log.Error("Failed to reload config after config changed", zap.Error(err))
+				logger.Error("Failed to reload config after config changed", zap.Error(err))
 			} else {
-				log.Info("Reloaded config, because config file changed", zap.String("event", event.Name))
+				logger.Info("Reloaded config, because config file changed", zap.String("event", event.Name))
 			}
 		}
 	})
 	viper.WatchConfig()
 
-	log.Info("Read config from file. Watching for config file changes enabled.", zap.String("file", filePath))
+	logger.Info("Read config from file. Watching for config file changes enabled.", zap.String("file", configFilePath))
 
 	return &config, nil
 }
@@ -99,7 +101,7 @@ func NewDefaultConfig() Config {
 	return config
 }
 
-func StoreDefaultConfigInFile(filePath string, log *zap.Logger) (*Config, error) {
+func StoreDefaultConfigInFile(filePath string) (*Config, error) {
 	config := NewDefaultConfig()
 
 	dConfig := dasel.New(config)
@@ -109,4 +111,15 @@ func StoreDefaultConfigInFile(filePath string, log *zap.Logger) (*Config, error)
 	}
 
 	return &config, nil
+}
+
+func (c *Config) GetConnectionConfig() sqlstore.ConnectionConfig {
+	connConfig := sqlstore.NewDefaultConfig().ConnectionConfig
+	connConfig.Host = c.SQLStore.Host
+	connConfig.Port = c.SQLStore.Port
+	connConfig.Username = c.SQLStore.Username
+	connConfig.Password = c.SQLStore.Password
+	connConfig.Database = c.SQLStore.Database
+
+	return connConfig
 }
