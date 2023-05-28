@@ -4,18 +4,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/vegaprotocol/data-metrics-store/config"
 	"golang.org/x/time/rate"
 )
 
 type CometClient struct {
 	httpClient  *http.Client
-	apiURL      string
+	config      *config.CometBFTConfig
 	rateLimiter *rate.Limiter
 }
 
-func NewCometClient(apiURL string) *CometClient {
+func NewCometClient(config *config.CometBFTConfig) *CometClient {
 	return &CometClient{
-		apiURL:      apiURL,
+		config:      config,
 		rateLimiter: rate.NewLimiter(rate.Every(10*time.Millisecond), 1),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,

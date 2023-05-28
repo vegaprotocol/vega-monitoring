@@ -56,7 +56,7 @@ func RunBlockSigners(args BlockSignersArgs) error {
 		return err
 	}
 
-	cometClient := comet.NewCometClient(cfg.CometBFT.ApiURL)
+	cometClient := comet.NewCometClient(&cfg.CometBFT)
 
 	connSource, err := sqlstore.NewTransactionalConnectionSource(logger, cfg.GetConnectionConfig())
 	if err != nil {

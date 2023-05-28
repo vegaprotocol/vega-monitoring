@@ -44,15 +44,15 @@ func init() {
 func RunGetBlockSigners(args GetBlockSignersArgs) error {
 
 	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
-	if len(args.ApiURL) == 0 {
-		if cfg != nil {
-			args.ApiURL = cfg.CometBFT.ApiURL
-		} else {
-			return fmt.Errorf("Required --api-url flag or config.toml file")
-		}
-	}
 
-	client := comet.NewCometClient(args.ApiURL)
+	var client *comet.CometClient
+	if len(args.ApiURL) > 0 {
+		client = comet.NewCometClient(&config.CometBFTConfig{ApiURL: args.ApiURL})
+	} else if cfg != nil {
+		client = comet.NewCometClient(&cfg.CometBFT)
+	} else {
+		return fmt.Errorf("Required --api-url flag or config.toml file")
+	}
 
 	blockSignersData, err := client.GetBlockSigners(args.Block)
 	if err != nil {

@@ -18,9 +18,7 @@ type Config struct {
 		AssetIds map[string]string `long:"AssetIds"`
 	} `group:"Coingecko" namespace:"coingecko"`
 
-	CometBFT struct {
-		ApiURL string `long:"ApiURL"`
-	} `group:"CometBFT" namespace:"cometbft"`
+	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
 
 	Ethereum struct {
 		RPCEndpoint      string            `long:"RPCEndpoint"`
@@ -41,6 +39,10 @@ type Config struct {
 		Password string `long:"password"`
 		Database string `long:"database"`
 	} `group:"Sqlstore" namespace:"sqlstore"`
+}
+
+type CometBFTConfig struct {
+	ApiURL string `long:"ApiURL"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {

@@ -32,9 +32,9 @@ func (c *CometClient) requestCometCommit(block int64) (cometCommitResponse, erro
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
 		return cometCommitResponse{}, fmt.Errorf("Failed rate limiter for Get Commit Data for block: %d. %w", block, err)
 	}
-	url := fmt.Sprintf("%s/commit", c.apiURL)
+	url := fmt.Sprintf("%s/commit", c.config.ApiURL)
 	if block > 0 {
-		url = fmt.Sprintf("%s/commit?height=%d", c.apiURL, block)
+		url = fmt.Sprintf("%s/commit?height=%d", c.config.ApiURL, block)
 	}
 	resp, err := http.Get(url)
 	if err != nil {
