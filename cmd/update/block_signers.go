@@ -66,8 +66,8 @@ func RunBlockSigners(args BlockSignersArgs) error {
 
 	var totalCount int = 0
 
-	for fromBlock := args.FromBlock; fromBlock <= args.ToBlock; fromBlock += 50 {
-		toBlock := fromBlock + 49 // toBlock inclusive
+	for fromBlock := args.FromBlock; fromBlock <= args.ToBlock; fromBlock += 200 {
+		toBlock := fromBlock + 199 // toBlock inclusive
 		if args.ToBlock < toBlock {
 			toBlock = args.ToBlock
 		}
