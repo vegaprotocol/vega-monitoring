@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"code.vegaprotocol.io/vega/logging"
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/comet"
 	"github.com/vegaprotocol/data-metrics-store/config"
@@ -57,17 +58,54 @@ func RunBlockSigners(args BlockSignersArgs) error {
 
 	cometClient := comet.NewCometClient(cfg.CometBFT.ApiURL)
 
-	blocks, err := cometClient.GetBlockSignersRange(args.FromBlock, args.ToBlock)
-	if err != nil {
-		return err
-	}
-	logger.Debug("fetched data from CometBFT", zap.Int("block count", len(blocks)))
-
 	connSource, err := sqlstore.NewTransactionalConnectionSource(logger, cfg.GetConnectionConfig())
 	if err != nil {
 		return err
 	}
 	blockSignerStore := sqlstore.NewBlockSigner(connSource)
+
+	var totalCount int = 0
+
+	for fromBlock := args.FromBlock; fromBlock <= args.ToBlock; fromBlock += 50 {
+		toBlock := fromBlock + 49 // toBlock inclusive
+		if args.ToBlock < toBlock {
+			toBlock = args.ToBlock
+		}
+		count, err := UpdateBlockRange(fromBlock, toBlock, cometClient, blockSignerStore, logger)
+		if err != nil {
+			return err
+		}
+		totalCount += count
+	}
+
+	logger.Info(
+		"Finished",
+		zap.Int64("blocks", args.ToBlock-args.FromBlock+1),
+		zap.Int("total row count sotred in SQLStore", totalCount),
+	)
+
+	return nil
+}
+
+func UpdateBlockRange(
+	fromBlock int64,
+	toBlock int64,
+	cometClient *comet.CometClient,
+	blockSignerStore *sqlstore.BlockSigner,
+	logger *logging.Logger,
+) (int, error) {
+
+	blocks, err := cometClient.GetBlockSignersRange(fromBlock, toBlock)
+	if err != nil {
+		return -1, err
+	}
+	logger.Info(
+		"fetched data from CometBFT",
+		zap.Int64("from-block", fromBlock),
+		zap.Int64("to-block", toBlock),
+		zap.Int("block count", len(blocks)),
+	)
+
 	for _, block := range blocks {
 		blockSignerStore.Add(&entities.BlockSigner{
 			VegaTime:  block.Time,
@@ -88,10 +126,16 @@ func RunBlockSigners(args BlockSignersArgs) error {
 	}
 
 	storedData, err := blockSignerStore.FlushUpsert(context.Background())
+	storedCount := len(storedData)
 	if err != nil {
-		return err
+		return storedCount, err
 	}
-	logger.Debug("stored data in SQLStore", zap.Int("row count", len(storedData)))
+	logger.Info(
+		"stored data in SQLStore",
+		zap.Int64("from-block", fromBlock),
+		zap.Int64("to-block", toBlock),
+		zap.Int("row count", storedCount),
+	)
 
-	return nil
+	return storedCount, nil
 }
