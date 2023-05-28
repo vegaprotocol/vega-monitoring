@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (c *CometClient) GetBlockSigners(block int) (*BlockSignersData, error) {
+func (c *CometClient) GetBlockSigners(block int64) (*BlockSignersData, error) {
 	response, err := c.requestCometCommit(block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit data for block %d, %w", block, err)
@@ -16,7 +16,7 @@ func (c *CometClient) GetBlockSigners(block int) (*BlockSignersData, error) {
 	return &blockData, nil
 }
 
-func (c *CometClient) GetBlockSignersRange(fromBlock int, toBlock int) ([]BlockSignersData, error) {
+func (c *CometClient) GetBlockSignersRange(fromBlock int64, toBlock int64) ([]BlockSignersData, error) {
 
 	responses, err := c.requestCometCommitRange(fromBlock, toBlock)
 	if err != nil {

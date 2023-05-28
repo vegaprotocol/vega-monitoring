@@ -13,8 +13,8 @@ import (
 
 type GetBlockSignersRangeArgs struct {
 	*CometArgs
-	FromBlock int
-	ToBlock   int
+	FromBlock int64
+	ToBlock   int64
 }
 
 var getBlockSignersRangeArgs GetBlockSignersRangeArgs
@@ -36,11 +36,11 @@ func init() {
 	CometCmd.AddCommand(getBlockSignersRangeCmd)
 	getBlockSignersRangeArgs.CometArgs = &cometArgs
 
-	getBlockSignersRangeCmd.PersistentFlags().IntVar(&getBlockSignersRangeArgs.FromBlock, "from-block", 1, "First block to get")
+	getBlockSignersRangeCmd.PersistentFlags().Int64Var(&getBlockSignersRangeArgs.FromBlock, "from-block", 1, "First block to get")
 	if err := getBlockSignersRangeCmd.MarkPersistentFlagRequired("from-block"); err != nil {
 		log.Fatalf("%v\n", err)
 	}
-	getBlockSignersRangeCmd.PersistentFlags().IntVar(&getBlockSignersRangeArgs.ToBlock, "to-block", 1, "Last block to get")
+	getBlockSignersRangeCmd.PersistentFlags().Int64Var(&getBlockSignersRangeArgs.ToBlock, "to-block", 1, "Last block to get")
 	if err := getBlockSignersRangeCmd.MarkPersistentFlagRequired("to-block"); err != nil {
 		log.Fatalf("%v\n", err)
 	}

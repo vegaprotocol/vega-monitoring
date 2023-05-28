@@ -7,14 +7,14 @@ import (
 )
 
 type BlockSignersData struct {
-	Height          int
+	Height          int64
 	Time            time.Time
 	ProposerAddress string
 	SignerAddresses []string
 }
 
 func NewBlockSignersData(response cometCommitResponse) (blockSignersData BlockSignersData, err error) {
-	blockSignersData.Height, err = strconv.Atoi(response.Result.SignedHeader.Header.Height)
+	blockSignersData.Height, err = strconv.ParseInt(response.Result.SignedHeader.Header.Height, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("failed to parse Height '%s' to int, from: %+v.", response.Result.SignedHeader.Header.Height, response)
 		return

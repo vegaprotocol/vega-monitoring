@@ -13,7 +13,7 @@ import (
 
 type GetBlockSignersArgs struct {
 	*CometArgs
-	Block int
+	Block int64
 }
 
 var getBlockSignersArgs GetBlockSignersArgs
@@ -35,7 +35,7 @@ func init() {
 	CometCmd.AddCommand(getBlockSignersCmd)
 	getBlockSignersArgs.CometArgs = &cometArgs
 
-	getBlockSignersCmd.PersistentFlags().IntVar(&getBlockSignersArgs.Block, "block", 1, "Number of block to get data for")
+	getBlockSignersCmd.PersistentFlags().Int64Var(&getBlockSignersArgs.Block, "block", 1, "Number of block to get data for")
 	if err := getBlockSignersCmd.MarkPersistentFlagRequired("block"); err != nil {
 		log.Fatalf("%v\n", err)
 	}

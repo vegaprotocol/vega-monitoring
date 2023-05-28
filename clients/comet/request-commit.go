@@ -28,7 +28,7 @@ type cometCommitResponse struct {
 	} `json:"result"`
 }
 
-func (c *CometClient) requestCometCommit(block int) (cometCommitResponse, error) {
+func (c *CometClient) requestCometCommit(block int64) (cometCommitResponse, error) {
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
 		return cometCommitResponse{}, fmt.Errorf("Failed rate limiter for Get Commit Data for block: %d. %w", block, err)
 	}
@@ -49,18 +49,18 @@ func (c *CometClient) requestCometCommit(block int) (cometCommitResponse, error)
 	return payload, nil
 }
 
-func (c *CometClient) requestCometCommitRange(startBlock int, endBlock int) (result []cometCommitResponse, err error) {
+func (c *CometClient) requestCometCommitRange(startBlock int64, endBlock int64) (result []cometCommitResponse, err error) {
 	var wg sync.WaitGroup
 	ch := make(chan cometCommitResponse, endBlock-startBlock+1)
 	for block := startBlock; block <= endBlock; block++ {
 		wg.Add(1)
-		go func(block int) {
+		go func(block int64) {
 			defer wg.Done()
 			response, err := c.requestCometCommit(block)
 			if err != nil {
 				fmt.Println(err)
 				response = cometCommitResponse{}
-				response.Result.SignedHeader.Header.Height = strconv.Itoa(block)
+				response.Result.SignedHeader.Header.Height = strconv.FormatInt(block, 10)
 			}
 			ch <- response
 		}(block)

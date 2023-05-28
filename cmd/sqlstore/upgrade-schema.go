@@ -9,19 +9,19 @@ import (
 	"github.com/vegaprotocol/data-metrics-store/sqlstore"
 )
 
-type MigrateToLatestSchemaArgs struct {
+type UpgradeSchemaArgs struct {
 	*SQLStoreArgs
 }
 
-var migrateToLatestSchemaArgs MigrateToLatestSchemaArgs
+var upgradeSchemaArgs UpgradeSchemaArgs
 
-// migrateToLatestSchemaCmd represents the migrateToLatestSchema command
-var migrateToLatestSchemaCmd = &cobra.Command{
-	Use:   "migrate-to-latest-schema",
+// upgradeSchemaCmd represents the upgradeSchema command
+var upgradeSchemaCmd = &cobra.Command{
+	Use:   "upgrade-schema",
 	Short: "Migrate Monitoring Tables to Latest Goose Schema",
 	Long:  `Migrate Monitoring Tables to Latest Goose Schema`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := RunMigrateToLatestSchema(migrateToLatestSchemaArgs); err != nil {
+		if err := RunUpgradeSchema(upgradeSchemaArgs); err != nil {
 			fmt.Printf("%v\n", err)
 			os.Exit(1)
 		}
@@ -29,11 +29,11 @@ var migrateToLatestSchemaCmd = &cobra.Command{
 }
 
 func init() {
-	SQLStoreCmd.AddCommand(migrateToLatestSchemaCmd)
-	migrateToLatestSchemaArgs.SQLStoreArgs = &sqlstoreArgs
+	SQLStoreCmd.AddCommand(upgradeSchemaCmd)
+	upgradeSchemaArgs.SQLStoreArgs = &sqlstoreArgs
 }
 
-func RunMigrateToLatestSchema(args MigrateToLatestSchemaArgs) error {
+func RunUpgradeSchema(args UpgradeSchemaArgs) error {
 	cfg, logger, err := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
 	if err != nil {
 		return err

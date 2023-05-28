@@ -9,6 +9,7 @@ import (
 	"github.com/vegaprotocol/data-metrics-store/cmd/ethutils"
 	"github.com/vegaprotocol/data-metrics-store/cmd/service"
 	"github.com/vegaprotocol/data-metrics-store/cmd/sqlstore"
+	"github.com/vegaprotocol/data-metrics-store/cmd/update"
 )
 
 func main() {
@@ -23,4 +24,5 @@ func init() {
 	rootCmd.RootCmd.AddCommand(coingecko.CoingeckoCmd)
 	rootCmd.RootCmd.AddCommand(service.ServiceCmd)
 	rootCmd.RootCmd.AddCommand(sqlstore.SQLStoreCmd)
+	rootCmd.RootCmd.AddCommand(update.UpdateCmd)
 }
