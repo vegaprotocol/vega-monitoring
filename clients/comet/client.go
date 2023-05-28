@@ -16,7 +16,7 @@ type CometClient struct {
 func NewCometClient(apiURL string) *CometClient {
 	return &CometClient{
 		apiURL:      apiURL,
-		rateLimiter: rate.NewLimiter(rate.Every(25*time.Millisecond), 1),
+		rateLimiter: rate.NewLimiter(rate.Every(10*time.Millisecond), 1),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,
 		},
