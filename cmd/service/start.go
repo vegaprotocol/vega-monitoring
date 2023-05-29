@@ -28,8 +28,10 @@ var startCmd = &cobra.Command{
 	Long:  `Start service`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// main
-		_, cancel := startEverything(startArgs)
-		defer shutdownEverything(cancel)
+		ctx, cancel := context.WithCancel(context.Background())
+		startEverything(ctx, startArgs)
+		defer shutdownEverything()
+		defer cancel()
 		waitShutdown()
 	},
 }
@@ -39,8 +41,7 @@ func init() {
 	startArgs.ServiceArgs = &serviceArgs
 }
 
-func startEverything(args StartArgs) (ctx context.Context, cancel context.CancelFunc) {
-	ctx, cancel = context.WithCancel(context.Background())
+func startEverything(ctx context.Context, args StartArgs) {
 	//
 	// Setup your services here and start all the go routines below
 	//
@@ -73,12 +74,9 @@ func startEverything(args StartArgs) (ctx context.Context, cancel context.Cancel
 	}()
 
 	fmt.Printf("Service has started\n")
-	return
 }
 
-func shutdownEverything(cancel context.CancelFunc) {
-	cancel()
-
+func shutdownEverything() {
 	var wg sync.WaitGroup
 	//
 	// Shut down all your services here - in go routines
@@ -101,15 +99,11 @@ func shutdownEverything(cancel context.CancelFunc) {
 		c <- struct{}{}
 	}()
 
-	// Timeout
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancelTimeout()
-
 	// Wait for go routines or timeout
 	select {
 	case <-c:
 		fmt.Printf("Evertything closed nicely\n")
-	case <-ctx.Done():
+	case <-time.After(5 * time.Second):
 		fmt.Printf("Service timed out to stop. Force stopping\n")
 	}
 
