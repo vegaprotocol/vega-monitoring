@@ -3,9 +3,6 @@
 CREATE extension IF NOT EXISTS timescaledb;
 
 CREATE SCHEMA metrics;
--- add metrics schema to search_path at the end
--- this doesn't work - don't know why
--- SELECT pg_catalog.set_config('search_path', CONCAT(pg_catalog.current_setting('search_path'),',metrics'), false);
 
 CREATE TYPE metrics.signer_role_type AS enum('ROLE_PROPOSER', 'ROLE_SIGNER');
 
@@ -24,6 +21,4 @@ create index on metrics.block_signers (tendermint_pub_key, role);
 DROP TABLE IF EXISTS metrics.block_signers;
 DROP TYPE IF EXISTS metrics.signer_role_type;
 SET search_path TO public;
--- this doesn't work - don't know why
--- SELECT pg_catalog.set_config('search_path', REPLACE(pg_catalog.current_setting('search_path'),',metrics',''), false);
 DROP SCHEMA IF EXISTS metrics;
