@@ -33,13 +33,14 @@ func (nhs *NetworkHistorySegment) UpsertWithoutTime(ctx context.Context, newSegm
 		VALUES
 			(
 				(SELECT vega_time FROM blocks WHERE height = $1),
-				$1,
 				$2,
-				$3
+				$3,
+				$4
 			)
-		ON CONFLICT (vega_time, height, data_node) DO UPDATE
+		ON CONFLICT (vega_time, data_node) DO UPDATE
 		SET
 			segment_id=EXCLUDED.segment_id`,
+		newSegment.Height,
 		newSegment.Height,
 		newSegment.DataNode,
 		newSegment.SegmentId,

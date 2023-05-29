@@ -6,7 +6,7 @@ CREATE TABLE metrics.network_history_segments
   height              BIGINT                   NOT NULL,
   data_node           TEXT                     NOT NULL,
   segment_id          TEXT                     NOT NULL,
-  PRIMARY KEY(vega_time, height, data_node)
+  PRIMARY KEY(vega_time, data_node)
 );
 SELECT create_hypertable('metrics.network_history_segments', 'vega_time', chunk_time_interval => INTERVAL '1 day');
 
