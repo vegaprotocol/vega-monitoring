@@ -13,7 +13,6 @@ import (
 
 type BlockSigner struct {
 	*vega_sqlstore.ConnectionSource
-	columns     []string
 	blockSigner []*entities.BlockSigner
 }
 
