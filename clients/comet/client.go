@@ -4,14 +4,16 @@ import (
 	"net/http"
 	"time"
 
+	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
 	"github.com/vegaprotocol/data-metrics-store/config"
 	"golang.org/x/time/rate"
 )
 
 type CometClient struct {
-	httpClient  *http.Client
-	config      *config.CometBFTConfig
-	rateLimiter *rate.Limiter
+	httpClient         *http.Client
+	config             *config.CometBFTConfig
+	rateLimiter        *rate.Limiter
+	validatorByAddress map[string]ValidatorData // local cache
 }
 
 func NewCometClient(config *config.CometBFTConfig) *CometClient {
@@ -22,4 +24,9 @@ func NewCometClient(config *config.CometBFTConfig) *CometClient {
 			Timeout: 2 * time.Second,
 		},
 	}
+}
+
+type ValidatorData struct {
+	Address  string
+	TmPubKey vega_entities.TendermintPublicKey
 }

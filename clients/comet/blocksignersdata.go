@@ -13,16 +13,16 @@ type BlockSignersData struct {
 	SignerAddresses []string
 }
 
-func NewBlockSignersData(response cometCommitResponse) (blockSignersData BlockSignersData, err error) {
+func newBlockSignersData(response commitResponse) (blockSignersData BlockSignersData, err error) {
 	blockSignersData.Height, err = strconv.ParseInt(response.Result.SignedHeader.Header.Height, 10, 64)
 	if err != nil {
-		err = fmt.Errorf("failed to parse Height '%s' to int, from: %+v.", response.Result.SignedHeader.Header.Height, response)
+		err = fmt.Errorf("failed to parse Height '%s' to int, from: %+v, %w", response.Result.SignedHeader.Header.Height, response, err)
 		return
 	}
 
 	blockSignersData.Time, err = time.Parse(time.RFC3339, response.Result.SignedHeader.Header.Time)
 	if err != nil {
-		err = fmt.Errorf("failed to parse Time '%s' to int, from: %+v.", response.Result.SignedHeader.Header.Time, response)
+		err = fmt.Errorf("failed to parse Time '%s' to int, from: %+v, %w", response.Result.SignedHeader.Header.Time, response, err)
 		return
 	}
 	blockSignersData.ProposerAddress = response.Result.SignedHeader.Header.ProposerAddress

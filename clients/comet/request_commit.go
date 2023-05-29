@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type cometCommitResponse struct {
+type commitResponse struct {
 	Result struct {
 		SignedHeader struct {
 			Header struct {
@@ -28,9 +28,9 @@ type cometCommitResponse struct {
 	} `json:"result"`
 }
 
-func (c *CometClient) requestCometCommit(block int64) (cometCommitResponse, error) {
+func (c *CometClient) requestCommit(block int64) (commitResponse, error) {
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
-		return cometCommitResponse{}, fmt.Errorf("Failed rate limiter for Get Commit Data for block: %d. %w", block, err)
+		return commitResponse{}, fmt.Errorf("Failed rate limiter for Get Commit Data for block: %d. %w", block, err)
 	}
 	url := fmt.Sprintf("%s/commit", c.config.ApiURL)
 	if block > 0 {
@@ -38,28 +38,28 @@ func (c *CometClient) requestCometCommit(block int64) (cometCommitResponse, erro
 	}
 	resp, err := http.Get(url)
 	if err != nil {
-		return cometCommitResponse{}, fmt.Errorf("Failed to Get Commit Data for block: %d. %w", block, err)
+		return commitResponse{}, fmt.Errorf("Failed to Get Commit Data for block: %d. %w", block, err)
 	}
 	defer resp.Body.Close()
-	var payload cometCommitResponse
+	var payload commitResponse
 	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return cometCommitResponse{}, fmt.Errorf("Failed to parse response for Get Commit Data for block: %d. %w", block, err)
+		return commitResponse{}, fmt.Errorf("Failed to parse response for Get Commit Data for block: %d. %w", block, err)
 	}
 
 	return payload, nil
 }
 
-func (c *CometClient) requestCometCommitRange(startBlock int64, endBlock int64) (result []cometCommitResponse, err error) {
+func (c *CometClient) requestCommitRange(startBlock int64, endBlock int64) (result []commitResponse, err error) {
 	var wg sync.WaitGroup
-	ch := make(chan cometCommitResponse, endBlock-startBlock+1)
+	ch := make(chan commitResponse, endBlock-startBlock+1)
 	for block := startBlock; block <= endBlock; block++ {
 		wg.Add(1)
 		go func(block int64) {
 			defer wg.Done()
-			response, err := c.requestCometCommit(block)
+			response, err := c.requestCommit(block)
 			if err != nil {
 				fmt.Println(err)
-				response = cometCommitResponse{}
+				response = commitResponse{}
 				response.Result.SignedHeader.Header.Height = strconv.FormatInt(block, 10)
 			}
 			ch <- response
