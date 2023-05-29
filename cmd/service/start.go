@@ -27,12 +27,14 @@ var startCmd = &cobra.Command{
 	Short: "Start service",
 	Long:  `Start service`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// main
+		// setup
 		ctx, cancel := context.WithCancel(context.Background())
 		startEverything(ctx, startArgs)
-		defer shutdownEverything()
-		defer cancel()
+		// run
 		waitShutdown()
+		// shutdown
+		cancel()
+		shutdownEverything()
 	},
 }
 
