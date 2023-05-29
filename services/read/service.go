@@ -3,23 +3,25 @@ package read
 import (
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/data-metrics-store/clients/comet"
-	"github.com/vegaprotocol/data-metrics-store/services"
 )
 
 type ReadService struct {
-	cometClient  *comet.CometClient
-	storeService *services.StoreService
-	log          *logging.Logger
+	cometClient      *comet.CometClient
+	storeReadService StoreReadService
+	log              *logging.Logger
+}
+
+type StoreReadService interface {
 }
 
 func NewReadService(
 	cometClient *comet.CometClient,
-	storeService *services.StoreService,
+	storeReadService StoreReadService,
 	log *logging.Logger,
 ) (*ReadService, error) {
 	return &ReadService{
-		cometClient:  cometClient,
-		storeService: storeService,
-		log:          log,
+		cometClient:      cometClient,
+		storeReadService: storeReadService,
+		log:              log,
 	}, nil
 }
