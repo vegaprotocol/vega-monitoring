@@ -24,7 +24,6 @@ func (nhs *NetworkHistorySegment) AddWithoutTime(data *datanode.NetworkHistorySe
 }
 
 func (nhs *NetworkHistorySegment) UpsertWithoutTime(ctx context.Context, newSegment *datanode.NetworkHistorySegment) error {
-	fmt.Printf("Upser %v", newSegment)
 	_, err := nhs.Connection.Exec(ctx, `
 		INSERT INTO metrics.network_history_segments (
 			vega_time,

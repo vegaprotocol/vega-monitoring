@@ -23,7 +23,7 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 		}
 
 		for _, segment := range segments {
-			segmentStore.AddWithoutTime(&segment)
+			segmentStore.AddWithoutTime(segment)
 		}
 		successCount += 1
 	}
