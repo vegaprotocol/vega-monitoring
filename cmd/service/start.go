@@ -27,14 +27,7 @@ var startCmd = &cobra.Command{
 	Short: "Start service",
 	Long:  `Start service`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// setup
-		ctx, cancel := context.WithCancel(context.Background())
-		startEverything(ctx, startArgs)
-		// run
-		waitShutdown()
-		// shutdown
-		cancel()
-		shutdownEverything()
+		run(startArgs)
 	},
 }
 
@@ -43,79 +36,105 @@ func init() {
 	startArgs.ServiceArgs = &serviceArgs
 }
 
-func startEverything(ctx context.Context, args StartArgs) {
+func run(args StartArgs) {
 	//
-	// Setup your services here and start all the go routines below
+	// SETUP
 	//
+	ctx, cancel := context.WithCancel(context.Background())
+	var shutdown_wg sync.WaitGroup
+
 	svc, err := cmd.SetupServices(args.ConfigFilePath, args.Debug)
 	if err != nil {
 		log.Fatalf("Failed to setup Services %+v\n", err)
 	}
-	go func() {
-		svc.Log.Info("Starting update Block Singers service")
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
 
-		time.Sleep(5 * time.Second)
-		for {
-			if err := svc.UpdateService.UpdateBlockSignersAllNew(); err != nil {
-				svc.Log.Error("Failed to update Block Signers", zap.Error(err))
-			}
-
-			select {
-			case <-ctx.Done():
-				svc.Log.Info("Stopping update Block Singers service")
-				return
-			case <-ticker.C:
-				continue
-			}
-		}
-	}()
+	//
+	// start: Block Singers Service
+	//
+	shutdown_wg.Add(1)
 	go func() {
-		fmt.Printf("Starting something #2\n")
+		defer shutdown_wg.Done()
+		runBlockSignersScraper(ctx, &svc)
 	}()
+	//
+	// start: example service
+	//
+	// shutdown_wg.Add(1)
+	// go func() {
+	// 	defer shutdown_wg.Done()
+	// 	fmt.Printf("Starting something #2\n")
+	// }()
 
 	fmt.Printf("Service has started\n")
-}
 
-func shutdownEverything() {
-	var wg sync.WaitGroup
 	//
-	// Shut down all your services here - in go routines
+	// wait: For SIGNALL
 	//
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Printf("Shutting down something #1\n")
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Printf("Shutting down something #2\n")
-	}()
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	s := <-sigc
+	log.Printf("signal received [%v] shutting down\n", s)
 
+	//
+	// Send CANCEL to all services
+	//
+	cancel()
+
+	//
+	// shutdown: example service
+	//
+	// shutdown_wg.Add(1)
+	// go func() {
+	// 	defer shutdown_wg.Done()
+	// 	fmt.Printf("Shutting down something #1\n")
+	// }()
+
+	//
 	// Notify when all go routines are done
-	c := make(chan struct{})
+	//
+	waitCh := make(chan struct{})
 	go func() {
-		wg.Wait()
-		c <- struct{}{}
+		defer close(waitCh)
+		shutdown_wg.Wait()
+		waitCh <- struct{}{}
 	}()
 
-	// Wait for go routines or timeout
+	//
+	// wait: For services to stop OR timeout
+	//
 	select {
-	case <-c:
+	case <-waitCh:
 		fmt.Printf("Evertything closed nicely\n")
 	case <-time.After(5 * time.Second):
 		fmt.Printf("Service timed out to stop. Force stopping\n")
 	}
 
+	//
+	// DONE
+	//
 	time.Sleep(time.Millisecond * 100)
 	fmt.Println("Service has stopped")
 }
 
-func waitShutdown() {
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	s := <-sigc
-	log.Printf("signal received [%v] shutting down\n", s)
+func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
+	svc.Log.Info("Starting update Block Singers Scraper in 5sec")
+
+	time.Sleep(5 * time.Second) // delay everything by 5sec
+
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		if err := svc.UpdateService.UpdateBlockSignersAllNew(ctx); err != nil {
+			svc.Log.Error("Failed to update Block Signers", zap.Error(err))
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Block Singers service")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
 }

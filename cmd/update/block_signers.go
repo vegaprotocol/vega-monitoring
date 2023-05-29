@@ -1,6 +1,7 @@
 package update
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -43,7 +44,7 @@ func RunBlockSigners(args BlockSignersArgs) error {
 		return err
 	}
 
-	if err := svc.UpdateService.UpdateBlockSigners(args.FromBlock, args.ToBlock); err != nil {
+	if err := svc.UpdateService.UpdateBlockSigners(context.Background(), args.FromBlock, args.ToBlock); err != nil {
 		return err
 	}
 
