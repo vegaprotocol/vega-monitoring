@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/vegaprotocol/data-metrics-store/cmd"
+	"go.uber.org/zap"
 )
 
 type StartArgs struct {
@@ -26,7 +28,7 @@ var startCmd = &cobra.Command{
 	Long:  `Start service`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// main
-		_, cancel := startEverything()
+		_, cancel := startEverything(startArgs)
 		defer shutdownEverything(cancel)
 		waitShutdown()
 	},
@@ -37,13 +39,34 @@ func init() {
 	startArgs.ServiceArgs = &serviceArgs
 }
 
-func startEverything() (ctx context.Context, cancel context.CancelFunc) {
+func startEverything(args StartArgs) (ctx context.Context, cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(context.Background())
 	//
 	// Setup your services here and start all the go routines below
 	//
+	svc, err := cmd.SetupServices(args.ConfigFilePath, args.Debug)
+	if err != nil {
+		log.Fatalf("Failed to setup Services %+v\n", err)
+	}
 	go func() {
-		fmt.Printf("Starting something #1\n")
+		svc.Log.Info("Starting update Block Singers service")
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		time.Sleep(5 * time.Second)
+		for {
+			if err := svc.UpdateService.UpdateBlockSignersAllNew(); err != nil {
+				svc.Log.Error("Failed to update Block Signers", zap.Error(err))
+			}
+
+			select {
+			case <-ctx.Done():
+				svc.Log.Info("Stopping update Block Singers service")
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
 	}()
 	go func() {
 		fmt.Printf("Starting something #2\n")
