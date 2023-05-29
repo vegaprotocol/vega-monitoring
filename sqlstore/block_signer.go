@@ -2,9 +2,11 @@ package sqlstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
 	"github.com/vegaprotocol/data-metrics-store/entities"
 )
@@ -107,3 +109,28 @@ func (bs *BlockSigner) FlushUpsert(ctx context.Context) ([]*entities.BlockSigner
 
 	return flushed, nil
 }
+
+func (bs *BlockSigner) GetLastestBlockInStore(ctx context.Context) (*entities.BlockSigner, error) {
+
+	result := &entities.BlockSigner{}
+
+	if err := pgxscan.Get(ctx, bs.Connection, result,
+		`SELECT vega_time, height, role, tendermint_address, tendermint_pub_key
+		FROM m_block_signers
+		ORDER BY vega_time
+		LIMIT 1`,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return result, nil
+}
+
+// SELECT s.i AS missing_height
+// FROM generate_series(1,(SELECT MAX(height) FROM m_block_signers)) s(i)
+// LEFT OUTER JOIN m_block_signers ON (m_block_signers.height = s.i)
+// WHERE m_block_signers.height IS NULL;
+
+//SELECT MAX(height) FROM m_block_signers;

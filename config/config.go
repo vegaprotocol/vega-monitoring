@@ -32,17 +32,19 @@ type Config struct {
 		Level string `long:"Level"`
 	} `group:"Logging" namespace:"logging"`
 
-	SQLStore struct {
-		Host     string `long:"host"`
-		Port     int    `long:"port"`
-		Username string `long:"username"`
-		Password string `long:"password"`
-		Database string `long:"database"`
-	} `group:"Sqlstore" namespace:"sqlstore"`
+	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
 }
 
 type CometBFTConfig struct {
 	ApiURL string `long:"ApiURL"`
+}
+
+type SQLStoreConfig struct {
+	Host     string `long:"host"`
+	Port     int    `long:"port"`
+	Username string `long:"username"`
+	Password string `long:"password"`
+	Database string `long:"database"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {

@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+func (c *CometClient) GetLatestBlockSigners() (*BlockSignersData, error) {
+	return c.GetBlockSigners(-1)
+}
+
 func (c *CometClient) GetBlockSigners(block int64) (*BlockSignersData, error) {
 	response, err := c.requestCometCommit(block)
 	if err != nil {
