@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/data-metrics-store/entities"
 	"github.com/vegaprotocol/data-metrics-store/services/read"
@@ -16,11 +15,11 @@ const (
 	BLOCK_NUM_IN_24h int64 = 123500 // 24[h/day] * 60[min/h] * 60[sec/h] / 0.7[block/sec]
 )
 
-func (us *UpdateService) BlockSignersAllNew() error {
-	return us.BlockSigners(0, 0)
+func (us *UpdateService) UpdateBlockSignersAllNew() error {
+	return us.UpdateBlockSigners(0, 0)
 }
 
-func (us *UpdateService) BlockSigners(fromBlock int64, toBlock int64) error {
+func (us *UpdateService) UpdateBlockSigners(fromBlock int64, toBlock int64) error {
 	var err error
 	blockSigner := us.storeService.NewBlockSigner()
 
@@ -100,16 +99,24 @@ func UpdateBlockRange(
 	)
 
 	for _, block := range blocks {
+		valData, err := readService.GetValidatorForAddressAtBlock(block.ProposerAddress, block.Height)
+		if err != nil {
+			return 0, err
+		}
 		blockSignerStore.Add(&entities.BlockSigner{
 			VegaTime: block.Time,
 			Role:     entities.BlockSignerRoleProposer,
-			TmPubKey: vega_entities.TendermintPublicKey(block.ProposerAddress),
+			TmPubKey: valData.TmPubKey,
 		})
 		for _, signerAddress := range block.SignerAddresses {
+			valData, err := readService.GetValidatorForAddressAtBlock(signerAddress, block.Height)
+			if err != nil {
+				return 0, err
+			}
 			blockSignerStore.Add(&entities.BlockSigner{
 				VegaTime: block.Time,
 				Role:     entities.BlockSignerRoleSigner,
-				TmPubKey: vega_entities.TendermintPublicKey(signerAddress),
+				TmPubKey: valData.TmPubKey,
 			})
 		}
 	}

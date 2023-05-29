@@ -64,7 +64,7 @@ func (bs *BlockSigner) Upsert(ctx context.Context, newBlockSigner *entities.Bloc
 			tendermint_pub_key)
 		VALUES
 			($1, $2, $3)
-		ON CONFLICT (vega_time, role, tendermint_address) DO NOTHING`,
+		ON CONFLICT (vega_time, role, tendermint_pub_key) DO NOTHING`,
 		newBlockSigner.VegaTime,
 		newBlockSigner.Role,
 		newBlockSigner.TmPubKey,

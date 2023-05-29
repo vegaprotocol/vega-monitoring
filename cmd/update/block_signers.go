@@ -43,7 +43,7 @@ func RunBlockSigners(args BlockSignersArgs) error {
 		return err
 	}
 
-	if err := svc.UpdateService.BlockSigners(args.FromBlock, args.ToBlock); err != nil {
+	if err := svc.UpdateService.UpdateBlockSigners(args.FromBlock, args.ToBlock); err != nil {
 		return err
 	}
 

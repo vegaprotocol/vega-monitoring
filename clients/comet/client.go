@@ -23,6 +23,7 @@ func NewCometClient(config *config.CometBFTConfig) *CometClient {
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,
 		},
+		validatorByAddress: map[string]ValidatorData{},
 	}
 }
 
