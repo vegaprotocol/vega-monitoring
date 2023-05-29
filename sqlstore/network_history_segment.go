@@ -37,7 +37,7 @@ func (nhs *NetworkHistorySegment) UpsertWithoutTime(ctx context.Context, newSegm
 				$2,
 				$3
 			)
-		ON CONFLICT (vega_time, data_node) DO UPDATE
+		ON CONFLICT (vega_time, height, data_node) DO UPDATE
 		SET
 			segment_id=EXCLUDED.segment_id`,
 		newSegment.Height,
