@@ -111,7 +111,7 @@ func (bs *BlockSigner) GetLastestBlockInStore(ctx context.Context) (int64, error
 		FROM metrics.block_signers, blocks
 		WHERE
 			metrics.block_signers.vega_time = blocks.vega_time
-		ORDER BY metrics.block_signers.vega_time
+		ORDER BY metrics.block_signers.vega_time DESC
 		LIMIT 1`,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
