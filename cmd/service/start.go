@@ -57,6 +57,14 @@ func run(args StartArgs) {
 		runBlockSignersScraper(ctx, &svc)
 	}()
 	//
+	// start: Network History Segments Service
+	//
+	shutdown_wg.Add(1)
+	go func() {
+		defer shutdown_wg.Done()
+		runNetworkHistorySegmentsScraper(ctx, &svc)
+	}()
+	//
 	// start: example service
 	//
 	// shutdown_wg.Add(1)
@@ -116,6 +124,7 @@ func run(args StartArgs) {
 	fmt.Println("Service has stopped")
 }
 
+// Block Signers
 func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 	svc.Log.Info("Starting update Block Singers Scraper in 5sec")
 
@@ -131,7 +140,35 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 
 		select {
 		case <-ctx.Done():
-			svc.Log.Info("Stopping update Block Singers service")
+			svc.Log.Info("Stopping update Block Singers Scraper")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+// Network History Segments
+func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices) {
+	svc.Log.Info("Starting update Network History Segments Scraper in 5sec")
+
+	time.Sleep(15 * time.Second) // delay everything by 5sec
+
+	ticker := time.NewTicker(250 * time.Second) // every ~300 block
+	defer ticker.Stop()
+
+	for {
+		apiURLs := []string{}
+		for _, apiURL := range svc.Config.DataNode.Monitor {
+			apiURLs = append(apiURLs, apiURL)
+		}
+		if err := svc.UpdateService.UpdateNetworkHistorySegments(ctx, apiURLs); err != nil {
+			svc.Log.Error("Failed to update Network History Segments", zap.Error(err))
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Network History Segments Scraper")
 			return
 		case <-ticker.C:
 			continue
