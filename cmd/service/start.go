@@ -150,7 +150,7 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 
 // Network History Segments
 func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices) {
-	svc.Log.Info("Starting update Network History Segments Scraper in 5sec")
+	svc.Log.Info("Starting update Network History Segments Scraper in 15sec")
 
 	time.Sleep(15 * time.Second) // delay everything by 5sec
 
