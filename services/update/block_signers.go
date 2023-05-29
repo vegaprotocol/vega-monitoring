@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/data-metrics-store/entities"
 	"github.com/vegaprotocol/data-metrics-store/services/read"
@@ -37,8 +38,8 @@ func (us *UpdateService) BlockSigners(fromBlock int64, toBlock int64) error {
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
 		}
-		if lastProcessedBlock != nil {
-			fromBlock = lastProcessedBlock.Height + 1
+		if lastProcessedBlock > 0 {
+			fromBlock = lastProcessedBlock + 1
 		} else {
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
 			if fromBlock <= 0 {
@@ -100,19 +101,15 @@ func UpdateBlockRange(
 
 	for _, block := range blocks {
 		blockSignerStore.Add(&entities.BlockSigner{
-			VegaTime:  block.Time,
-			Height:    block.Height,
-			Role:      entities.BlockSignerRoleProposer,
-			TmAddress: block.ProposerAddress,
-			//TmPubKey: vega_entities.TendermintPublicKey(block.ProposerAddress),
+			VegaTime: block.Time,
+			Role:     entities.BlockSignerRoleProposer,
+			TmPubKey: vega_entities.TendermintPublicKey(block.ProposerAddress),
 		})
 		for _, signerAddress := range block.SignerAddresses {
 			blockSignerStore.Add(&entities.BlockSigner{
-				VegaTime:  block.Time,
-				Height:    block.Height,
-				Role:      entities.BlockSignerRoleSigner,
-				TmAddress: signerAddress,
-				//TmPubKey: vega_entities.TendermintPublicKey(block.ProposerAddress),
+				VegaTime: block.Time,
+				Role:     entities.BlockSignerRoleSigner,
+				TmPubKey: vega_entities.TendermintPublicKey(signerAddress),
 			})
 		}
 	}

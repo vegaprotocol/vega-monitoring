@@ -7,9 +7,7 @@ import (
 )
 
 type BlockSigner struct {
-	VegaTime  time.Time                          `db:"vega_time"`
-	Height    int64                              `db:"height"`
-	Role      BlockSignerRole                    `db:"role"`
-	TmAddress string                             `db:"tendermint_address"`
-	TmPubKey  *vega_entities.TendermintPublicKey `db:"tendermint_pub_key"`
+	VegaTime time.Time                         `db:"vega_time"`
+	Role     BlockSignerRole                   `db:"role"`
+	TmPubKey vega_entities.TendermintPublicKey `db:"tendermint_pub_key"`
 }

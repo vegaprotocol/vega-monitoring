@@ -14,17 +14,12 @@ import (
 type BlockSigner struct {
 	*vega_sqlstore.ConnectionSource
 	columns     []string
-	table_name  string
 	blockSigner []*entities.BlockSigner
 }
 
 func NewBlockSigner(connectionSource *vega_sqlstore.ConnectionSource) *BlockSigner {
 	return &BlockSigner{
 		ConnectionSource: connectionSource,
-		columns: []string{
-			"vega_time", "height", "role", "tendermint_pub_key",
-		},
-		table_name: "m_block_signers",
 	}
 }
 
@@ -36,13 +31,15 @@ func (bs *BlockSigner) Flush(ctx context.Context) ([]*entities.BlockSigner, erro
 	rows := make([][]interface{}, 0, len(bs.blockSigner))
 	for _, data := range bs.blockSigner {
 		rows = append(rows, []interface{}{
-			data.VegaTime, data.Height, data.Role, data.TmPubKey,
+			data.VegaTime, data.Role, data.TmPubKey,
 		})
 	}
 	if rows != nil {
 		copyCount, err := bs.Connection.CopyFrom(
 			ctx,
-			pgx.Identifier{bs.table_name}, bs.columns, pgx.CopyFromRows(rows),
+			pgx.Identifier{"metrics.block_signers"},
+			[]string{"vega_time", "role", "tendermint_pub_key"},
+			pgx.CopyFromRows(rows),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy block signer into database:%w", err)
@@ -61,22 +58,15 @@ func (bs *BlockSigner) Flush(ctx context.Context) ([]*entities.BlockSigner, erro
 
 func (bs *BlockSigner) Upsert(ctx context.Context, newBlockSigner *entities.BlockSigner) error {
 	_, err := bs.Connection.Exec(ctx, `
-		INSERT INTO m_block_signers (
+		INSERT INTO metrics.block_signers (
 			vega_time,
-			height,
 			role,
-			tendermint_address,
 			tendermint_pub_key)
 		VALUES
-			($1, $2, $3, $4, $5)
-		ON CONFLICT (vega_time, role, tendermint_address) DO UPDATE
-		SET
-			height = EXCLUDED.height,
-			tendermint_pub_key = EXCLUDED.tendermint_pub_key`,
+			($1, $2, $3)
+		ON CONFLICT (vega_time, role, tendermint_address) DO NOTHING`,
 		newBlockSigner.VegaTime,
-		newBlockSigner.Height,
 		newBlockSigner.Role,
-		newBlockSigner.TmAddress,
 		newBlockSigner.TmPubKey,
 	)
 
@@ -110,22 +100,26 @@ func (bs *BlockSigner) FlushUpsert(ctx context.Context) ([]*entities.BlockSigner
 	return flushed, nil
 }
 
-func (bs *BlockSigner) GetLastestBlockInStore(ctx context.Context) (*entities.BlockSigner, error) {
+func (bs *BlockSigner) GetLastestBlockInStore(ctx context.Context) (int64, error) {
 
-	result := &entities.BlockSigner{}
+	result := &struct {
+		Height int64 `db:"height"`
+	}{}
 
 	if err := pgxscan.Get(ctx, bs.Connection, result,
-		`SELECT vega_time, height, role, tendermint_address, tendermint_pub_key
-		FROM m_block_signers
-		ORDER BY vega_time
+		`SELECT blocks.height
+		FROM metrics.block_signers, blocks
+		WHERE
+			metrics.block_signers.vega_time = blocks.vega_time
+		ORDER BY metrics.block_signers.vega_time
 		LIMIT 1`,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return 0, nil
 		}
-		return nil, err
+		return 0, err
 	}
-	return result, nil
+	return result.Height, nil
 }
 
 // SELECT s.i AS missing_height

@@ -15,7 +15,7 @@ var EmbedMigrations embed.FS
 
 const (
 	SQLMigrationsDir        = "migrations"
-	GooseDBVersionTableName = "m_goose_db_version"
+	GooseDBVersionTableName = "metrics_goose_db_version"
 )
 
 func MigrateToLatestSchema(log *logging.Logger, connConfig vega_sqlstore.ConnectionConfig) error {
