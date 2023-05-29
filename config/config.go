@@ -20,6 +20,11 @@ type Config struct {
 
 	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
 
+	DataNode struct {
+		ApiURL  string            `long:"ApiURL"`
+		Monitor map[string]string `long:"Monitor"`
+	} `group:"DataNode" namespace:"datanode"`
+
 	Ethereum struct {
 		RPCEndpoint      string            `long:"RPCEndpoint"`
 		EtherscanURL     string            `long:"EtherscanURL"`
@@ -87,6 +92,9 @@ func NewDefaultConfig() Config {
 	}
 	// CometBFT
 	config.CometBFT.ApiURL = "http://localhost:26657"
+	// DataNode
+	config.DataNode.ApiURL = "http://localhost:3008"
+	config.DataNode.Monitor = map[string]string{}
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"

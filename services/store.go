@@ -44,3 +44,7 @@ func NewStoreService(
 func (s *StoreService) NewBlockSigner() *sqlstore.BlockSigner {
 	return sqlstore.NewBlockSigner(s.connSource)
 }
+
+func (s *StoreService) NewNetworkHistorySegment() *sqlstore.NetworkHistorySegment {
+	return sqlstore.NewNetworkHistorySegment(s.connSource)
+}
