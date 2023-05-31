@@ -158,7 +158,7 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 
 // Network History Segments
 func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices) {
-	svc.Log.Info("Starting update Network History Segments Scraper in 15sec")
+	svc.Log.Info("Starting update Network History Segments Scraper in 10sec")
 
 	time.Sleep(10 * time.Second) // delay everything by 10sec
 
@@ -186,7 +186,7 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 
 // Comet Txs
 func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
-	svc.Log.Info("Starting update Network History Segments Scraper in 15sec")
+	svc.Log.Info("Starting update Comet Txs Scraper in 20sec")
 
 	time.Sleep(20 * time.Second) // delay everything by 20sec - 15sec after Block Signers scraper
 
