@@ -94,7 +94,7 @@ func UpdateCometTxsRange(
 	)
 
 	for _, tx := range txs {
-		serviceStore.AddWithoutTime(&tx)
+		serviceStore.AddWithoutTime(tx)
 	}
 
 	storedData, err := serviceStore.FlushUpsertWithoutTime(context.Background())

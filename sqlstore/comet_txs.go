@@ -13,7 +13,7 @@ import (
 
 type CometTxs struct {
 	*vega_sqlstore.ConnectionSource
-	cometTxs []*comet.CometTx
+	cometTxs []comet.CometTx
 }
 
 func NewCometTxs(connectionSource *vega_sqlstore.ConnectionSource) *CometTxs {
@@ -22,11 +22,11 @@ func NewCometTxs(connectionSource *vega_sqlstore.ConnectionSource) *CometTxs {
 	}
 }
 
-func (nhs *CometTxs) AddWithoutTime(newTx *comet.CometTx) {
+func (nhs *CometTxs) AddWithoutTime(newTx comet.CometTx) {
 	nhs.cometTxs = append(nhs.cometTxs, newTx)
 }
 
-func (nhs *CometTxs) UpsertWithoutTime(ctx context.Context, newTx *comet.CometTx) error {
+func (nhs *CometTxs) UpsertWithoutTime(ctx context.Context, newTx comet.CometTx) error {
 	_, err := nhs.Connection.Exec(ctx, `
 		INSERT INTO metrics.comet_txs (
 			vega_time,
@@ -69,7 +69,7 @@ func (nhs *CometTxs) UpsertWithoutTime(ctx context.Context, newTx *comet.CometTx
 	return err
 }
 
-func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]*comet.CometTx, error) {
+func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx, error) {
 	var blockCtx context.Context
 	var cancel context.CancelFunc
 	blockCtx, cancel = context.WithCancel(ctx)
@@ -80,8 +80,8 @@ func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]*comet.CometTx
 		return nil, fmt.Errorf("failed to add transaction to context:%w", err)
 	}
 
-	for _, segment := range c.cometTxs {
-		if err := c.UpsertWithoutTime(blockCtx, segment); err != nil {
+	for _, tx := range c.cometTxs {
+		if err := c.UpsertWithoutTime(blockCtx, tx); err != nil {
 			return nil, err
 		}
 	}
