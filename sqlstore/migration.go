@@ -63,3 +63,26 @@ func RevertToSchemaVersionZero(log *logging.Logger, connConfig vega_sqlstore.Con
 
 	return nil
 }
+
+func RevertOneVersion(log *logging.Logger, connConfig vega_sqlstore.ConnectionConfig) error {
+	goose.SetBaseFS(EmbedMigrations)
+	goose.SetLogger(log.Named("db migration").GooseLogger())
+	goose.SetVerbose(true)
+	goose.SetTableName(GooseDBVersionTableName)
+
+	poolConfig, err := connConfig.GetPoolConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get pool config:%w", err)
+	}
+
+	db := stdlib.OpenDB(*poolConfig.ConnConfig)
+	defer db.Close()
+
+	log.Info("Checking database version and Reverting SQL schema to version 0, please wait...")
+	if err = goose.Down(db, SQLMigrationsDir); err != nil {
+		return fmt.Errorf("error migrating SQL schema: %w", err)
+	}
+	log.Info("SQL schema migration completed successfully")
+
+	return nil
+}

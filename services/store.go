@@ -48,3 +48,7 @@ func (s *StoreService) NewBlockSigner() *sqlstore.BlockSigner {
 func (s *StoreService) NewNetworkHistorySegment() *sqlstore.NetworkHistorySegment {
 	return sqlstore.NewNetworkHistorySegment(s.connSource)
 }
+
+func (s *StoreService) NewCometTxs() *sqlstore.CometTxs {
+	return sqlstore.NewCometTxs(s.connSource)
+}

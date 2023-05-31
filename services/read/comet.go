@@ -15,3 +15,7 @@ func (s *ReadService) GetNetworkLatestBlockHeight() (int64, error) {
 func (s *ReadService) GetBlockSigners(fromBlock int64, toBlock int64) ([]comet.BlockSignersData, error) {
 	return s.cometClient.GetBlockSignersRange(fromBlock, toBlock)
 }
+
+func (s *ReadService) GetCometTxs(fromBlock int64, toBlock int64) ([]comet.CometTx, error) {
+	return s.cometClient.GetTxsForBlockRange(fromBlock, toBlock)
+}
