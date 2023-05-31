@@ -65,6 +65,14 @@ func run(args StartArgs) {
 		runNetworkHistorySegmentsScraper(ctx, &svc)
 	}()
 	//
+	// start: Comet Txs Service
+	//
+	shutdown_wg.Add(1)
+	go func() {
+		defer shutdown_wg.Done()
+		runCometTxsScraper(ctx, &svc)
+	}()
+	//
 	// start: example service
 	//
 	// shutdown_wg.Add(1)
@@ -152,7 +160,7 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices) {
 	svc.Log.Info("Starting update Network History Segments Scraper in 15sec")
 
-	time.Sleep(15 * time.Second) // delay everything by 5sec
+	time.Sleep(10 * time.Second) // delay everything by 10sec
 
 	ticker := time.NewTicker(250 * time.Second) // every ~300 block
 	defer ticker.Stop()
@@ -169,6 +177,30 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 		select {
 		case <-ctx.Done():
 			svc.Log.Info("Stopping update Network History Segments Scraper")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+// Comet Txs
+func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
+	svc.Log.Info("Starting update Network History Segments Scraper in 15sec")
+
+	time.Sleep(20 * time.Second) // delay everything by 20sec - 15sec after Block Signers scraper
+
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		if err := svc.UpdateService.UpdateCometTxsAllNew(ctx); err != nil {
+			svc.Log.Error("Failed to update Comet Txs", zap.Error(err))
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Comet Txs Scraper")
 			return
 		case <-ticker.C:
 			continue
