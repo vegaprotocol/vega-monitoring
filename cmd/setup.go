@@ -3,6 +3,7 @@ package cmd
 import (
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/data-metrics-store/clients/comet"
+	"github.com/vegaprotocol/data-metrics-store/clients/ethutils"
 	"github.com/vegaprotocol/data-metrics-store/config"
 	"github.com/vegaprotocol/data-metrics-store/services"
 	"github.com/vegaprotocol/data-metrics-store/services/read"
@@ -29,7 +30,11 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 
 	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
-	svc.ReadService, err = read.NewReadService(cometClient, svc.StoreService, svc.Log)
+	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
+	if err != nil {
+		return
+	}
+	svc.ReadService, err = read.NewReadService(cometClient, ethClient, svc.StoreService, svc.Log)
 	if err != nil {
 		return
 	}

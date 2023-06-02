@@ -39,7 +39,7 @@ func init() {
 }
 
 func RunGetBalance(args GetBalanceArgs) error {
-	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+	cfg, log, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
 	if len(args.EthNodeURL) == 0 {
 		if cfg != nil && len(cfg.Ethereum.RPCEndpoint) > 0 {
 			args.EthNodeURL = cfg.Ethereum.RPCEndpoint
@@ -62,7 +62,7 @@ func RunGetBalance(args GetBalanceArgs) error {
 		}
 	}
 
-	client, err := ethutils.NewEthClient(args.EthNodeURL)
+	client, err := ethutils.NewEthClient(&cfg.Ethereum, log)
 	if err != nil {
 		return err
 	}

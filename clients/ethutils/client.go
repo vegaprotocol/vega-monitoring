@@ -4,21 +4,25 @@ import (
 	"context"
 	"fmt"
 
+	"code.vegaprotocol.io/vega/logging"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/vegaprotocol/data-metrics-store/config"
 )
 
 type EthClient struct {
-	ethURL string
-	client ethclient.Client
+	ethConfig *config.EthereumConfig
+	log       *logging.Logger
+	client    *ethclient.Client
 }
 
-func NewEthClient(ethURL string) (*EthClient, error) {
-	client, err := ethclient.DialContext(context.Background(), ethURL)
+func NewEthClient(ethConfig *config.EthereumConfig, log *logging.Logger) (*EthClient, error) {
+	client, err := ethclient.DialContext(context.Background(), ethConfig.RPCEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Ethereum Node, %w", err)
 	}
 	return &EthClient{
-		ethURL: ethURL,
-		client: *client,
+		ethConfig: ethConfig,
+		log:       log,
+		client:    client,
 	}, nil
 }

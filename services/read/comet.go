@@ -19,3 +19,7 @@ func (s *ReadService) GetBlockSigners(fromBlock int64, toBlock int64) ([]comet.B
 func (s *ReadService) GetCometTxs(fromBlock int64, toBlock int64) ([]comet.CometTx, error) {
 	return s.cometClient.GetTxsForBlockRange(fromBlock, toBlock)
 }
+
+func (s *ReadService) GetValidatorForAddressAtBlock(address string, block int64) (*comet.ValidatorData, error) {
+	return s.cometClient.GetValidatorForAddressAtBlock(address, block)
+}

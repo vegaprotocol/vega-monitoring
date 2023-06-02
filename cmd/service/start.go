@@ -73,6 +73,14 @@ func run(args StartArgs) {
 		runCometTxsScraper(ctx, &svc)
 	}()
 	//
+	// start: Network Balances
+	//
+	shutdown_wg.Add(1)
+	go func() {
+		defer shutdown_wg.Done()
+		runNetworkBalancesScraper(ctx, &svc)
+	}()
+	//
 	// start: example service
 	//
 	// shutdown_wg.Add(1)
@@ -201,6 +209,30 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
 		select {
 		case <-ctx.Done():
 			svc.Log.Info("Stopping update Comet Txs Scraper")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+// Network Balances
+func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
+	svc.Log.Info("Starting update Network Balances Scraper in 15sec")
+
+	time.Sleep(15 * time.Second)
+
+	ticker := time.NewTicker(50 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx); err != nil {
+			svc.Log.Error("Failed to update Network Balances", zap.Error(err))
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Network Balances Scraper")
 			return
 		case <-ticker.C:
 			continue

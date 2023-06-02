@@ -14,9 +14,17 @@ type ERC20Token struct {
 	HexAddress string
 }
 
+func (c *EthClient) GetAssetPoolBalanceForToken(hexTokenAddress string) (*big.Int, error) {
+	tokenClient, err := c.GetERC20(hexTokenAddress)
+	if err != nil {
+		return nil, err
+	}
+	return tokenClient.BalanceOf(c.ethConfig.AssetPoolAddress)
+}
+
 func (c *EthClient) GetERC20(hexTokenAddress string) (*ERC20Token, error) {
 	tokenAddress := common.HexToAddress(hexTokenAddress)
-	tokenClient, err := IERC20.NewIERC20(tokenAddress, &c.client)
+	tokenClient, err := IERC20.NewIERC20(tokenAddress, c.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to ERC20 token %s, %w", hexTokenAddress, err)
 	}

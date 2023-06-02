@@ -52,3 +52,15 @@ func (s *StoreService) NewNetworkHistorySegment() *sqlstore.NetworkHistorySegmen
 func (s *StoreService) NewCometTxs() *sqlstore.CometTxs {
 	return sqlstore.NewCometTxs(s.connSource)
 }
+
+func (s *StoreService) NewNetworkBalances() *sqlstore.NetworkBalances {
+	return sqlstore.NewNetworkBalances(s.connSource)
+}
+
+//
+// Data Node tables
+//
+
+func (s *StoreService) NewAssets() *vega_sqlstore.Assets {
+	return vega_sqlstore.NewAssets(s.connSource)
+}

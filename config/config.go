@@ -25,13 +25,7 @@ type Config struct {
 		Monitor map[string]string `long:"Monitor"`
 	} `group:"DataNode" namespace:"datanode"`
 
-	Ethereum struct {
-		RPCEndpoint      string            `long:"RPCEndpoint"`
-		EtherscanURL     string            `long:"EtherscanURL"`
-		EtherscanApiKey  string            `long:"EtherscanApiKey"`
-		AssetPoolAddress string            `long:"AssetPoolAddress"`
-		AssetAddresses   map[string]string `long:"AssetAddresses"`
-	} `group:"Ethereum" namespace:"ethereum"`
+	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
 	Logging struct {
 		Level string `long:"Level"`
@@ -50,6 +44,14 @@ type SQLStoreConfig struct {
 	Username string `long:"username"`
 	Password string `long:"password"`
 	Database string `long:"database"`
+}
+
+type EthereumConfig struct {
+	RPCEndpoint      string            `long:"RPCEndpoint"`
+	EtherscanURL     string            `long:"EtherscanURL"`
+	EtherscanApiKey  string            `long:"EtherscanApiKey"`
+	AssetPoolAddress string            `long:"AssetPoolAddress"`
+	AssetAddresses   map[string]string `long:"AssetAddresses"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {

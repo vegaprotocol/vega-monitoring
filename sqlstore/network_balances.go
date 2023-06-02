@@ -1,0 +1,77 @@
+package sqlstore
+
+import (
+	"context"
+	"fmt"
+
+	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+	"github.com/vegaprotocol/data-metrics-store/entities"
+)
+
+type NetworkBalances struct {
+	*vega_sqlstore.ConnectionSource
+	NetworkBalances []entities.NetworkBalance
+}
+
+func NewNetworkBalances(connectionSource *vega_sqlstore.ConnectionSource) *NetworkBalances {
+	return &NetworkBalances{
+		ConnectionSource: connectionSource,
+	}
+}
+
+func (nhs *NetworkBalances) Add(newBalance entities.NetworkBalance) {
+	nhs.NetworkBalances = append(nhs.NetworkBalances, newBalance)
+}
+
+func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance entities.NetworkBalance) error {
+	_, err := nhs.Connection.Exec(ctx, `
+		INSERT INTO metrics.network_balances (
+			balance_time,
+			asset_id,
+			balance_source,
+			balance)
+		VALUES
+			(
+				$1,
+				(SELECT id FROM assets_current WHERE erc20_contract = $2),
+				$3,
+				$4
+			)
+		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
+		SET
+			balance=EXCLUDED.balance`,
+		newBalance.BalanceTime,
+		newBalance.AssetEthereumHexAddress,
+		newBalance.BalanceSource,
+		newBalance.Balance,
+	)
+
+	return err
+}
+
+func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBalance, error) {
+	var blockCtx context.Context
+	var cancel context.CancelFunc
+	blockCtx, cancel = context.WithCancel(ctx)
+	defer cancel()
+
+	blockCtx, err := c.WithTransaction(blockCtx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Flush Upsert Network Balances, failed to add transaction to context:%w", err)
+	}
+
+	for _, tx := range c.NetworkBalances {
+		if err := c.UpsertWithoutAssetId(blockCtx, tx); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := c.Commit(blockCtx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction to Flush Upsert Network Balances: %w", err)
+	}
+
+	flushed := c.NetworkBalances
+	c.NetworkBalances = nil
+
+	return flushed, nil
+}
