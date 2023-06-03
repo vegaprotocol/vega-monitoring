@@ -13,10 +13,7 @@ import (
 )
 
 type Config struct {
-	Coingecko struct {
-		ApiURL   string            `long:"ApiURL"`
-		AssetIds map[string]string `long:"AssetIds"`
-	} `group:"Coingecko" namespace:"coingecko"`
+	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko"`
 
 	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
 
@@ -32,6 +29,11 @@ type Config struct {
 	} `group:"Logging" namespace:"logging"`
 
 	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
+}
+
+type CoingeckoConfig struct {
+	ApiURL   string            `long:"ApiURL"`
+	AssetIds map[string]string `long:"AssetIds"`
 }
 
 type CometBFTConfig struct {
@@ -87,9 +89,10 @@ func NewDefaultConfig() Config {
 	// Coingecko
 	config.Coingecko.ApiURL = "https://api.coingecko.com/api/v3"
 	config.Coingecko.AssetIds = map[string]string{
-		"vega": "vega-protocol",
-		"usdt": "tether",
-		"usdc": "usd-coin",
+		"VEGA": "vega-protocol",
+		"USDT": "tether",
+		"USDC": "usd-coin",
+		"WETH": "weth",
 	}
 	// CometBFT
 	config.CometBFT.ApiURL = "http://localhost:26657"

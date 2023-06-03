@@ -57,6 +57,10 @@ func (s *StoreService) NewNetworkBalances() *sqlstore.NetworkBalances {
 	return sqlstore.NewNetworkBalances(s.connSource)
 }
 
+func (s *StoreService) NewAssetPrices() *sqlstore.AssetPrices {
+	return sqlstore.NewAssetPrices(s.connSource)
+}
+
 //
 // Data Node tables
 //

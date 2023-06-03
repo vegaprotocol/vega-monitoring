@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"code.vegaprotocol.io/vega/logging"
+	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
 	"github.com/vegaprotocol/data-metrics-store/clients/comet"
 	"github.com/vegaprotocol/data-metrics-store/clients/ethutils"
 	"github.com/vegaprotocol/data-metrics-store/config"
@@ -29,12 +30,13 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		return
 	}
 
+	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
 	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
 	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
 	if err != nil {
 		return
 	}
-	svc.ReadService, err = read.NewReadService(cometClient, ethClient, svc.StoreService, svc.Log)
+	svc.ReadService, err = read.NewReadService(coingeckoClient, cometClient, ethClient, svc.StoreService, svc.Log)
 	if err != nil {
 		return
 	}

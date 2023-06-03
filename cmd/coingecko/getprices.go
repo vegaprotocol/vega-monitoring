@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"code.vegaprotocol.io/vega/logging"
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
 	"github.com/vegaprotocol/data-metrics-store/config"
@@ -38,29 +39,38 @@ func init() {
 }
 
 func RunGetPrice(args GetPriceArgs) error {
-	cfg, _, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
-	if len(args.ApiURL) == 0 {
-		if cfg != nil {
-			args.ApiURL = cfg.Coingecko.ApiURL
-		} else {
-			return fmt.Errorf("Required --api-url flag or config.toml file")
-		}
-	}
-	if args.AssetIds == nil || len(args.AssetIds) == 0 {
-		if cfg != nil {
-			args.AssetIds = []string{}
-			for _, assetId := range cfg.Coingecko.AssetIds {
-				args.AssetIds = append(args.AssetIds, assetId)
-			}
-		} else {
-			return fmt.Errorf("Required --asset-ids flag or config.toml file")
-		}
+	cfg, log, _ := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
+
+	coingeckoConfig := config.CoingeckoConfig{}
+	if len(args.ApiURL) > 0 {
+		coingeckoConfig.ApiURL = args.ApiURL
+	} else if cfg != nil {
+		coingeckoConfig.ApiURL = cfg.Coingecko.ApiURL
+	} else {
+		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}
 
-	client := coingecko.NewCoingeckoClient(args.ApiURL)
-	prices, err := client.GetAssetPrices(args.AssetIds)
-	if err != nil {
-		return err
+	if log == nil {
+		log = logging.NewProdLogger()
+	}
+
+	client := coingecko.NewCoingeckoClient(&coingeckoConfig, log)
+	var prices []coingecko.PriceData
+	var err error
+
+	if args.AssetIds != nil && len(args.AssetIds) > 0 {
+		prices, err = client.GetAssetPrices(args.AssetIds)
+		if err != nil {
+			return err
+		}
+	} else if cfg != nil {
+		coingeckoConfig.AssetIds = cfg.Coingecko.AssetIds
+		prices, err = client.GetPrices()
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("Required --asset-ids flag or config.toml file")
 	}
 
 	bytePrices, err := json.MarshalIndent(prices, "", "\t")

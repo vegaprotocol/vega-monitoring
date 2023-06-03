@@ -81,6 +81,14 @@ func run(args StartArgs) {
 		runNetworkBalancesScraper(ctx, &svc)
 	}()
 	//
+	// start: Asset Prices
+	//
+	shutdown_wg.Add(1)
+	go func() {
+		defer shutdown_wg.Done()
+		runAssetPricesScraper(ctx, &svc)
+	}()
+	//
 	// start: example service
 	//
 	// shutdown_wg.Add(1)
@@ -239,6 +247,30 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 		select {
 		case <-ctx.Done():
 			svc.Log.Info("Stopping update Network Balances Scraper")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+// Asset Prices
+func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices) {
+	svc.Log.Info("Starting update Asset Prices Scraper in 25sec")
+
+	time.Sleep(25 * time.Second)
+
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+		if err := svc.UpdateService.UpdateAssetPrices(ctx); err != nil {
+			svc.Log.Error("Failed to update Asset Prices", zap.Error(err))
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Asset Prices Scraper")
 			return
 		case <-ticker.C:
 			continue
