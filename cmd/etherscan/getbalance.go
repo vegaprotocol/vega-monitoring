@@ -35,7 +35,7 @@ func init() {
 	getBalanceArgs.EtherscanArgs = &etherscanArgs
 
 	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.WalletAddress, "wallet", "", "Ethereum address to get balance for")
-	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.TokenAddress, "token", "", "Token address to get balance for")
+	getBalanceCmd.PersistentFlags().StringVar(&getBalanceArgs.TokenAddress, "token", "0xcb84d72e61e383767c4dfeb2d8ff7f4fb89abc6e", "Token address to get balance for")
 }
 
 func RunGetBalance(args GetBalanceArgs) error {
@@ -55,13 +55,6 @@ func RunGetBalance(args GetBalanceArgs) error {
 			args.WalletAddress = cfg.Ethereum.AssetPoolAddress
 		} else {
 			return fmt.Errorf("Required --wallet flag or config.toml file")
-		}
-	}
-	if len(args.TokenAddress) == 0 {
-		if cfg != nil {
-			args.TokenAddress = cfg.Ethereum.AssetAddresses["vega"]
-		} else {
-			return fmt.Errorf("Required --token flag or config.toml file")
 		}
 	}
 
