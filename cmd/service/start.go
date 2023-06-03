@@ -227,7 +227,13 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 
 	for {
 		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx); err != nil {
-			svc.Log.Error("Failed to update Network Balances", zap.Error(err))
+			svc.Log.Error("Failed to update Network Balances: Asset Pool", zap.Error(err))
+		}
+		if err := svc.UpdateService.UpdatePartiesTotalBalances(ctx); err != nil {
+			svc.Log.Error("Failed to update Network Balances: Partiest Total", zap.Error(err))
+		}
+		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(ctx); err != nil {
+			svc.Log.Error("Failed to update Network Balances: Unrealised Withdrawals", zap.Error(err))
 		}
 
 		select {

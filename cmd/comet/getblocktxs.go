@@ -49,7 +49,7 @@ func RunGetBlockTxs(args GetBlockTxsArgs) error {
 		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}
 
-	txsList, err := client.GetTxsForBlock(args.Block)
+	txsList, err := client.GetTxsForBlockNotFiltered(args.Block)
 	if err != nil {
 		return err
 	}

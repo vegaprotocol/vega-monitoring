@@ -11,8 +11,10 @@ import (
 
 type NetworkBalancesArgs struct {
 	*UpdateArgs
-	AssetPool bool
-	All       bool
+	All                   bool
+	AssetPool             bool
+	PartiesTotal          bool
+	UnrealisedWithdrawals bool
 }
 
 var networkBalancesArgs NetworkBalancesArgs
@@ -34,8 +36,10 @@ func init() {
 	UpdateCmd.AddCommand(networkBalancesCmd)
 	networkBalancesArgs.UpdateArgs = &updateArgs
 
-	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.AssetPool, "asset-pool", false, "Update Asset Pool")
-	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.All, "all", false, "Update all")
+	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.All, "all", false, "Update all Balances")
+	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.AssetPool, "asset-pool", false, "Update Asset Pool Balances")
+	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.PartiesTotal, "parties-total", false, "Update Parties Total Balances")
+	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.UnrealisedWithdrawals, "unrealised-withdrawals", false, "Update Unrealised Withdrawals Balances")
 }
 
 func RunNetworkBalances(args NetworkBalancesArgs) error {
@@ -46,6 +50,18 @@ func RunNetworkBalances(args NetworkBalancesArgs) error {
 
 	if args.All || args.AssetPool {
 		if err := svc.UpdateService.UpdateAssetPoolBalances(context.Background()); err != nil {
+			return err
+		}
+	}
+
+	if args.All || args.PartiesTotal {
+		if err := svc.UpdateService.UpdatePartiesTotalBalances(context.Background()); err != nil {
+			return err
+		}
+	}
+
+	if args.All || args.UnrealisedWithdrawals {
+		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(context.Background()); err != nil {
 			return err
 		}
 	}

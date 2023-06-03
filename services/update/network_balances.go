@@ -12,6 +12,8 @@ import (
 
 func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context) error {
 
+	us.log.Info("Update Asset Pool Balances: start")
+
 	assetsService := us.storeService.NewAssets()
 
 	assets, err := assetsService.GetAll(ctx)
@@ -40,5 +42,31 @@ func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context) error {
 		zap.Int("row count", len(balances)),
 	)
 
+	return nil
+}
+
+func (us *UpdateService) UpdatePartiesTotalBalances(ctx context.Context) error {
+
+	us.log.Info("Update Parties Total Balances: start")
+
+	networkBalancesStore := us.storeService.NewNetworkBalances()
+	if err := networkBalancesStore.UpsertPartiesTotalBalance(ctx); err != nil {
+		us.log.Error("Failed to update Parties Total Balances", zap.Error(err))
+		return fmt.Errorf("failed to update Parties Total Balances, %w", err)
+	}
+	us.log.Info("Stored Parties Total Balances in SQLStore")
+	return nil
+}
+
+func (us *UpdateService) UpdateUnrealisedWithdrawalsBalances(ctx context.Context) error {
+
+	us.log.Info("Update Unrealised Withdrawals Balances: start")
+
+	networkBalancesStore := us.storeService.NewNetworkBalances()
+	if err := networkBalancesStore.UpsertUnrealisedWithdrawalsBalance(ctx); err != nil {
+		us.log.Error("Failed to update Unrealised Withdrawals Balances", zap.Error(err))
+		return fmt.Errorf("failed to update Unrealised Withdrawals Balances, %w", err)
+	}
+	us.log.Info("Stored Unrealised Withdrawals Balances in SQLStore")
 	return nil
 }

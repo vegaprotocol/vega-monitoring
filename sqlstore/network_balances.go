@@ -75,3 +75,44 @@ func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBa
 
 	return flushed, nil
 }
+
+func (nhs *NetworkBalances) UpsertPartiesTotalBalance(ctx context.Context) error {
+	_, err := nhs.Connection.Exec(ctx, `
+		INSERT INTO metrics.network_balances (
+			balance_time,
+			asset_id,
+			balance_source,
+			balance)
+		SELECT DATE_TRUNC('minute', NOW()), accounts.asset_id, 'PARTIES_TOTAL', SUM(current_balances.balance)
+			FROM current_balances, accounts
+			WHERE current_balances.account_id = accounts.id
+			GROUP BY accounts.asset_id
+		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
+		SET
+			balance=EXCLUDED.balance`,
+	)
+
+	return err
+}
+
+func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Context) error {
+	_, err := nhs.Connection.Exec(ctx, `
+		INSERT INTO metrics.network_balances (
+			balance_time,
+			asset_id,
+			balance_source,
+			balance)
+		SELECT DATE_TRUNC('minute', NOW()), asset, 'UNREALISED_WITHDRAWALS_TOTAL', SUM(amount)
+			FROM withdrawals
+			WHERE
+				withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz
+			AND
+				status = 'STATUS_FINALIZED'
+			GROUP BY asset
+		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
+		SET
+			balance=EXCLUDED.balance`,
+	)
+
+	return err
+}
