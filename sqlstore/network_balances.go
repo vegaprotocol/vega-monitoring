@@ -103,7 +103,7 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 			balance_source,
 			balance)
 		SELECT DATE_TRUNC('minute', NOW()), asset, 'UNREALISED_WITHDRAWALS_TOTAL', SUM(amount)
-			FROM withdrawals
+			FROM withdrawals_current
 			WHERE
 				withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz
 			AND
@@ -119,26 +119,16 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 
 func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error {
 	_, err := nhs.Connection.Exec(ctx, `
-		WITH open_deposits AS (
-			SELECT asset, SUM(amount) AS amount
-			FROM deposits
-			WHERE status = 'STATUS_OPEN'
-			GROUP BY asset 
-		), finalized_deposits AS (
-			SELECT asset, SUM(amount) AS amount
-			FROM deposits
-			WHERE status = 'STATUS_FINALIZED'
-			GROUP BY asset 
-		)
 		INSERT INTO metrics.network_balances (
 			balance_time,
 			asset_id,
 			balance_source,
 			balance)
-		SELECT DATE_TRUNC('minute', NOW()), open_deposits.asset, 'UNFINALIZED_DEPOSITS', open_deposits.amount - finalized_deposits.amount
-		FROM open_deposits, finalized_deposits
-		WHERE
-			open_deposits.asset = finalized_deposits.asset
+		SELECT DATE_TRUNC('minute', NOW()), asset, 'UNFINALIZED_DEPOSITS', SUM(amount)
+			FROM deposits_current
+			WHERE
+				status <> 'STATUS_FINALIZED'
+			GROUP BY asset
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
