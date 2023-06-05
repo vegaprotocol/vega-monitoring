@@ -15,6 +15,7 @@ type NetworkBalancesArgs struct {
 	AssetPool             bool
 	PartiesTotal          bool
 	UnrealisedWithdrawals bool
+	UnfinalizedDeposits   bool
 }
 
 var networkBalancesArgs NetworkBalancesArgs
@@ -40,6 +41,7 @@ func init() {
 	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.AssetPool, "asset-pool", false, "Update Asset Pool Balances")
 	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.PartiesTotal, "parties-total", false, "Update Parties Total Balances")
 	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.UnrealisedWithdrawals, "unrealised-withdrawals", false, "Update Unrealised Withdrawals Balances")
+	networkBalancesCmd.PersistentFlags().BoolVar(&networkBalancesArgs.UnfinalizedDeposits, "unfinalized-deposits", false, "Update Unfinalized Deposits Balances")
 }
 
 func RunNetworkBalances(args NetworkBalancesArgs) error {
@@ -62,6 +64,12 @@ func RunNetworkBalances(args NetworkBalancesArgs) error {
 
 	if args.All || args.UnrealisedWithdrawals {
 		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(context.Background()); err != nil {
+			return err
+		}
+	}
+
+	if args.All || args.UnfinalizedDeposits {
+		if err := svc.UpdateService.UpdateUnfinalizedDepositsBalances(context.Background()); err != nil {
 			return err
 		}
 	}

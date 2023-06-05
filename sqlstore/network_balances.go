@@ -116,3 +116,33 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 
 	return err
 }
+
+func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error {
+	_, err := nhs.Connection.Exec(ctx, `
+		WITH open_deposits AS (
+			SELECT asset, SUM(amount) AS amount
+			FROM deposits
+			WHERE status = 'STATUS_OPEN'
+			GROUP BY asset 
+		), finalized_deposits AS (
+			SELECT asset, SUM(amount) AS amount
+			FROM deposits
+			WHERE status = 'STATUS_FINALIZED'
+			GROUP BY asset 
+		)
+		INSERT INTO metrics.network_balances (
+			balance_time,
+			asset_id,
+			balance_source,
+			balance)
+		SELECT DATE_TRUNC('minute', NOW()), open_deposits.asset, 'UNFINALIZED_DEPOSITS', open_deposits.amount - finalized_deposits.amount
+		FROM open_deposits, finalized_deposits
+		WHERE
+			open_deposits.asset = finalized_deposits.asset
+		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
+		SET
+			balance=EXCLUDED.balance`,
+	)
+
+	return err
+}

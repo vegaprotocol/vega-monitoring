@@ -1,6 +1,6 @@
 -- +goose Up
 
-CREATE TYPE metrics.balance_source_type AS enum('ASSET_POOL', 'PARTIES_TOTAL', 'UNREALISED_WITHDRAWALS_TOTAL');
+CREATE TYPE metrics.balance_source_type AS enum('ASSET_POOL', 'PARTIES_TOTAL', 'UNREALISED_WITHDRAWALS_TOTAL', 'UNFINALIZED_DEPOSITS');
 
 CREATE TABLE metrics.network_balances
 (

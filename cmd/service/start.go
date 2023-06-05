@@ -243,6 +243,9 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Unrealised Withdrawals", zap.Error(err))
 		}
+		if err := svc.UpdateService.UpdateUnfinalizedDepositsBalances(ctx); err != nil {
+			svc.Log.Error("Failed to update Network Balances: Unfinalized Deposits", zap.Error(err))
+		}
 
 		select {
 		case <-ctx.Done():

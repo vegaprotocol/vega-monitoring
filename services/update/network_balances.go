@@ -70,3 +70,16 @@ func (us *UpdateService) UpdateUnrealisedWithdrawalsBalances(ctx context.Context
 	us.log.Info("Stored Unrealised Withdrawals Balances in SQLStore")
 	return nil
 }
+
+func (us *UpdateService) UpdateUnfinalizedDepositsBalances(ctx context.Context) error {
+
+	us.log.Info("Update Unfinalized Deposits Balances: start")
+
+	networkBalancesStore := us.storeService.NewNetworkBalances()
+	if err := networkBalancesStore.UpsertUnfinalizedDeposits(ctx); err != nil {
+		us.log.Error("Failed to update Unfinalized Deposits Balances", zap.Error(err))
+		return fmt.Errorf("failed to update Unfinalized Deposits Balances, %w", err)
+	}
+	us.log.Info("Stored Unfinalized Deposits Balances in SQLStore")
+	return nil
+}
