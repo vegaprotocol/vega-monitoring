@@ -78,6 +78,12 @@ func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBa
 
 func (nhs *NetworkBalances) UpsertPartiesTotalBalance(ctx context.Context) error {
 	_, err := nhs.Connection.Exec(ctx, `
+		WITH latest_balance AS (
+			SELECT accounts.asset_id, SUM(current_balances.balance) AS balance
+			FROM current_balances, accounts
+			WHERE current_balances.account_id = accounts.id
+			GROUP BY accounts.asset_id
+		)
 		INSERT INTO metrics.network_balances (
 			balance_time,
 			asset_id,
@@ -102,13 +108,10 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 			asset_id,
 			balance_source,
 			balance)
-		SELECT DATE_TRUNC('minute', NOW()), asset, 'UNREALISED_WITHDRAWALS_TOTAL', SUM(amount)
-			FROM withdrawals_current
-			WHERE
-				withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz
-			AND
-				status = 'STATUS_FINALIZED'
-			GROUP BY asset
+		SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
+			FROM assets_current a
+			LEFT JOIN withdrawals_current w ON (w.asset = a.id AND w.withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz AND w.status = 'STATUS_FINALIZED')
+			GROUP BY a.id
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
@@ -124,11 +127,10 @@ func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error
 			asset_id,
 			balance_source,
 			balance)
-		SELECT DATE_TRUNC('minute', NOW()), asset, 'UNFINALIZED_DEPOSITS', SUM(amount)
-			FROM deposits_current
-			WHERE
-				status <> 'STATUS_FINALIZED'
-			GROUP BY asset
+		SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNFINALIZED_DEPOSITS', COALESCE(SUM(d.amount), 0)
+			FROM assets_current a
+			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status <> 'STATUS_FINALIZED')
+			GROUP BY a.id
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
