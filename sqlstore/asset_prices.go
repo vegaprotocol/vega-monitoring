@@ -27,25 +27,21 @@ func (ap *AssetPrices) Add(data *coingecko.PriceData) {
 func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.PriceData) error {
 	_, err := ap.Connection.Exec(ctx, `
 		INSERT INTO metrics.asset_prices (
-			asset_id,
 			price_time,
+			asset_id,
 			price)
 		VALUES
 			(
-				(SELECT id FROM assets_current WHERE LOWER(symbol) = $1),
-				$2,
+				$1,
+				(SELECT id FROM assets_current WHERE LOWER(symbol) = $2),
 				$3
 			)
-		ON CONFLICT (asset_id) DO UPDATE
+		ON CONFLICT (price_time, asset_id) DO UPDATE
 		SET
-			price_time=EXCLUDED.price_time,
-			price=EXCLUDED.price
-		WHERE
-			metrics.asset_prices.price_time < $4`,
+			price=EXCLUDED.price`,
+		newAssetPrices.Time,
 		strings.ToLower(newAssetPrices.AssetSymbol),
-		newAssetPrices.Time,
 		newAssetPrices.PriceUSD,
-		newAssetPrices.Time,
 	)
 
 	return err

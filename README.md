@@ -1,40 +1,77 @@
-# data-metrics-store
-MVP to store more data for metrics
+# Vega Network Monitoring
 
-```bash
-go run main.go --help
-```
+To properly monitor Vega Network you need to know what is happening in the network itself, e.g. deposits, transfers, new market proposals, etc. 90% of this information is already gathered by the Data Node and stored in TimescaleDB, which is time series database extension to the PostgreSQL. You can use various tools, like Grafana or Metabase, to process and filter that data.
+
+Vega Network Monitoring is a separate application that provides the other 10% of data. It extends the Data Node database with new tables, filled with data scraped from other services.
+
+### Extra data
+
+#### 1. Block Signers
+
+Information about validators signing and proposing blocks. [table](sqlstore/migrations/0001_block_signers.sql)
+
+#### 2. Network History Segments
+
+Network History is a way of storing Data Node state in segments created every X blocks, and sharing them through IPFS. In here we store segment hashes available from specified list of Data Nodes. [table](sqlstore/migrations/0002_segments.sql)
+
+#### 3. CometBFT Txs
+
+Subest of CometBFT Txs that otherwise can't be found in Data Node DB.
+
+#### 4. Network Balances
+
+Keeps track of four types of balances:
+- `Asset Pool` - Vega Network's wallet on Ethereum,
+- `Vega Network` - a total amount of all parties on Vega Network,
+- `Unrealized Withdrawal` - withdrawal already executed on Vega Network, but not yet on Ethereum,
+- `Unfinalized Deposit` - deposits already executed on Ethereum, awaiting X confirmation blocks.
+
+[table](sqlstore/migrations/0004_network_balances.sql)
+
+#### 5. Asset Prices
+
+Prices in USD of all assets traded on Vega Network. [table](sqlstore/migrations/0005_asset_prices.sql)
+
+
+## Setup
 
 ## Setup Service
 
-#### Compile
+### Compile
 
 ```bash
-go build -o bin/data-metrics-store .
+go build -o bin/vega-monitoring .
 ```
 
-#### Init
+### Init
 
-This will create `config.toml` in the root folder
+#### Create config file
+
+First, generate `config.toml` in the root directory.
 
 ```bash
-./data-metrics-store service init
+./vega-monitoring service init
 ```
 
-#### Edit config file
+Now edit the `config.toml` and provide necessary information.
+
+Validate config
 
 ```bash
-vim config.toml
+./vega-monitoring service validate-config
 ```
 
-#### Validate config
+#### Initialize Database
+
+Before, you need to start Data Node, which will set up a Database.
+Then run this to create all extra tables for Vega Network Monitoring
 
 ```bash
-./data-metrics-store service validate-config
+./vega-monitoring service init-db
 ```
 
-#### Start service
+### Start service
 
 ```bash
-./data-metrics-store service start
+./vega-monitoring service start
 ```
