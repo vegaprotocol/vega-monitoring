@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/data-metrics-store/cmd"
+	"github.com/vegaprotocol/data-metrics-store/sqlstore"
 	"go.uber.org/zap"
 )
 
@@ -46,6 +47,9 @@ func run(args StartArgs) {
 	svc, err := cmd.SetupServices(args.ConfigFilePath, args.Debug)
 	if err != nil {
 		log.Fatalf("Failed to setup Services %+v\n", err)
+	}
+	if err := sqlstore.MigrateToLatestSchema(svc.Log, svc.Config.SQLStore.GetConnectionConfig()); err != nil {
+		log.Fatalf("Failed to migrate database to latest version %+v\n", err)
 	}
 
 	//
