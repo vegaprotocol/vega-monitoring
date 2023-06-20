@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/cmd"
+	"github.com/vegaprotocol/vega-monitoring/cmd"
 )
 
 type NetworkBalancesArgs struct {

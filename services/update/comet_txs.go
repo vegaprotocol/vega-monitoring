@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/data-metrics-store/services/read"
-	"github.com/vegaprotocol/data-metrics-store/sqlstore"
+	"github.com/vegaprotocol/vega-monitoring/services/read"
+	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 	"go.uber.org/zap"
 )
 

@@ -1,7 +1,7 @@
 package read
 
 import (
-	"github.com/vegaprotocol/data-metrics-store/clients/comet"
+	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 )
 
 func (s *ReadService) GetNetworkLatestBlockHeight() (int64, error) {

@@ -6,7 +6,7 @@ import (
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/vegaprotocol/data-metrics-store/config"
+	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type EthClient struct {

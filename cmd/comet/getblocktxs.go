@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/clients/comet"
-	"github.com/vegaprotocol/data-metrics-store/config"
+	"github.com/vegaprotocol/vega-monitoring/clients/comet"
+	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type GetBlockTxsArgs struct {

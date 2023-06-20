@@ -2,9 +2,9 @@ package read
 
 import (
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
-	"github.com/vegaprotocol/data-metrics-store/clients/comet"
-	"github.com/vegaprotocol/data-metrics-store/clients/ethutils"
+	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
+	"github.com/vegaprotocol/vega-monitoring/clients/comet"
+	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 )
 
 type ReadService struct {

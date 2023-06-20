@@ -5,8 +5,8 @@ import (
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/data-metrics-store/config"
-	"github.com/vegaprotocol/data-metrics-store/sqlstore"
+	"github.com/vegaprotocol/vega-monitoring/config"
+	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
 type StoreService struct {

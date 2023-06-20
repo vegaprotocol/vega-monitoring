@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/vegaprotocol/data-metrics-store/types"
+	"github.com/vegaprotocol/vega-monitoring/types"
 	"golang.org/x/time/rate"
 )
 

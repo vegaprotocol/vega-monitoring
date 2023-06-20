@@ -1,15 +1,15 @@
 package main
 
 import (
-	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
-	"github.com/vegaprotocol/data-metrics-store/cmd/binance"
-	"github.com/vegaprotocol/data-metrics-store/cmd/coingecko"
-	"github.com/vegaprotocol/data-metrics-store/cmd/comet"
-	"github.com/vegaprotocol/data-metrics-store/cmd/etherscan"
-	"github.com/vegaprotocol/data-metrics-store/cmd/ethutils"
-	"github.com/vegaprotocol/data-metrics-store/cmd/service"
-	"github.com/vegaprotocol/data-metrics-store/cmd/sqlstore"
-	"github.com/vegaprotocol/data-metrics-store/cmd/update"
+	rootCmd "github.com/vegaprotocol/vega-monitoring/cmd"
+	"github.com/vegaprotocol/vega-monitoring/cmd/binance"
+	"github.com/vegaprotocol/vega-monitoring/cmd/coingecko"
+	"github.com/vegaprotocol/vega-monitoring/cmd/comet"
+	"github.com/vegaprotocol/vega-monitoring/cmd/etherscan"
+	"github.com/vegaprotocol/vega-monitoring/cmd/ethutils"
+	"github.com/vegaprotocol/vega-monitoring/cmd/service"
+	"github.com/vegaprotocol/vega-monitoring/cmd/sqlstore"
+	"github.com/vegaprotocol/vega-monitoring/cmd/update"
 )
 
 func main() {

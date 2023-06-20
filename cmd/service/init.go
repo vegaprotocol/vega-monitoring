@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/config"
+	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type InitArgs struct {

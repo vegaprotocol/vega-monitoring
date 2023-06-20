@@ -8,7 +8,7 @@ import (
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
-	"github.com/vegaprotocol/data-metrics-store/clients/comet"
+	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 )
 
 type CometTxs struct {

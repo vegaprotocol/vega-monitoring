@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
-	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
+	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 )
 
 type AssetPrices struct {

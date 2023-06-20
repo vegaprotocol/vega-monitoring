@@ -5,7 +5,7 @@ import (
 	"time"
 
 	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
-	"github.com/vegaprotocol/data-metrics-store/config"
+	"github.com/vegaprotocol/vega-monitoring/config"
 	"golang.org/x/time/rate"
 )
 

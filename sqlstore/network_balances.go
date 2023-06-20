@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
-	"github.com/vegaprotocol/data-metrics-store/entities"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
 type NetworkBalances struct {

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/clients/binance"
+	"github.com/vegaprotocol/vega-monitoring/clients/binance"
 )
 
 type GetPriceArgs struct {

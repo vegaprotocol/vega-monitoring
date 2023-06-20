@@ -15,7 +15,7 @@ type RootArgs struct {
 var Args RootArgs
 
 var RootCmd = &cobra.Command{
-	Use:   "data-metrics-store",
+	Use:   "vega-monitoring",
 	Short: "",
 	Long:  ``,
 }
@@ -23,7 +23,7 @@ var RootCmd = &cobra.Command{
 func Execute() {
 	err := RootCmd.Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to run data-metrics-store '%s'\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to run vega-monitoring '%s'\n", err)
 		os.Exit(1)
 	}
 }

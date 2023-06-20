@@ -2,8 +2,8 @@ package update
 
 import (
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/data-metrics-store/services"
-	"github.com/vegaprotocol/data-metrics-store/services/read"
+	"github.com/vegaprotocol/vega-monitoring/services"
+	"github.com/vegaprotocol/vega-monitoring/services/read"
 )
 
 type UpdateService struct {

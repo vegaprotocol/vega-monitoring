@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"github.com/vegaprotocol/data-metrics-store/entities"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 	"go.uber.org/zap"
 )
 

@@ -1,4 +1,4 @@
-module github.com/vegaprotocol/data-metrics-store
+module github.com/vegaprotocol/vega-monitoring
 
 go 1.19
 

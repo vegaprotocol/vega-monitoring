@@ -7,8 +7,8 @@ import (
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/spf13/cobra"
-	"github.com/vegaprotocol/data-metrics-store/clients/coingecko"
-	"github.com/vegaprotocol/data-metrics-store/config"
+	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
+	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type GetPriceArgs struct {

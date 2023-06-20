@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
-	"github.com/vegaprotocol/data-metrics-store/clients/datanode"
+	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 )
 
 type NetworkHistorySegment struct {

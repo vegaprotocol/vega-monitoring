@@ -3,7 +3,7 @@ package update
 import (
 	"context"
 
-	"github.com/vegaprotocol/data-metrics-store/clients/datanode"
+	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"go.uber.org/zap"
 )
 

@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/spf13/cobra"
-	rootCmd "github.com/vegaprotocol/data-metrics-store/cmd"
+	rootCmd "github.com/vegaprotocol/vega-monitoring/cmd"
 )
 
 type ServiceArgs struct {
