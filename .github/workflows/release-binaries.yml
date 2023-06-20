@@ -1,0 +1,216 @@
+---
+name: Release vega-monitoring binary
+
+"on":
+  push:
+    branches:
+      - main
+    tags:
+
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish as a GitHub release'
+        required: false
+        type: boolean
+        default: false
+      tag:
+        description: 'Git Tag to build and publish'
+        required: false
+        type: string
+        default: ''
+      archs:
+        description: 'Architecture to build and publish'
+        required: false
+        type: choice
+        options:
+          - [amd64, arm64]
+          - [amd64]
+          - [arm64]
+      os:
+        description: 'OS to build and publish'
+        required: false
+        type: choice
+        options:
+          - [linux, macos, windows]
+          - [linux]
+          - [macos]
+          - [windows]
+
+jobs:
+  #
+  # Linux
+  #
+  release-linux:
+    if: ${{ contains(fromJson(inputs.os || '["linux"]'), 'linux') }}
+    name: Release vega-monitoring on Linux ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJson(inputs.archs || '["amd64", "arm64"]') }}
+    env:
+      GOOS: linux
+      GOARCH: ${{ matrix.arch }}
+      CGO_ENABLED: 0
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.20
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Sanity check
+        run: |
+          git rev-parse --verify HEAD
+          git status
+
+      - name: Build binary
+        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring .
+
+      - name: Check help
+        if: ${{ env.GOARCH == 'amd64' }}
+        working-directory: build
+        run: ./vega-monitoring --help
+
+      - name: Bundle binary in archive
+        uses: thedoctor0/zip-release@master
+        with:
+          type: zip
+          directory: build
+          filename: vega-monitoring-${{ env.GOOS }}-${{ env.GOARCH }}.zip
+
+      - name: Release
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@cd28b0f5ee8571b76cfdaa62a30d51d752317477
+        with:
+          files: build/*.zip
+          name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #
+  # macOS
+  #
+  release-macos:
+    if: ${{ contains(fromJson(inputs.os || '["macos"]'), 'macos') }}
+    name: Release vega-monitoring on MacOS ${{ matrix.arch }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJson(inputs.archs || '["amd64", "arm64"]') }}
+    env:
+      GOOS: darwin
+      GOARCH: ${{ matrix.arch }}
+      CGO_ENABLED: 0
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+
+        with:
+          go-version: 1.20
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Sanity check
+        run: |
+          git rev-parse --verify HEAD
+          git status
+
+      - name: Build binary
+        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring .
+
+      - name: Check help
+        if: ${{ env.GOARCH == 'amd64' }}
+        working-directory: build
+        run: ./vega-monitoring --help
+
+      - name: Bundle binary in archive
+        uses: thedoctor0/zip-release@master
+        with:
+          type: zip
+          directory: build
+          filename: vega-monitoring-${{ env.GOOS }}-${{ env.GOARCH }}.zip
+
+      - name: Release
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@cd28b0f5ee8571b76cfdaa62a30d51d752317477
+        with:
+          files: build/*.zip
+          name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #
+  # Windows
+  #
+  release-windows:
+    if: ${{ contains(fromJson(inputs.os || '["windows"]'), 'windows') }}
+    name: Release vega-monitoring on Windows ${{ matrix.arch }}
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJson(inputs.archs || '["amd64"]') }}
+        exclude:
+          - arch: arm64
+    env:
+      GOOS: windows
+      GOARCH: ${{ matrix.arch }}
+      CGO_ENABLED: 0
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.20
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Sanity check
+        run: |
+          git rev-parse --verify HEAD
+          git status
+
+      - name: Build binary
+        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring.exe .
+
+      - name: Check version
+        if: ${{ env.GOARCH == 'amd64' }}
+        working-directory: build
+        run: .\vega-monitoring.exe --help
+
+      - name: Bundle binary in archive
+        uses: thedoctor0/zip-release@master
+        with:
+          type: zip
+          directory: build
+          filename: vega-monitoring-${{ env.GOOS }}-${{ env.GOARCH }}.zip
+
+      - name: Release
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@cd28b0f5ee8571b76cfdaa62a30d51d752317477
+        with:
+          files: build/*.zip
+          name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
