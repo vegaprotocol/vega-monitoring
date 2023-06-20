@@ -9,12 +9,12 @@ CREATE TABLE metrics.asset_prices
 );
 SELECT create_hypertable('metrics.asset_prices', 'price_time', chunk_time_interval => INTERVAL '1 day');
 
-CREATE VIEW asset_prices_current AS (
-  SELECT DISTINCT ON (asset_id) * FROM asset_prices ORDER BY asset_id, price_time DESC
+CREATE VIEW metrics.asset_prices_current AS (
+  SELECT DISTINCT ON (asset_id) * FROM metrics.asset_prices ORDER BY asset_id, price_time DESC
 );
 
 -- +goose Down
 
-DROP VIEW IF EXISTS asset_prices_current;
+DROP VIEW IF EXISTS metrics.asset_prices_current;
 
 DROP TABLE IF EXISTS metrics.asset_prices;
