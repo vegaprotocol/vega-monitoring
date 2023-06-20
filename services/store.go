@@ -22,12 +22,7 @@ func NewStoreService(
 	log *logging.Logger,
 ) (*StoreService, error) {
 
-	connConfig := vega_sqlstore.NewDefaultConfig().ConnectionConfig
-	connConfig.Host = config.Host
-	connConfig.Port = config.Port
-	connConfig.Username = config.Username
-	connConfig.Password = config.Password
-	connConfig.Database = config.Database
+	connConfig := config.GetConnectionConfig()
 
 	connSource, err := vega_sqlstore.NewTransactionalConnectionSource(log, connConfig)
 	if err != nil {

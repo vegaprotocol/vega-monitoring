@@ -39,7 +39,7 @@ func RunRollBack(args RollBackArgs) error {
 		return err
 	}
 
-	if err := sqlstore.RevertOneVersion(logger, cfg.GetConnectionConfig()); err != nil {
+	if err := sqlstore.RevertOneVersion(logger, cfg.SQLStore.GetConnectionConfig()); err != nil {
 		return err
 	}
 

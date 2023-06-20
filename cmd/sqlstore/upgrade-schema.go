@@ -39,7 +39,7 @@ func RunUpgradeSchema(args UpgradeSchemaArgs) error {
 		return err
 	}
 
-	if err := sqlstore.MigrateToLatestSchema(logger, cfg.GetConnectionConfig()); err != nil {
+	if err := sqlstore.MigrateToLatestSchema(logger, cfg.SQLStore.GetConnectionConfig()); err != nil {
 		return err
 	}
 

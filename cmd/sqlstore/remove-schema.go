@@ -39,7 +39,7 @@ func RunRemoveSchema(args RemoveSchemaArgs) error {
 		return err
 	}
 
-	if err := sqlstore.RevertToSchemaVersionZero(logger, cfg.GetConnectionConfig()); err != nil {
+	if err := sqlstore.RevertToSchemaVersionZero(logger, cfg.SQLStore.GetConnectionConfig()); err != nil {
 		return err
 	}
 

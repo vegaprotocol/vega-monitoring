@@ -128,13 +128,13 @@ func StoreDefaultConfigInFile(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-func (c *Config) GetConnectionConfig() sqlstore.ConnectionConfig {
+func (c *SQLStoreConfig) GetConnectionConfig() sqlstore.ConnectionConfig {
 	connConfig := sqlstore.NewDefaultConfig().ConnectionConfig
-	connConfig.Host = c.SQLStore.Host
-	connConfig.Port = c.SQLStore.Port
-	connConfig.Username = c.SQLStore.Username
-	connConfig.Password = c.SQLStore.Password
-	connConfig.Database = c.SQLStore.Database
+	connConfig.Host = c.Host
+	connConfig.Port = c.Port
+	connConfig.Username = c.Username
+	connConfig.Password = c.Password
+	connConfig.Database = c.Database
 
 	return connConfig
 }
