@@ -6,6 +6,7 @@ name: Release vega-monitoring binary
     branches:
       - main
     tags:
+      - "v*"
 
   workflow_dispatch:
     inputs:
@@ -63,20 +64,28 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
         with:
+          path: 'vega-monitoring'
           ref: ${{ inputs.tag }}
 
       - name: Sanity check
+        working-directory: 'vega-monitoring'
         run: |
           git rev-parse --verify HEAD
           git status
 
       - name: Build binary
-        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring .
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static"' -o ../build/vega-monitoring .
 
-      - name: Check help
+      - name: Build binary with version override
+        if: ${{ inputs.tag || startsWith(github.ref, 'refs/tags/') }}
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static" -X github.com/vegaprotocol/vega-monitoring/cmd/version.cliVersion=${{ inputs.tag || github.ref_name }}' -o ../build/vega-monitoring .
+
+      - name: Check version
         if: ${{ env.GOARCH == 'amd64' }}
         working-directory: build
-        run: ./vega-monitoring --help
+        run: ./vega-monitoring version
 
       - name: Bundle binary in archive
         uses: thedoctor0/zip-release@master
@@ -122,20 +131,28 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
         with:
+          path: 'vega-monitoring'
           ref: ${{ inputs.tag }}
 
       - name: Sanity check
+        working-directory: 'vega-monitoring'
         run: |
           git rev-parse --verify HEAD
           git status
 
       - name: Build binary
-        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring .
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static"' -o ../build/vega-monitoring .
 
-      - name: Check help
+      - name: Build binary with version override
+        if: ${{ inputs.tag || startsWith(github.ref, 'refs/tags/') }}
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static" -X github.com/vegaprotocol/vega-monitoring/cmd/version.cliVersion=${{ inputs.tag || github.ref_name }}' -o ../build/vega-monitoring .
+
+      - name: Check version
         if: ${{ env.GOARCH == 'amd64' }}
         working-directory: build
-        run: ./vega-monitoring --help
+        run: ./vega-monitoring version
 
       - name: Bundle binary in archive
         uses: thedoctor0/zip-release@master
@@ -159,7 +176,7 @@ jobs:
   # Windows
   #
   release-windows:
-    if: ${{ contains(fromJson(inputs.os || '["windows"]'), 'windows') }}
+    if: ${{ contains(fromJson(inputs.os), 'windows') }}
     name: Release vega-monitoring on Windows ${{ matrix.arch }}
     runs-on: windows-2019
     strategy:
@@ -182,20 +199,28 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
         with:
+          path: 'vega-monitoring'
           ref: ${{ inputs.tag }}
 
       - name: Sanity check
+        working-directory: 'vega-monitoring'
         run: |
           git rev-parse --verify HEAD
           git status
 
       - name: Build binary
-        run: go build -ldflags '-extldflags "-static"' -o build/vega-monitoring.exe .
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static"' -o ../build/vega-monitoring.exe .
+
+      - name: Build binary with version override
+        if: ${{ inputs.tag || startsWith(github.ref, 'refs/tags/') }}
+        working-directory: 'vega-monitoring'
+        run: go build -ldflags '-extldflags "-static" -X github.com/vegaprotocol/vega-monitoring/cmd/version.cliVersion=${{ inputs.tag || github.ref_name }}' -o ../build/vega-monitoring .
 
       - name: Check version
         if: ${{ env.GOARCH == 'amd64' }}
         working-directory: build
-        run: .\vega-monitoring.exe --help
+        run: .\vega-monitoring.exe version
 
       - name: Bundle binary in archive
         uses: thedoctor0/zip-release@master

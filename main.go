@@ -10,6 +10,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/cmd/service"
 	"github.com/vegaprotocol/vega-monitoring/cmd/sqlstore"
 	"github.com/vegaprotocol/vega-monitoring/cmd/update"
+	"github.com/vegaprotocol/vega-monitoring/cmd/version"
 )
 
 func main() {
@@ -25,4 +26,5 @@ func init() {
 	rootCmd.RootCmd.AddCommand(service.ServiceCmd)
 	rootCmd.RootCmd.AddCommand(sqlstore.SQLStoreCmd)
 	rootCmd.RootCmd.AddCommand(update.UpdateCmd)
+	rootCmd.RootCmd.AddCommand(version.VersionCmd)
 }
