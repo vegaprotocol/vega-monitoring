@@ -12,7 +12,7 @@ Information about validators signing and proposing blocks. [table](sqlstore/migr
 
 #### 2. Network History Segments
 
-Network History is a way of storing Data Node state in segments created every X blocks, and sharing them through IPFS. In here we store segment hashes available from specified list of Data Nodes. [table](sqlstore/migrations/0002_segments.sql)
+Network History is a way of storing Data Node state in segments created every X blocks, and sharing them through IPFS. Here we store segment hashes available from a specified list of Data Nodes. [table](sqlstore/migrations/0002_segments.sql)
 
 #### 3. CometBFT Txs
 
@@ -53,7 +53,7 @@ First, generate `config.toml` in the root directory.
 ./vega-monitoring service init
 ```
 
-Now edit the `config.toml` and provide necessary information.
+Now edit the `config.toml` and provide the necessary information.
 
 Validate config
 
