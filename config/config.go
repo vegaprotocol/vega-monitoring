@@ -29,6 +29,26 @@ type Config struct {
 	} `group:"Logging" namespace:"logging"`
 
 	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
+
+	Prometheus PrometheusConfig `group:"Prometheus" namespace:"prometheus"`
+
+	Services struct {
+		BlockSigners struct {
+			Enabled bool `long:"enabled"`
+		} `group:"BlockSigners" namespace:"blocksigners"`
+		NetworkHistorySegments struct {
+			Enabled bool `long:"enabled"`
+		} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
+		CometTxs struct {
+			Enabled bool `long:"enabled"`
+		} `group:"CometTxs" namespace:"comettxs"`
+		NetworkBalances struct {
+			Enabled bool `long:"enabled"`
+		} `group:"NetworkBalances" namespace:"networkbalances"`
+		AssetPrices struct {
+			Enabled bool `long:"enabled"`
+		} `group:"AssetPrices" namespace:"assetprices"`
+	} `group:"Services" namespace:"services"`
 }
 
 type CoingeckoConfig struct {
@@ -53,6 +73,12 @@ type EthereumConfig struct {
 	EtherscanURL     string `long:"EtherscanURL"`
 	EtherscanApiKey  string `long:"EtherscanApiKey"`
 	AssetPoolAddress string `long:"AssetPoolAddress"`
+}
+
+type PrometheusConfig struct {
+	Port    int    `long:"port"`
+	Path    string `long:"path"`
+	Enabled bool   `long:"enabled"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
@@ -112,6 +138,16 @@ func NewDefaultConfig() Config {
 	config.SQLStore.Username = ""
 	config.SQLStore.Password = ""
 	config.SQLStore.Database = ""
+	// Prometheus
+	config.Prometheus.Enabled = true
+	config.Prometheus.Path = "/metrics"
+	config.Prometheus.Port = 2100
+	// Services
+	config.Services.BlockSigners.Enabled = true
+	config.Services.NetworkHistorySegments.Enabled = true
+	config.Services.CometTxs.Enabled = true
+	config.Services.NetworkBalances.Enabled = true
+	config.Services.AssetPrices.Enabled = true
 
 	return config
 }
