@@ -55,43 +55,77 @@ func run(args StartArgs) {
 	//
 	// start: Block Singers Service
 	//
-	shutdown_wg.Add(1)
-	go func() {
-		defer shutdown_wg.Done()
-		runBlockSignersScraper(ctx, &svc)
-	}()
+	if svc.Config.Services.BlockSigners.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			runBlockSignersScraper(ctx, &svc)
+		}()
+	} else {
+		svc.Log.Info("Not starting Block Signers Service", zap.String("config", "Enabled=false"))
+	}
 	//
 	// start: Network History Segments Service
 	//
-	shutdown_wg.Add(1)
-	go func() {
-		defer shutdown_wg.Done()
-		runNetworkHistorySegmentsScraper(ctx, &svc)
-	}()
+	if svc.Config.Services.NetworkHistorySegments.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			runNetworkHistorySegmentsScraper(ctx, &svc)
+		}()
+	} else {
+		svc.Log.Info("Not starting Network History Segments Service", zap.String("config", "Enabled=false"))
+	}
 	//
 	// start: Comet Txs Service
 	//
-	shutdown_wg.Add(1)
-	go func() {
-		defer shutdown_wg.Done()
-		runCometTxsScraper(ctx, &svc)
-	}()
+	if svc.Config.Services.CometTxs.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			runCometTxsScraper(ctx, &svc)
+		}()
+	} else {
+		svc.Log.Info("Not starting Comet Txs Service", zap.String("config", "Enabled=false"))
+	}
 	//
 	// start: Network Balances
 	//
-	shutdown_wg.Add(1)
-	go func() {
-		defer shutdown_wg.Done()
-		runNetworkBalancesScraper(ctx, &svc)
-	}()
+	if svc.Config.Services.NetworkBalances.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			runNetworkBalancesScraper(ctx, &svc)
+		}()
+	} else {
+		svc.Log.Info("Not starting Network Balances Service", zap.String("config", "Enabled=false"))
+	}
 	//
 	// start: Asset Prices
 	//
-	shutdown_wg.Add(1)
-	go func() {
-		defer shutdown_wg.Done()
-		runAssetPricesScraper(ctx, &svc)
-	}()
+	if svc.Config.Services.AssetPrices.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			runAssetPricesScraper(ctx, &svc)
+		}()
+	} else {
+		svc.Log.Info("Not starting Asset Prices Service", zap.String("config", "Enabled=false"))
+	}
+	//
+	// start: Prometheus Endpoint
+	//
+	if svc.Config.Prometheus.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			if err := svc.PrometheusService.Start(); err != nil {
+				svc.Log.Error("Failed to start Prometheus Endpoint", zap.Error(err))
+			}
+		}()
+	} else {
+		svc.Log.Info("Not starting Prometheus Endpoint", zap.String("config", "Enabled=false"))
+	}
 	//
 	// start: example service
 	//
@@ -101,7 +135,7 @@ func run(args StartArgs) {
 	// 	fmt.Printf("Starting something #2\n")
 	// }()
 
-	fmt.Printf("Service has started\n")
+	svc.Log.Info("Service has started")
 
 	//
 	// wait: For SIGNALL
@@ -109,13 +143,26 @@ func run(args StartArgs) {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	s := <-sigc
-	log.Printf("signal received [%v] shutting down\n", s)
+	svc.Log.Info("Signal received, shutting down", zap.Any("signal", s))
 
 	//
 	// Send CANCEL to all services
 	//
 	cancel()
 
+	//
+	// shutdown: Prometheus Endpoint
+	//
+	if svc.Config.Prometheus.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			svc.Log.Info("Shutting down Prometheus Endpoint")
+			if err := svc.PrometheusService.Shutdown(ctx); err != nil {
+				svc.Log.Error("failed to stop Promethus Endpoint", zap.Error(err))
+			}
+		}()
+	}
 	//
 	// shutdown: example service
 	//
