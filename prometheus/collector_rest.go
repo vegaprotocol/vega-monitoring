@@ -46,6 +46,11 @@ func NewRESTCollector() *RESTCollector {
 // Describe returns all descriptions of the collector.
 func (c *RESTCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.desc.coreBlockHeight
+	ch <- c.desc.dataNodeBlockHeight
+	ch <- c.desc.coreTime
+	ch <- c.desc.dataNodeTime
+	ch <- c.desc.duration
+	ch <- c.desc.nodeData
 }
 
 // Collect returns the current state of all metrics of the collector.
