@@ -118,12 +118,31 @@ func run(args StartArgs) {
 		shutdown_wg.Add(1)
 		go func() {
 			defer shutdown_wg.Done()
+			svc.Log.Info("Starting Prometheus Endpoint service")
 			if err := svc.PrometheusService.Start(); err != nil {
 				svc.Log.Error("Failed to start Prometheus Endpoint", zap.Error(err))
+				cancel()
 			}
 		}()
 	} else {
 		svc.Log.Info("Not starting Prometheus Endpoint", zap.String("config", "Enabled=false"))
+	}
+	//
+	// start: DataNode Checker
+	//
+	if svc.Config.Prometheus.Enabled { // same flag as for Prometheus
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			svc.Log.Info("Starting DataNode Checker service in 10sec")
+			time.Sleep(10 * time.Second)
+			if err := svc.DataNodeCheckerService.Start(ctx); err != nil {
+				svc.Log.Error("Failed to start DataNode Checker service", zap.Error(err))
+				cancel()
+			}
+		}()
+	} else {
+		svc.Log.Info("Not starting DataNode Checker service", zap.String("config", "Enabled=false"))
 	}
 	//
 	// start: example service
