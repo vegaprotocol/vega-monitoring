@@ -37,12 +37,15 @@ func (s *DataNodeCheckerService) Start(ctx context.Context) error {
 	for {
 		for _, node := range *s.config {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
-			restResult, err := checkREST(node.REST)
+			checkResults, err := requestStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to get data for", zap.String("node", node.Name), zap.Error(err))
 				s.metrics.UpdateNodeAsError(node.Name, err)
 			} else {
-				s.metrics.UpdateNodeRESTResults(node.Name, restResult)
+				checkResults.RESTReqDuration, _ = checkREST(node.REST)
+				checkResults.GQLReqDuration, _ = checkGQL(node.GraphQL)
+				checkResults.GRPCReqDuration, _ = checkGRPC(node.GRPC)
+				s.metrics.UpdateNodeCheckResults(node.Name, checkResults)
 			}
 			select {
 			case <-ctx.Done():

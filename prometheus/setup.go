@@ -19,7 +19,7 @@ func NewMetrics(promRegistry *prometheus.Registry) *Metrics {
 	return m
 }
 
-func (m *Metrics) UpdateNodeRESTResults(node string, results *RESTResults) {
+func (m *Metrics) UpdateNodeCheckResults(node string, results *DataNodeChecksResults) {
 	m.rest.UpdateNodeResults(node, results)
 }
 

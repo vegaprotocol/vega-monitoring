@@ -16,7 +16,7 @@ var (
 	timeout = 2 * time.Second
 )
 
-func checkREST(address string) (*prometheus.RESTResults, error) {
+func requestStats(address string) (*prometheus.DataNodeChecksResults, error) {
 	reqURL, err := url.JoinPath(address, "statistics")
 	if err != nil {
 		return nil, fmt.Errorf("failed to check REST of %s, failed to create request URL, %w", address, err)
@@ -32,7 +32,7 @@ func checkREST(address string) (*prometheus.RESTResults, error) {
 		return nil, fmt.Errorf("failed to check REST %s, failed to create request, %w", address, err)
 	}
 	resp, err := http.DefaultClient.Do(req)
-	duration := time.Since(startTime)
+	_ = time.Since(startTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check REST %s, request failed, %w", address, err)
 	}
@@ -80,8 +80,7 @@ func checkREST(address string) (*prometheus.RESTResults, error) {
 	}
 	dataNodeTime := time.Unix(intDataNodeTime, 0)
 
-	return &prometheus.RESTResults{
-		Duration:            duration,
+	return &prometheus.DataNodeChecksResults{
 		CurrentTime:         currentTime,
 		CoreTime:            vegaTime,
 		DataNodeTime:        dataNodeTime,
