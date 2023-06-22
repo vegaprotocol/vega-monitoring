@@ -33,7 +33,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 
 	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
-	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
+	cometClient := comet.NewCometClient(&svc.Config.LocalNode)
 	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
 	if err != nil {
 		return

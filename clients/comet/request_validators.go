@@ -28,9 +28,9 @@ func (c *CometClient) requestValidators(block int64) (validatorsResponse, error)
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
 		return validatorsResponse{}, fmt.Errorf("Failed rate limiter for Get Validators for block: %d. %w", block, err)
 	}
-	url := fmt.Sprintf("%s/validators", c.config.ApiURL)
+	url := fmt.Sprintf("%s/validators", c.config.CometURL)
 	if block > 0 {
-		url = fmt.Sprintf("%s/validators?height=%d", c.config.ApiURL, block)
+		url = fmt.Sprintf("%s/validators?height=%d", c.config.CometURL, block)
 	}
 	resp, err := http.Get(url)
 	if err != nil {

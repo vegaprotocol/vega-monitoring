@@ -45,8 +45,8 @@ func RunNetworkHistorySegments(args NetworkHistorySegmentsArgs) error {
 	apiURLs := []string{}
 
 	if len(args.ApiURL) == 0 {
-		for _, apiURL := range svc.Config.DataNode.Monitor {
-			apiURLs = append(apiURLs, apiURL)
+		for _, dataNode := range svc.Config.DataNode {
+			apiURLs = append(apiURLs, dataNode.REST)
 		}
 	} else {
 		apiURLs = append(apiURLs, args.ApiURL)

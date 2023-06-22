@@ -15,12 +15,9 @@ import (
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko"`
 
-	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
+	LocalNode LocalNodeConfig `group:"LocalNode" namespace:"localnode"`
 
-	DataNode struct {
-		ApiURL  string            `long:"ApiURL"`
-		Monitor map[string]string `long:"Monitor"`
-	} `group:"DataNode" namespace:"datanode"`
+	DataNode []DataNodeConfig `group:"DataNode" namespace:"datanode"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
@@ -58,6 +55,18 @@ type CoingeckoConfig struct {
 
 type CometBFTConfig struct {
 	ApiURL string `long:"ApiURL"`
+}
+
+type LocalNodeConfig struct {
+	CometURL     string `long:"CometURL"`
+	DataNodeREST string `long:"DataNodeREST"`
+}
+
+type DataNodeConfig struct {
+	Name    string `long:"Name"`
+	REST    string `long:"REST"`
+	GraphQL string `long:"GraphQL"`
+	GRPC    string `long:"GRPC"`
 }
 
 type SQLStoreConfig struct {
@@ -120,11 +129,11 @@ func NewDefaultConfig() Config {
 		"USDC": "usd-coin",
 		"WETH": "weth",
 	}
-	// CometBFT
-	config.CometBFT.ApiURL = "http://localhost:26657"
+	// Local Node
+	config.LocalNode.CometURL = "http://localhost:26657"
+	config.LocalNode.DataNodeREST = "http://localhost:3008"
 	// DataNode
-	config.DataNode.ApiURL = "http://localhost:3008"
-	config.DataNode.Monitor = map[string]string{}
+	config.DataNode = []DataNodeConfig{}
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"

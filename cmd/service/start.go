@@ -12,7 +12,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/vega-monitoring/cmd"
-	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 	"go.uber.org/zap"
 )
 
@@ -234,8 +233,8 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 
 	for {
 		apiURLs := []string{}
-		for _, apiURL := range svc.Config.DataNode.Monitor {
-			apiURLs = append(apiURLs, apiURL)
+		for _, dataNode := range svc.Config.DataNode {
+			apiURLs = append(apiURLs, dataNode.REST)
 		}
 		if err := svc.UpdateService.UpdateNetworkHistorySegments(ctx, apiURLs); err != nil {
 			svc.Log.Error("Failed to update Network History Segments", zap.Error(err))
