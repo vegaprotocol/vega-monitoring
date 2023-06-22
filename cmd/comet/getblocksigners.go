@@ -47,9 +47,9 @@ func RunGetBlockSigners(args GetBlockSignersArgs) error {
 
 	var client *comet.CometClient
 	if len(args.ApiURL) > 0 {
-		client = comet.NewCometClient(&config.CometBFTConfig{ApiURL: args.ApiURL})
+		client = comet.NewCometClient(&config.LocalNodeConfig{CometURL: args.ApiURL})
 	} else if cfg != nil {
-		client = comet.NewCometClient(&cfg.CometBFT)
+		client = comet.NewCometClient(&cfg.LocalNode)
 	} else {
 		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}

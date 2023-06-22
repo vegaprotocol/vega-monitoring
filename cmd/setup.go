@@ -7,18 +7,20 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/datanode"
 	"github.com/vegaprotocol/vega-monitoring/services"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 	"github.com/vegaprotocol/vega-monitoring/services/update"
 )
 
 type AllServices struct {
-	Config            *config.Config
-	Log               *logging.Logger
-	StoreService      *services.StoreService
-	ReadService       *read.ReadService
-	UpdateService     *update.UpdateService
-	PrometheusService *prometheus.PrometheusService
+	Config                 *config.Config
+	Log                    *logging.Logger
+	StoreService           *services.StoreService
+	ReadService            *read.ReadService
+	UpdateService          *update.UpdateService
+	PrometheusService      *prometheus.PrometheusService
+	DataNodeCheckerService *datanode.DataNodeCheckerService
 }
 
 func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err error) {
@@ -33,7 +35,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 
 	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
-	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
+	cometClient := comet.NewCometClient(&svc.Config.LocalNode)
 	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
 	if err != nil {
 		return
@@ -49,5 +51,9 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 
 	svc.PrometheusService = prometheus.NewPrometheusService(&svc.Config.Prometheus)
+
+	svc.DataNodeCheckerService = datanode.NewDataNodeCheckerService(
+		&svc.Config.DataNode, svc.PrometheusService.Metrics, svc.Log,
+	)
 	return
 }

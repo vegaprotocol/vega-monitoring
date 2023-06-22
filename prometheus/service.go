@@ -5,26 +5,36 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type PrometheusService struct {
-	config *config.PrometheusConfig
-	server *http.Server
+	config      *config.PrometheusConfig
+	server      *http.Server
+	promHandler *http.Handler
+	Metrics     *Metrics
 }
 
 func NewPrometheusService(cfg *config.PrometheusConfig) *PrometheusService {
+	promRegistry := prometheus.NewRegistry()
+	metrics := NewMetrics(promRegistry)
+	promHandler := promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{Registry: promRegistry})
+
 	return &PrometheusService{
-		config: cfg,
+		config:      cfg,
+		promHandler: &promHandler,
+		Metrics:     metrics,
 	}
 }
 
 func (s *PrometheusService) Start() error {
+	// Setup Http Service
 	mux := http.NewServeMux()
+	mux.Handle(s.config.Path, *s.promHandler)
 
-	mux.Handle(s.config.Path, promhttp.Handler())
-
+	// Start Http Service
 	s.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.config.Port),
 		Handler: mux,

@@ -40,9 +40,9 @@ func (c *CometClient) requestBlockResults(block int64) (blockResultsResponse, er
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
 		return blockResultsResponse{}, fmt.Errorf("Failed rate limiter for Get Block Results for block: %d. %w", block, err)
 	}
-	url := fmt.Sprintf("%s/block_results", c.config.ApiURL)
+	url := fmt.Sprintf("%s/block_results", c.config.CometURL)
 	if block > 0 {
-		url = fmt.Sprintf("%s/block_results?height=%d", c.config.ApiURL, block)
+		url = fmt.Sprintf("%s/block_results?height=%d", c.config.CometURL, block)
 	}
 	resp, err := http.Get(url)
 	if err != nil {
