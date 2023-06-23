@@ -6,6 +6,8 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 )
 
+const UpdaterType = "updater"
+
 type UpdateService struct {
 	readService  *read.ReadService
 	storeService *services.StoreService

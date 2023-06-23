@@ -2,17 +2,21 @@ package update
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"go.uber.org/zap"
 )
 
 func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiURLs []string) error {
+	logger := us.log.With(zap.String(UpdaterType, "UpdateNetworkHistorySegments"))
+
 	segmentStore := us.storeService.NewNetworkHistorySegment()
 
 	var successCount, failCount int64
 
 	for _, apiURL := range apiURLs {
+		logger.Debug("fetching network history segments", zap.String("url", apiURL))
 		dataNodeClient := datanode.NewDataNodeClient(apiURL)
 
 		segments, err := dataNodeClient.GetNetworkHistorySegments()
@@ -25,6 +29,8 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 		for _, segment := range segments {
 			segmentStore.AddWithoutTime(segment)
 		}
+
+		logger.Debug(fmt.Sprintf("fetched %d network history segments", len(segments)), zap.String("url", apiURL))
 		successCount += 1
 	}
 
@@ -32,7 +38,7 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 	if err != nil {
 		return err
 	}
-	us.log.Info(
+	logger.Info(
 		"Stored Segment data in SQLStore",
 		zap.Int64("data-node success", successCount),
 		zap.Int64("data-node fail", failCount),
