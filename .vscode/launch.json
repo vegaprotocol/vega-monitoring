@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        // To be able attach to the process running on the remote server run the following
+        // command on the remote server. You should run it as a user who runs the process
+        // or as a root:
+        //
+        //      dlv attach <process_id> --headless --listen=0.0.0.0:55555  --accept-multiclient
+        //
+        // Then you have to have the 55555 port open. 
+        // NOTE: You need the same version of the code which has been compiled on the binery
+        //
+        // Finally you can run this debugging
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "debugAdapter": "dlv-dap",
+
+            "mode": "remote",
+            "port": 55555,
+            "host": "m0.vega.community",
+            "asRoot": true,
+            "substitutePath": [
+                {
+                    // the `to` path comes from the machine where binary has been compiled
+                    // usually it is the path from the Github runner
+                    // 
+                    // You can get this path by running the following command on the remote:
+                    //
+                    //      strings <binary> | grep main.go
+                    // e.g: strings <vega-monitoring-home>/vega-monitoring | grep main.go
+                    //
+                    "to": "/home/runner/work/vega-monitoring/vega-monitoring/vega-monitoring",
+                    "from": "${workspaceFolder}"
+                }
+            ]
+        }
+    ]
+}
