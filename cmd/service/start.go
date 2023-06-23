@@ -310,7 +310,7 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
-		svc.Log.Debugf("runCometTxsScraper tick")
+		svc.Log.Debugf("runNetworkBalancesScraper tick")
 
 		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Asset Pool", zap.Error(err))
@@ -345,6 +345,8 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runAssetPricesScraper tick")
+
 		if err := svc.UpdateService.UpdateAssetPrices(ctx); err != nil {
 			svc.Log.Error("Failed to update Asset Prices", zap.Error(err))
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type networkHistorySegmentsResponse struct {
@@ -19,7 +20,10 @@ type networkHistorySegmentsResponse struct {
 }
 
 func (c *DataNodeClient) requestNetworkHistorySegmets() (networkHistorySegmentsResponse, error) {
-	if err := c.rateLimiter.Wait(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // TODO: Pass parent context
+	defer cancel()
+
+	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return networkHistorySegmentsResponse{}, fmt.Errorf("Failed rate limiter for Get Network History Segmets for %s. %w", c.apiURL, err)
 	}
 	url := fmt.Sprintf("%s/api/v2/networkhistory/segments", c.apiURL)
