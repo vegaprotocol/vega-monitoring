@@ -228,6 +228,8 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runBlockSignerScrapper tick")
+
 		if err := svc.UpdateService.UpdateBlockSignersAllNew(ctx); err != nil {
 			svc.Log.Error("Failed to update Block Signers", zap.Error(err))
 		}
@@ -252,6 +254,8 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runNetworkHistorySegmentsScraper tick")
+
 		apiURLs := []string{}
 		for _, dataNode := range svc.Config.DataNode {
 			apiURLs = append(apiURLs, dataNode.REST)
@@ -280,6 +284,8 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runCometTxsScraper tick")
+
 		if err := svc.UpdateService.UpdateCometTxsAllNew(ctx); err != nil {
 			svc.Log.Error("Failed to update Comet Txs", zap.Error(err))
 		}
@@ -304,6 +310,8 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runNetworkBalancesScraper tick")
+
 		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Asset Pool", zap.Error(err))
 		}
@@ -337,6 +345,8 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices) {
 	defer ticker.Stop()
 
 	for {
+		svc.Log.Debugf("runAssetPricesScraper tick")
+
 		if err := svc.UpdateService.UpdateAssetPrices(ctx); err != nil {
 			svc.Log.Error("Failed to update Asset Prices", zap.Error(err))
 		}

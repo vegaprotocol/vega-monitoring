@@ -23,8 +23,11 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 	var err error
 	blockSigner := us.storeService.NewBlockSigner()
 
+	logger := us.log.With(zap.String(UpdaterType, "UpdateBlockSigners"))
+
 	// get Last Block
 	if toBlock <= 0 {
+		logger.Debug("getting network toBlock network height")
 		toBlock, err = us.readService.GetNetworkLatestBlockHeight()
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
@@ -33,6 +36,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 
 	// get First Block
 	if fromBlock <= 0 {
+		logger.Debug("getting network fromBlock network height")
 		lastProcessedBlock, err := blockSigner.GetLastestBlockInStore(context.Background())
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
@@ -50,7 +54,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		return fmt.Errorf("cannot update Block Signers, from block '%d' is greater than to block '%d'", fromBlock, toBlock)
 	}
 	// Update in batches
-	us.log.Info(
+	logger.Info(
 		"Update Block Signers in batches",
 		zap.Int64("first block", fromBlock),
 		zap.Int64("last block", toBlock),
@@ -58,19 +62,20 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 
 	var totalCount int = 0
 
+	logger.Debugf("getting batch blocks from %d to %d", fromBlock, toBlock)
 	for batchFirstBlock := fromBlock; batchFirstBlock <= toBlock; batchFirstBlock += 200 {
 		batchLastBlock := batchFirstBlock + 199 // endBlock inclusive
 		if batchLastBlock > toBlock {
 			batchLastBlock = toBlock
 		}
-		count, err := UpdateBlockRange(batchFirstBlock, batchLastBlock, us.readService, blockSigner, us.log)
+		count, err := UpdateBlockRange(batchFirstBlock, batchLastBlock, us.readService, blockSigner, logger)
 		if err != nil {
 			return err
 		}
 		totalCount += count
 	}
 
-	us.log.Info(
+	logger.Info(
 		"Finished",
 		zap.Int64("processed blocks", toBlock-fromBlock+1),
 		zap.Int("total row count sotred in SQLStore", totalCount),

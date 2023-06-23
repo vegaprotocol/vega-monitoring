@@ -17,9 +17,11 @@ func (us *UpdateService) UpdateCometTxsAllNew(ctx context.Context) error {
 func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, toBlock int64) error {
 	var err error
 	serviceStore := us.storeService.NewCometTxs()
+	logger := us.log.With(zap.String(UpdaterType, "UpdateCometTxs"))
 
 	// get Last Block
 	if toBlock <= 0 {
+		logger.Debug("getting network toBlock network height")
 		toBlock, err = us.readService.GetNetworkLatestBlockHeight()
 		if err != nil {
 			return fmt.Errorf("failed to Update Comet Txs, %w", err)
@@ -28,6 +30,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 
 	// get First Block
 	if fromBlock <= 0 {
+		logger.Debug("getting network fromBlock network height")
 		lastProcessedBlock, err := serviceStore.GetLastestBlockInStore(context.Background())
 		if err != nil {
 			return fmt.Errorf("failed to Update Comet Txs, %w", err)
@@ -44,8 +47,9 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 	if fromBlock > toBlock {
 		return fmt.Errorf("cannot update Comet Txs, from block '%d' is greater than to block '%d'", fromBlock, toBlock)
 	}
+
 	// Update in batches
-	us.log.Info(
+	logger.Info(
 		"Update Comet Txs in batches",
 		zap.Int64("first block", fromBlock),
 		zap.Int64("last block", toBlock),
@@ -53,19 +57,20 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 
 	var totalCount int = 0
 
+	logger.Debugf("getting batch blocks from %d to %d", fromBlock, toBlock)
 	for batchFirstBlock := fromBlock; batchFirstBlock <= toBlock; batchFirstBlock += 200 {
 		batchLastBlock := batchFirstBlock + 199 // endBlock inclusive
 		if batchLastBlock > toBlock {
 			batchLastBlock = toBlock
 		}
-		count, err := UpdateCometTxsRange(batchFirstBlock, batchLastBlock, us.readService, serviceStore, us.log)
+		count, err := UpdateCometTxsRange(batchFirstBlock, batchLastBlock, us.readService, serviceStore, logger)
 		if err != nil {
 			return err
 		}
 		totalCount += count
 	}
 
-	us.log.Info(
+	logger.Info(
 		"Finished",
 		zap.Int64("processed blocks", toBlock-fromBlock+1),
 		zap.Int("total row count sotred in SQLStore", totalCount),

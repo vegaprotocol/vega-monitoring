@@ -77,6 +77,7 @@ func checkGRPC(address string) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer connection.Close()
 
 	now := time.Now()
 
