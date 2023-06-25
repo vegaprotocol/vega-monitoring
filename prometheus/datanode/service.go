@@ -11,13 +11,13 @@ import (
 )
 
 type DataNodeCheckerService struct {
-	config  *[]config.DataNodeConfig
+	config  *config.MonitoringConfig
 	metrics *prometheus.Metrics
 	log     *logging.Logger
 }
 
 func NewDataNodeCheckerService(
-	config *[]config.DataNodeConfig,
+	config *config.MonitoringConfig,
 	metrics *prometheus.Metrics,
 	log *logging.Logger,
 ) *DataNodeCheckerService {
@@ -35,7 +35,7 @@ func (s *DataNodeCheckerService) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	for {
-		for _, node := range *s.config {
+		for _, node := range s.config.DataNode {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
 			checkResults, err := requestStats(node.REST)
 			if err != nil {

@@ -17,8 +17,6 @@ type Config struct {
 
 	LocalNode LocalNodeConfig `group:"LocalNode" namespace:"localnode"`
 
-	DataNode []DataNodeConfig `group:"DataNode" namespace:"datanode"`
-
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
 	Logging struct {
@@ -28,6 +26,8 @@ type Config struct {
 	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
 
 	Prometheus PrometheusConfig `group:"Prometheus" namespace:"prometheus"`
+
+	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring"`
 
 	Services struct {
 		BlockSigners struct {
@@ -62,13 +62,6 @@ type LocalNodeConfig struct {
 	DataNodeREST string `long:"DataNodeREST"`
 }
 
-type DataNodeConfig struct {
-	Name    string `long:"Name"`
-	REST    string `long:"REST"`
-	GraphQL string `long:"GraphQL"`
-	GRPC    string `long:"GRPC"`
-}
-
 type SQLStoreConfig struct {
 	Host     string `long:"host"`
 	Port     int    `long:"port"`
@@ -88,6 +81,18 @@ type PrometheusConfig struct {
 	Port    int    `long:"port"`
 	Path    string `long:"path"`
 	Enabled bool   `long:"enabled"`
+}
+
+type MonitoringConfig struct {
+	DataNode []DataNodeConfig `group:"DataNode" namespace:"datanode"`
+}
+
+type DataNodeConfig struct {
+	Name        string `long:"Name"`
+	REST        string `long:"REST"`
+	GraphQL     string `long:"GraphQL"`
+	GRPC        string `long:"GRPC"`
+	Environment string `long:"Environment"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
@@ -132,8 +137,6 @@ func NewDefaultConfig() Config {
 	// Local Node
 	config.LocalNode.CometURL = "http://localhost:26657"
 	config.LocalNode.DataNodeREST = "http://localhost:3008"
-	// DataNode
-	config.DataNode = []DataNodeConfig{}
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"
@@ -151,6 +154,8 @@ func NewDefaultConfig() Config {
 	config.Prometheus.Enabled = true
 	config.Prometheus.Path = "/metrics"
 	config.Prometheus.Port = 2100
+	// Monitoring
+	config.Monitoring.DataNode = []DataNodeConfig{}
 	// Services
 	config.Services.BlockSigners.Enabled = true
 	config.Services.NetworkHistorySegments.Enabled = true

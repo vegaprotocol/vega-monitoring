@@ -257,7 +257,7 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 		svc.Log.Debugf("runNetworkHistorySegmentsScraper tick")
 
 		apiURLs := []string{}
-		for _, dataNode := range svc.Config.DataNode {
+		for _, dataNode := range svc.Config.Monitoring.DataNode {
 			apiURLs = append(apiURLs, dataNode.REST)
 		}
 		if err := svc.UpdateService.UpdateNetworkHistorySegments(ctx, apiURLs); err != nil {
