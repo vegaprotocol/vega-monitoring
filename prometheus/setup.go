@@ -5,24 +5,24 @@ import (
 )
 
 type Metrics struct {
-	rest *RESTCollector
+	dataNodeCollector *DataNodeCollector
 }
 
 func NewMetrics(promRegistry *prometheus.Registry) *Metrics {
 
 	m := &Metrics{
-		rest: NewRESTCollector(),
+		dataNodeCollector: NewDataNodeCollector(),
 	}
 
-	promRegistry.MustRegister(m.rest)
+	prometheus.WrapRegistererWithPrefix("vega_monitoring", promRegistry).MustRegister(m.dataNodeCollector)
 
 	return m
 }
 
-func (m *Metrics) UpdateNodeCheckResults(node string, results *DataNodeChecksResults) {
-	m.rest.UpdateNodeResults(node, results)
+func (m *Metrics) UpdateDataNodeCheckResults(node string, results *DataNodeChecksResults) {
+	m.dataNodeCollector.UpdateNodeResults(node, results)
 }
 
-func (m *Metrics) UpdateNodeAsError(node string, err error) {
-	m.rest.UpdateNodeAsError(node, err)
+func (m *Metrics) UpdateDataNodeAsError(node string, err error) {
+	m.dataNodeCollector.UpdateNodeAsError(node, err)
 }
