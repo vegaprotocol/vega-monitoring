@@ -39,7 +39,7 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 		// Go DataNode one-by-one synchroniusly
 		for _, node := range s.config.DataNode {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
-			checkResults, err := requestStats(node.REST)
+			checkResults, err := requestDataNodeStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to get data for", zap.String("node", node.Name), zap.Error(err))
 				s.metrics.UpdateDataNodeAsError(node.Name, err)
