@@ -40,12 +40,12 @@ func (s *DataNodeCheckerService) Start(ctx context.Context) error {
 			checkResults, err := requestStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to get data for", zap.String("node", node.Name), zap.Error(err))
-				s.metrics.UpdateNodeAsError(node.Name, err)
+				s.metrics.UpdateDataNodeAsError(node.Name, err)
 			} else {
 				checkResults.RESTReqDuration, _ = checkREST(node.REST)
 				checkResults.GQLReqDuration, _ = checkGQL(node.GraphQL)
 				checkResults.GRPCReqDuration, _ = checkGRPC(node.GRPC)
-				s.metrics.UpdateNodeCheckResults(node.Name, checkResults)
+				s.metrics.UpdateDataNodeCheckResults(node.Name, checkResults)
 			}
 			select {
 			case <-ctx.Done():
