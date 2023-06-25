@@ -6,27 +6,27 @@ import (
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/vega-monitoring/config"
-	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 	"go.uber.org/zap"
 )
 
 type NodeScannerService struct {
-	config  *config.MonitoringConfig
-	metrics *prometheus.Metrics
-	log     *logging.Logger
+	config    *config.MonitoringConfig
+	collector *collectors.VegaMonitoringCollector
+	log       *logging.Logger
 }
 
 func NewNodeScannerService(
 	config *config.MonitoringConfig,
-	metrics *prometheus.Metrics,
+	collector *collectors.VegaMonitoringCollector,
 	log *logging.Logger,
 ) *NodeScannerService {
 	log = log.With(zap.String("service", "node-scanner"))
 
 	return &NodeScannerService{
-		config:  config,
-		metrics: metrics,
-		log:     log,
+		config:    config,
+		collector: collector,
+		log:       log,
 	}
 }
 
@@ -39,15 +39,15 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 		// Go DataNode one-by-one synchroniusly
 		for _, node := range s.config.DataNode {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
-			checkResults, err := requestDataNodeStats(node.REST)
+			dataNodeStats, err := requestDataNodeStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to get data for data-node", zap.String("node", node.Name), zap.Error(err))
-				s.metrics.UpdateDataNodeAsError(node.Name, err)
+				s.collector.UpdateDataNodeStatusAsError(node.Name, err)
 			} else {
-				checkResults.RESTReqDuration, _ = checkREST(node.REST)
-				checkResults.GQLReqDuration, _ = checkGQL(node.GraphQL)
-				checkResults.GRPCReqDuration, _ = checkGRPC(node.GRPC)
-				s.metrics.UpdateDataNodeChecksResults(node.Name, checkResults)
+				dataNodeStats.RESTReqDuration, _ = checkREST(node.REST)
+				dataNodeStats.GQLReqDuration, _ = checkGQL(node.GraphQL)
+				dataNodeStats.GRPCReqDuration, _ = checkGRPC(node.GRPC)
+				s.collector.UpdateDataNodeStatus(node.Name, dataNodeStats)
 			}
 			select {
 			case <-ctx.Done():
@@ -60,12 +60,12 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 		// Go BlockExplorer one-by-one synchroniously
 		for _, node := range s.config.BlockExporer {
 			s.log.Debug("getting data for block-explorer", zap.String("name", node.Name))
-			checkResults, err := requestBlockExplorerStats(node.REST)
+			status, err := requestBlockExplorerStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to get data for block-explorer", zap.String("node", node.Name), zap.Error(err))
-				s.metrics.UpdateDataNodeAsError(node.Name, err)
+				s.collector.UpdateBlockExplorerStatusAsError(node.Name, err)
 			} else {
-				s.metrics.UpdateBlockExplorerChecksResults(node.Name, checkResults)
+				s.collector.UpdateBlockExplorerStatus(node.Name, status)
 			}
 			select {
 			case <-ctx.Done():

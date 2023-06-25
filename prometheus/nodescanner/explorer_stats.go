@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
 )
 
-func requestBlockExplorerStats(address string) (*prometheus.BlockExplorerChecksResults, error) {
+func requestBlockExplorerStats(address string) (*types.BlockExplorerStatus, error) {
 	// Get core stats
-	coreCheckResults, _, err := requestCoreStats(address, []string{})
+	coreStatus, _, err := requestCoreStats(address, []string{})
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +48,8 @@ func requestBlockExplorerStats(address string) (*prometheus.BlockExplorerChecksR
 		return nil, fmt.Errorf("failed to get /rest/info %s, failed to parse response, %w", address, err)
 	}
 
-	return &prometheus.BlockExplorerChecksResults{
-		CoreCheckResults:         *coreCheckResults,
+	return &types.BlockExplorerStatus{
+		CoreStatus:               *coreStatus,
 		BlockExplorerVersion:     payload.Version,
 		BlockExplorerVersionHash: payload.VersionHash,
 	}, nil

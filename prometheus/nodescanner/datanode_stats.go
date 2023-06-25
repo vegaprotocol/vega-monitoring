@@ -5,13 +5,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
 )
 
-func requestDataNodeStats(address string) (*prometheus.DataNodeChecksResults, error) {
+func requestDataNodeStats(address string) (*types.DataNodeStatus, error) {
 
 	// Request Core statistics - on data-node endpoint they should contain data-node headers
-	coreCheckResults, headers, err := requestCoreStats(address, []string{"x-block-height", "x-block-timestamp"})
+	coreStatus, headers, err := requestCoreStats(address, []string{"x-block-height", "x-block-timestamp"})
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +36,8 @@ func requestDataNodeStats(address string) (*prometheus.DataNodeChecksResults, er
 	}
 	dataNodeTime := time.Unix(intDataNodeTime, 0)
 
-	return &prometheus.DataNodeChecksResults{
-		CoreCheckResults:    *coreCheckResults,
+	return &types.DataNodeStatus{
+		CoreStatus:          *coreStatus,
 		DataNodeTime:        dataNodeTime,
 		DataNodeBlockHeight: dataNodeBlockHeight,
 	}, nil

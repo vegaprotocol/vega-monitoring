@@ -54,7 +54,7 @@ func run(args StartArgs) {
 	prometheusService := prometheus.NewPrometheusService(&config.Prometheus)
 
 	nodeScannerService := nodescanner.NewNodeScannerService(
-		&config.Monitoring, prometheusService.Metrics, logger,
+		&config.Monitoring, prometheusService.VegaMonitoringCollector, logger,
 	)
 
 	//

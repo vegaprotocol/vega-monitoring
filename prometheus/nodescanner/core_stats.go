@@ -8,14 +8,14 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
 )
 
 var (
 	timeout = 2 * time.Second
 )
 
-func requestCoreStats(address string, headers []string) (*prometheus.CoreCheckResults, map[string]string, error) {
+func requestCoreStats(address string, headers []string) (*types.CoreStatus, map[string]string, error) {
 	reqURL, err := url.JoinPath(address, "statistics")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to check REST of %s, failed to create request URL, %w", address, err)
@@ -66,7 +66,7 @@ func requestCoreStats(address string, headers []string) (*prometheus.CoreCheckRe
 		headerValues[header] = resp.Header.Get(header)
 	}
 
-	return &prometheus.CoreCheckResults{
+	return &types.CoreStatus{
 			CurrentTime:        currentTime,
 			CoreTime:           vegaTime,
 			CoreBlockHeight:    payload.Statistics.BlockHeight,

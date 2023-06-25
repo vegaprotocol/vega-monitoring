@@ -1,8 +1,8 @@
-package prometheus
+package types
 
 import "time"
 
-type CoreCheckResults struct {
+type CoreStatus struct {
 	CurrentTime     time.Time
 	CoreBlockHeight uint64
 	CoreTime        time.Time
@@ -12,8 +12,8 @@ type CoreCheckResults struct {
 	CoreAppVersionHash string
 }
 
-type DataNodeChecksResults struct {
-	CoreCheckResults
+type DataNodeStatus struct {
+	CoreStatus
 
 	DataNodeBlockHeight uint64
 	DataNodeTime        time.Time
@@ -23,8 +23,8 @@ type DataNodeChecksResults struct {
 	GRPCReqDuration time.Duration
 }
 
-type BlockExplorerChecksResults struct {
-	CoreCheckResults
+type BlockExplorerStatus struct {
+	CoreStatus
 
 	BlockExplorerVersion     string
 	BlockExplorerVersionHash string

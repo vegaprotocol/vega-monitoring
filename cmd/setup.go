@@ -53,7 +53,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	svc.PrometheusService = prometheus.NewPrometheusService(&svc.Config.Prometheus)
 
 	svc.NodeScannerService = nodescanner.NewNodeScannerService(
-		&svc.Config.Monitoring, svc.PrometheusService.Metrics, svc.Log,
+		&svc.Config.Monitoring, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 	)
 	return
 }
