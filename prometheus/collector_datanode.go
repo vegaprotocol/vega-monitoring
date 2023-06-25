@@ -99,7 +99,7 @@ func (c *DataNodeCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.MustNewConstMetric(
 				c.desc.coreInfo, prometheus.UntypedValue, 1,
 				// extra labels
-				node, checkResults.ChainId, checkResults.AppVersion, checkResults.AppVersionHash,
+				node, checkResults.CoreChainId, checkResults.CoreAppVersion, checkResults.CoreAppVersionHash,
 			))
 	}
 

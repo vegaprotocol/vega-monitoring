@@ -42,12 +42,12 @@ func requestStats(address string) (*prometheus.DataNodeChecksResults, error) {
 
 	var payload struct {
 		Statistics struct {
-			BlockHeight    uint64 `json:"blockHeight,string"`
-			CurrentTime    string `json:"currentTime"`
-			VegaTime       string `json:"vegaTime"`
-			ChainId        string `json:"chainId"`
-			AppVersion     string `json:"appVersion"`
-			AppVersionHash string `json:"appVersionHash"`
+			BlockHeight        uint64 `json:"blockHeight,string"`
+			CurrentTime        string `json:"currentTime"`
+			VegaTime           string `json:"vegaTime"`
+			CoreChainId        string `json:"chainId"`
+			CoreAppVersion     string `json:"appVersion"`
+			CoreAppVersionHash string `json:"appVersionHash"`
 		} `json:"statistics"`
 	}
 	defer resp.Body.Close()
@@ -81,13 +81,15 @@ func requestStats(address string) (*prometheus.DataNodeChecksResults, error) {
 	dataNodeTime := time.Unix(intDataNodeTime, 0)
 
 	return &prometheus.DataNodeChecksResults{
-		CurrentTime:         currentTime,
-		CoreTime:            vegaTime,
+		CoreCheckResults: prometheus.CoreCheckResults{
+			CurrentTime:        currentTime,
+			CoreTime:           vegaTime,
+			CoreBlockHeight:    payload.Statistics.BlockHeight,
+			CoreChainId:        payload.Statistics.CoreChainId,
+			CoreAppVersion:     payload.Statistics.CoreAppVersion,
+			CoreAppVersionHash: payload.Statistics.CoreAppVersionHash,
+		},
 		DataNodeTime:        dataNodeTime,
-		CoreBlockHeight:     payload.Statistics.BlockHeight,
 		DataNodeBlockHeight: dataNodeBlockHeight,
-		ChainId:             payload.Statistics.ChainId,
-		AppVersion:          payload.Statistics.AppVersion,
-		AppVersionHash:      payload.Statistics.AppVersionHash,
 	}, nil
 }

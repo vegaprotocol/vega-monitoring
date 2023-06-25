@@ -21,6 +21,7 @@ func NewNodeScannerService(
 	metrics *prometheus.Metrics,
 	log *logging.Logger,
 ) *NodeScannerService {
+	log = log.With(zap.String("service", "node-scanner"))
 
 	return &NodeScannerService{
 		config:  config,
@@ -35,6 +36,7 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	for {
+		// Go DataNode one-by-one synchroniusly
 		for _, node := range s.config.DataNode {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
 			checkResults, err := requestStats(node.REST)

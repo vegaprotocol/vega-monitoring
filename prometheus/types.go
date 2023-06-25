@@ -2,16 +2,21 @@ package prometheus
 
 import "time"
 
-type DataNodeChecksResults struct {
-	CurrentTime         time.Time
-	CoreBlockHeight     uint64
-	DataNodeBlockHeight uint64
-	CoreTime            time.Time
-	DataNodeTime        time.Time
+type CoreCheckResults struct {
+	CurrentTime     time.Time
+	CoreBlockHeight uint64
+	CoreTime        time.Time
 
-	ChainId        string
-	AppVersion     string
-	AppVersionHash string
+	CoreChainId        string
+	CoreAppVersion     string
+	CoreAppVersionHash string
+}
+
+type DataNodeChecksResults struct {
+	CoreCheckResults
+
+	DataNodeBlockHeight uint64
+	DataNodeTime        time.Time
 
 	RESTReqDuration time.Duration
 	GQLReqDuration  time.Duration
