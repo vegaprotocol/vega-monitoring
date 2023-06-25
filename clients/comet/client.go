@@ -11,12 +11,12 @@ import (
 
 type CometClient struct {
 	httpClient         *http.Client
-	config             *config.LocalNodeConfig
+	config             *config.CometBFTConfig
 	rateLimiter        *rate.Limiter
 	validatorByAddress map[string]ValidatorData // local cache
 }
 
-func NewCometClient(config *config.LocalNodeConfig) *CometClient {
+func NewCometClient(config *config.CometBFTConfig) *CometClient {
 	return &CometClient{
 		config:      config,
 		rateLimiter: rate.NewLimiter(rate.Every(10*time.Millisecond), 1),

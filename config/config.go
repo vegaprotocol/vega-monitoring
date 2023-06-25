@@ -15,7 +15,7 @@ import (
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko"`
 
-	LocalNode LocalNodeConfig `group:"LocalNode" namespace:"localnode"`
+	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
@@ -55,11 +55,6 @@ type CoingeckoConfig struct {
 
 type CometBFTConfig struct {
 	ApiURL string `long:"ApiURL"`
-}
-
-type LocalNodeConfig struct {
-	CometURL     string `long:"CometURL"`
-	DataNodeREST string `long:"DataNodeREST"`
 }
 
 type SQLStoreConfig struct {
@@ -143,8 +138,7 @@ func NewDefaultConfig() Config {
 		"WETH": "weth",
 	}
 	// Local Node
-	config.LocalNode.CometURL = "http://localhost:26657"
-	config.LocalNode.DataNodeREST = "http://localhost:3008"
+	config.CometBFT.ApiURL = "http://localhost:26657"
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"
