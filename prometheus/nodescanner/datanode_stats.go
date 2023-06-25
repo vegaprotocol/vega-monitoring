@@ -8,16 +8,15 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
 )
 
-var (
-	timeout = 2 * time.Second
-)
-
 func requestDataNodeStats(address string) (*prometheus.DataNodeChecksResults, error) {
+
+	// Request Core statistics - on data-node endpoint they should contain data-node headers
 	coreCheckResults, headers, err := requestCoreStats(address, []string{"x-block-height", "x-block-timestamp"})
 	if err != nil {
 		return nil, err
 	}
 
+	// parse data-node headers
 	strDataNodeBlockHeight := headers["x-block-height"]
 	if len(strDataNodeBlockHeight) == 0 {
 		return nil, fmt.Errorf("failed to check REST %s, failed to get x-block-height response header, %w", address, err)

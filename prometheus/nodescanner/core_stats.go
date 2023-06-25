@@ -11,6 +11,10 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
 )
 
+var (
+	timeout = 2 * time.Second
+)
+
 func requestCoreStats(address string, headers []string) (*prometheus.CoreCheckResults, map[string]string, error) {
 	reqURL, err := url.JoinPath(address, "statistics")
 	if err != nil {

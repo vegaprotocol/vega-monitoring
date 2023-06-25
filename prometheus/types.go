@@ -22,3 +22,10 @@ type DataNodeChecksResults struct {
 	GQLReqDuration  time.Duration
 	GRPCReqDuration time.Duration
 }
+
+type BlockExplorerChecksResults struct {
+	CoreCheckResults
+
+	BlockExplorerVersion     string
+	BlockExplorerVersionHash string
+}

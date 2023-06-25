@@ -41,13 +41,31 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
 			checkResults, err := requestDataNodeStats(node.REST)
 			if err != nil {
-				s.log.Error("Failed to get data for", zap.String("node", node.Name), zap.Error(err))
+				s.log.Error("Failed to get data for data-node", zap.String("node", node.Name), zap.Error(err))
 				s.metrics.UpdateDataNodeAsError(node.Name, err)
 			} else {
 				checkResults.RESTReqDuration, _ = checkREST(node.REST)
 				checkResults.GQLReqDuration, _ = checkGQL(node.GraphQL)
 				checkResults.GRPCReqDuration, _ = checkGRPC(node.GRPC)
-				s.metrics.UpdateDataNodeCheckResults(node.Name, checkResults)
+				s.metrics.UpdateDataNodeChecksResults(node.Name, checkResults)
+			}
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				continue
+			}
+		}
+
+		// Go BlockExplorer one-by-one synchroniously
+		for _, node := range s.config.BlockExporer {
+			s.log.Debug("getting data for block-explorer", zap.String("name", node.Name))
+			checkResults, err := requestBlockExplorerStats(node.REST)
+			if err != nil {
+				s.log.Error("Failed to get data for block-explorer", zap.String("node", node.Name), zap.Error(err))
+				s.metrics.UpdateDataNodeAsError(node.Name, err)
+			} else {
+				s.metrics.UpdateBlockExplorerChecksResults(node.Name, checkResults)
 			}
 			select {
 			case <-ctx.Done():
