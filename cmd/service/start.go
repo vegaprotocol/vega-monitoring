@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -129,21 +128,21 @@ func run(args StartArgs) {
 		svc.Log.Info("Not starting Prometheus Endpoint", zap.String("config", "Enabled=false"))
 	}
 	//
-	// start: DataNode Checker
+	// start: Node Scanner
 	//
 	if svc.Config.Prometheus.Enabled { // same flag as for Prometheus
 		shutdown_wg.Add(1)
 		go func() {
 			defer shutdown_wg.Done()
-			svc.Log.Info("Starting DataNode Checker service in 10sec")
+			svc.Log.Info("Starting Node Scanner service in 10sec")
 			time.Sleep(10 * time.Second)
 			if err := svc.NodeScannerService.Start(ctx); err != nil {
-				svc.Log.Error("Failed to start DataNode Checker service", zap.Error(err))
+				svc.Log.Error("Failed to start Node Scanner service", zap.Error(err))
 				cancel()
 			}
 		}()
 	} else {
-		svc.Log.Info("Not starting DataNode Checker service", zap.String("config", "Enabled=false"))
+		svc.Log.Info("Not starting Node Scanner service", zap.String("config", "Enabled=false"))
 	}
 	//
 	// start: example service
@@ -206,16 +205,16 @@ func run(args StartArgs) {
 	//
 	select {
 	case <-waitCh:
-		fmt.Printf("Evertything closed nicely\n")
+		svc.Log.Info("Evertything closed nicely\n")
 	case <-time.After(5 * time.Second):
-		fmt.Printf("Service timed out to stop. Force stopping\n")
+		svc.Log.Error("Service timed out to stop. Force stopping\n")
 	}
 
 	//
 	// DONE
 	//
 	time.Sleep(time.Millisecond * 100)
-	fmt.Println("Service has stopped")
+	svc.Log.Info("Service has stopped")
 }
 
 // Block Signers
