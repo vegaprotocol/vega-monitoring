@@ -84,8 +84,8 @@ type PrometheusConfig struct {
 }
 
 type MonitoringConfig struct {
-	DataNode     []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
-	BlockExporer []BlockExplorerConfig `group:"BlockExporer" namespace:"blockexporer"`
+	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
+	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 }
 
 type DataNodeConfig struct {
@@ -94,6 +94,7 @@ type DataNodeConfig struct {
 	GraphQL     string `long:"GraphQL"`
 	GRPC        string `long:"GRPC"`
 	Environment string `long:"Environment"`
+	Internal    bool   `long:"Internal"`
 }
 
 type BlockExplorerConfig struct {
