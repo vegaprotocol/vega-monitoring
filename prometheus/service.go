@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vegaprotocol/vega-monitoring/config"
 )
@@ -19,6 +20,10 @@ type PrometheusService struct {
 
 func NewPrometheusService(cfg *config.PrometheusConfig) *PrometheusService {
 	promRegistry := prometheus.NewRegistry()
+	promRegistry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
 	metrics := NewMetrics(promRegistry)
 	promHandler := promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{Registry: promRegistry})
 
