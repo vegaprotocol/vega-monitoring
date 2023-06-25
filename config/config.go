@@ -13,9 +13,9 @@ import (
 )
 
 type Config struct {
-	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko"`
+	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
 
-	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft"`
+	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs\n stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables\n endpoint needs to have discard_abci_responses set to false"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
@@ -23,11 +23,11 @@ type Config struct {
 		Level string `long:"Level"`
 	} `group:"Logging" namespace:"logging"`
 
-	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
+	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore" comment:"vega-monitoring will create new tables in this database in metrics schema,\n and will start adding data into those tables"`
 
 	Prometheus PrometheusConfig `group:"Prometheus" namespace:"prometheus"`
 
-	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring"`
+	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring" comment:"collected metrics are exposed on prometheus"`
 
 	Services struct {
 		BlockSigners struct {
@@ -50,7 +50,7 @@ type Config struct {
 
 type CoingeckoConfig struct {
 	ApiURL   string            `long:"ApiURL"`
-	AssetIds map[string]string `long:"AssetIds"`
+	AssetIds map[string]string `long:"AssetIds" comment:"use Vega Asset Symbol as key, and coingecko asset id as value, e.g. USDC = \"usd-coin\"\n Vega Assset symbols: https://api.vega.community/api/v2/assets\n Coingecko asset ids: https://api.coingecko.com/api/v3/coins/list"`
 }
 
 type CometBFTConfig struct {
@@ -66,10 +66,10 @@ type SQLStoreConfig struct {
 }
 
 type EthereumConfig struct {
-	RPCEndpoint      string `long:"RPCEndpoint"`
+	RPCEndpoint      string `long:"RPCEndpoint" comment:"used to get Asset Pool's asset balances"`
 	EtherscanURL     string `long:"EtherscanURL"`
 	EtherscanApiKey  string `long:"EtherscanApiKey"`
-	AssetPoolAddress string `long:"AssetPoolAddress"`
+	AssetPoolAddress string `long:"AssetPoolAddress" comment:"used to get balances of asssets"`
 }
 
 type PrometheusConfig struct {
@@ -84,18 +84,18 @@ type MonitoringConfig struct {
 }
 
 type DataNodeConfig struct {
-	Name        string `long:"Name"`
+	Name        string `long:"Name" comment:"Short name, e.g. api1, be0 or n01"`
 	REST        string `long:"REST"`
 	GraphQL     string `long:"GraphQL"`
 	GRPC        string `long:"GRPC"`
-	Environment string `long:"Environment"`
-	Internal    bool   `long:"Internal"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+	Internal    bool   `long:"Internal" comment:"true if node run by Vega Team, otherwise false"`
 }
 
 type BlockExplorerConfig struct {
-	Name        string `long:"Name"`
+	Name        string `long:"Name" comment:"Short name, e.g. api1, be0 or n01"`
 	REST        string `long:"REST"`
-	Environment string `long:"Environment"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
