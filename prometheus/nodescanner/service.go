@@ -1,4 +1,4 @@
-package datanode
+package nodescanner
 
 import (
 	"context"
@@ -10,26 +10,26 @@ import (
 	"go.uber.org/zap"
 )
 
-type DataNodeCheckerService struct {
+type NodeScannerService struct {
 	config  *config.MonitoringConfig
 	metrics *prometheus.Metrics
 	log     *logging.Logger
 }
 
-func NewDataNodeCheckerService(
+func NewNodeScannerService(
 	config *config.MonitoringConfig,
 	metrics *prometheus.Metrics,
 	log *logging.Logger,
-) *DataNodeCheckerService {
+) *NodeScannerService {
 
-	return &DataNodeCheckerService{
+	return &NodeScannerService{
 		config:  config,
 		metrics: metrics,
 		log:     log,
 	}
 }
 
-func (s *DataNodeCheckerService) Start(ctx context.Context) error {
+func (s *NodeScannerService) Start(ctx context.Context) error {
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()

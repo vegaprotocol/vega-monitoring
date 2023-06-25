@@ -137,7 +137,7 @@ func run(args StartArgs) {
 			defer shutdown_wg.Done()
 			svc.Log.Info("Starting DataNode Checker service in 10sec")
 			time.Sleep(10 * time.Second)
-			if err := svc.DataNodeCheckerService.Start(ctx); err != nil {
+			if err := svc.NodeScannerService.Start(ctx); err != nil {
 				svc.Log.Error("Failed to start DataNode Checker service", zap.Error(err))
 				cancel()
 			}

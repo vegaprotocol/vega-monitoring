@@ -7,20 +7,20 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
-	"github.com/vegaprotocol/vega-monitoring/prometheus/datanode"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
 	"github.com/vegaprotocol/vega-monitoring/services"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 	"github.com/vegaprotocol/vega-monitoring/services/update"
 )
 
 type AllServices struct {
-	Config                 *config.Config
-	Log                    *logging.Logger
-	StoreService           *services.StoreService
-	ReadService            *read.ReadService
-	UpdateService          *update.UpdateService
-	PrometheusService      *prometheus.PrometheusService
-	DataNodeCheckerService *datanode.DataNodeCheckerService
+	Config             *config.Config
+	Log                *logging.Logger
+	StoreService       *services.StoreService
+	ReadService        *read.ReadService
+	UpdateService      *update.UpdateService
+	PrometheusService  *prometheus.PrometheusService
+	NodeScannerService *nodescanner.NodeScannerService
 }
 
 func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err error) {
@@ -52,7 +52,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 
 	svc.PrometheusService = prometheus.NewPrometheusService(&svc.Config.Prometheus)
 
-	svc.DataNodeCheckerService = datanode.NewDataNodeCheckerService(
+	svc.NodeScannerService = nodescanner.NewNodeScannerService(
 		&svc.Config.Monitoring, svc.PrometheusService.Metrics, svc.Log,
 	)
 	return
