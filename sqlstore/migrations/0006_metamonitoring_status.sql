@@ -4,7 +4,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   (
     SELECT
       'asset_prices' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(price_time, price_time) AS last_update
     FROM asset_prices
     WHERE
@@ -12,7 +12,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   ) UNION ALL (
     SELECT
       'block_signers' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(vega_time, vega_time) AS last_update
     FROM block_signers
     WHERE
@@ -20,7 +20,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   ) UNION ALL (
     SELECT
       'comet_txs' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(vega_time, vega_time) AS last_update
     FROM comet_txs
     WHERE
@@ -28,7 +28,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   ) UNION ALL (
     SELECT
       'network_balances' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(balance_time, balance_time) AS last_update
     FROM network_balances
     WHERE
@@ -36,7 +36,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   ) UNION ALL (
     SELECT
       'network_history_segments' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(vega_time, vega_time) AS last_update
     FROM network_history_segments
     WHERE
@@ -44,7 +44,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
   ) UNION ALL (
     SELECT
       'data_node' AS check_name,
-      CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS is_healthy,
+      CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS is_healthy,
       last(vega_time, vega_time) AS last_update
     FROM last_block
     WHERE
