@@ -16,14 +16,14 @@ var desc = struct {
 		dataNodePerformanceRESTInfoDuration *prometheus.Desc
 		dataNodePerformanceGQLInfoDuration  *prometheus.Desc
 		dataNodePerformanceGRPCInfoDuration *prometheus.Desc
-
-		dataNodeDown *prometheus.Desc
 	}
 
 	BlockExplorer struct {
 		blockExplorerInfo *prometheus.Desc
+	}
 
-		blockExplorerDown *prometheus.Desc
+	NodeDown struct {
+		nodeDown *prometheus.Desc
 	}
 }{}
 
@@ -61,10 +61,6 @@ func init() {
 		"datanode_performance_grpc_info_duration", "Duration of gRPC request to get info about node", []string{"node", "type", "environment", "internal"}, nil,
 	)
 
-	desc.DataNode.dataNodeDown = prometheus.NewDesc(
-		"datanode_down", "Data Node is not responsive", []string{"node", "type", "environment", "internal"}, nil,
-	)
-
 	//
 	// Block Explorer
 	//
@@ -72,7 +68,10 @@ func init() {
 		"blockexplorer_info", "Basic information about block explorer", []string{"node", "type", "environment", "internal", "version", "version_hash"}, nil,
 	)
 
-	desc.BlockExplorer.blockExplorerDown = prometheus.NewDesc(
-		"blockexplorer_down", "Block Explorer is not responsive", []string{"node", "type", "environment", "internal"}, nil,
+	//
+	// Node Down
+	//
+	desc.NodeDown.nodeDown = prometheus.NewDesc(
+		"node_down", "Node is not responsive", []string{"node", "type", "environment", "internal"}, nil,
 	)
 }

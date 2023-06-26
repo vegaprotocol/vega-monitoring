@@ -7,12 +7,15 @@ import (
 type NodeType string
 
 const (
+	CoreType          NodeType = "core"
 	DataNodeType      NodeType = "datanode"
 	BlockExplorerType NodeType = "blockexplorer"
 )
 
 func (n NodeType) String() string {
 	switch n {
+	case CoreType:
+		return "core"
 	case DataNodeType:
 		return "datanode"
 	case BlockExplorerType:

@@ -2,6 +2,8 @@ package nodescanner
 
 import (
 	"context"
+	"log"
+	"sync"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
@@ -32,18 +34,44 @@ func NewNodeScannerService(
 }
 
 func (s *NodeScannerService) Start(ctx context.Context) error {
+	var wg sync.WaitGroup
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.startScannindLocalNode(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(5 * time.Second) // delay by 5 sec
+		s.startScannindDataNodes(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(25 * time.Second) // delay by 25 sec
+		s.startScannindBlockExplorers(ctx)
+	}()
+
+	wg.Wait()
+	return nil
+}
+
+func (s *NodeScannerService) startScannindDataNodes(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for {
 		// Go DataNode one-by-one synchroniusly
 		for _, node := range s.config.DataNode {
-			s.log.Debug("getting data for data-node", zap.String("name", node.Name))
+			s.log.Debug("start scanning data-node", zap.String("name", node.Name))
 			dataNodeStatus, err := requestDataNodeStats(node.REST)
 			if err != nil {
-				s.log.Error("Failed to get data for data-node", zap.String("node", node.Name), zap.Error(err))
-				s.collector.UpdateDataNodeStatusAsError(node.Name, types.NodeDownStatus{
+				s.log.Error("Failed to scan data-node", zap.String("node", node.Name), zap.Error(err))
+				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
 					Error:       err,
 					Environment: node.Environment,
 					Internal:    node.Internal,
@@ -52,37 +80,12 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 			} else {
 				dataNodeStatus.Environment = node.Environment
 				dataNodeStatus.Internal = node.Internal
-				dataNodeStatus.Type = "datanode"
+				dataNodeStatus.Type = types.DataNodeType
 				dataNodeStatus.RESTReqDuration, _ = checkREST(node.REST)
 				dataNodeStatus.GQLReqDuration, _ = checkGQL(node.GraphQL)
 				dataNodeStatus.GRPCReqDuration, _ = checkGRPC(node.GRPC)
 				s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
-			}
-			select {
-			case <-ctx.Done():
-				break
-			default:
-				continue
-			}
-		}
-
-		// Go BlockExplorer one-by-one synchroniously
-		for _, node := range s.config.BlockExplorer {
-			s.log.Debug("getting data for block-explorer", zap.String("name", node.Name))
-			blockExplorerStatus, err := requestBlockExplorerStats(node.REST)
-			if err != nil {
-				s.log.Error("Failed to get data for block-explorer", zap.String("node", node.Name), zap.Error(err))
-				s.collector.UpdateBlockExplorerStatusAsError(node.Name, types.NodeDownStatus{
-					Error:       err,
-					Environment: node.Environment,
-					Internal:    true,
-					Type:        types.BlockExplorerType,
-				})
-			} else {
-				blockExplorerStatus.Environment = node.Environment
-				blockExplorerStatus.Internal = true
-				blockExplorerStatus.Type = types.BlockExplorerType
-				s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+				s.log.Debug("successfully scanned data-node", zap.String("name", node.Name))
 			}
 			select {
 			case <-ctx.Done():
@@ -94,8 +97,125 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
-			s.log.Info("Stopping Data Node Collector for Prometheus")
-			return nil
+			s.log.Info("Stopping Scanning Data Nodes for Prometheus")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *NodeScannerService) startScannindBlockExplorers(ctx context.Context) {
+
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+
+		// Go BlockExplorer one-by-one synchroniously
+		for _, node := range s.config.BlockExplorer {
+			s.log.Debug("start scanning block-explorer", zap.String("name", node.Name))
+			blockExplorerStatus, err := requestBlockExplorerStats(node.REST)
+			if err != nil {
+				s.log.Error("Failed to scan block-explorer", zap.String("node", node.Name), zap.Error(err))
+				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
+					Error:       err,
+					Environment: node.Environment,
+					Internal:    true,
+					Type:        types.BlockExplorerType,
+				})
+			} else {
+				blockExplorerStatus.Environment = node.Environment
+				blockExplorerStatus.Internal = true
+				blockExplorerStatus.Type = types.BlockExplorerType
+				s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+				s.log.Debug("successfully scanned block-explorer", zap.String("name", node.Name))
+			}
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				continue
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			s.log.Info("Stopping Scanning Block Explorers for Prometheus")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *NodeScannerService) startScannindLocalNode(ctx context.Context) {
+	var (
+		coreStatus          *types.CoreStatus
+		dataNodeStatus      *types.DataNodeStatus
+		blockExplorerStatus *types.BlockExplorerStatus
+		node                = &s.config.LocalNode
+		nodeType            = types.NodeType(node.Type)
+	)
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		s.log.Debug("start scanning local node",
+			zap.String("name", node.Name),
+			zap.String("environmet", node.Environment),
+			zap.String("type", node.Type),
+		)
+		var err error = nil
+
+		switch nodeType {
+		case types.CoreType:
+			coreStatus, _, err = requestCoreStats(node.REST, nil)
+			coreStatus.Environment = node.Environment
+			coreStatus.Internal = true
+			coreStatus.Type = types.CoreType
+			s.collector.UpdateCoreStatus(node.Name, coreStatus)
+		case types.DataNodeType:
+			dataNodeStatus, err = requestDataNodeStats(node.REST)
+			dataNodeStatus.Environment = node.Environment
+			dataNodeStatus.Internal = true
+			dataNodeStatus.Type = types.DataNodeType
+			s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
+		case types.BlockExplorerType:
+			blockExplorerStatus, err = requestBlockExplorerStats(node.REST)
+			blockExplorerStatus.Environment = node.Environment
+			blockExplorerStatus.Internal = true
+			blockExplorerStatus.Type = types.BlockExplorerType
+			s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+		default:
+			log.Fatalf("Failed to scan local node, unknow node type %s", s.config.LocalNode.Type)
+		}
+
+		if err == nil {
+			s.log.Debug("successfully scanned node",
+				zap.String("name", node.Name),
+				zap.String("environmet", node.Environment),
+				zap.String("type", node.Type),
+			)
+		} else {
+			s.log.Error("Failed to scan",
+				zap.String("name", node.Name),
+				zap.String("environmet", node.Environment),
+				zap.String("type", node.Type),
+				zap.Error(err),
+			)
+			s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
+				Error:       err,
+				Environment: node.Environment,
+				Internal:    true,
+				Type:        nodeType,
+			})
+		}
+
+		select {
+		case <-ctx.Done():
+			s.log.Info("Stopping Scanning Local Node for Prometheus")
+			return
 		case <-ticker.C:
 			continue
 		}

@@ -2,46 +2,63 @@ package collectors
 
 import (
 	"strconv"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
 )
 
 type VegaMonitoringCollector struct {
-	dataNodeStatuses map[string]*types.DataNodeStatus
-	dataNodeDown     map[string]types.NodeDownStatus
-
+	coreStatuses          map[string]*types.CoreStatus
+	dataNodeStatuses      map[string]*types.DataNodeStatus
 	blockExplorerStatuses map[string]*types.BlockExplorerStatus
-	blockExplorerDown     map[string]types.NodeDownStatus
+	nodeDownStatuses      map[string]types.NodeDownStatus
+
+	accessMu sync.RWMutex
 }
 
 func NewVegaMonitoringCollector() *VegaMonitoringCollector {
 	return &VegaMonitoringCollector{
+		coreStatuses:          map[string]*types.CoreStatus{},
 		dataNodeStatuses:      map[string]*types.DataNodeStatus{},
-		dataNodeDown:          map[string]types.NodeDownStatus{},
 		blockExplorerStatuses: map[string]*types.BlockExplorerStatus{},
-		blockExplorerDown:     map[string]types.NodeDownStatus{},
+		nodeDownStatuses:      map[string]types.NodeDownStatus{},
 	}
 }
 
-func (c *VegaMonitoringCollector) UpdateDataNodeStatus(node string, result *types.DataNodeStatus) {
-	delete(c.dataNodeDown, node)
-	c.dataNodeStatuses[node] = result
+func (c *VegaMonitoringCollector) UpdateCoreStatus(node string, newStatus *types.CoreStatus) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.clearStatusFor(node)
+	c.coreStatuses[node] = newStatus
 }
 
-func (c *VegaMonitoringCollector) UpdateDataNodeStatusAsError(node string, downStatus types.NodeDownStatus) {
+func (c *VegaMonitoringCollector) UpdateDataNodeStatus(node string, newStatus *types.DataNodeStatus) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.clearStatusFor(node)
+	c.dataNodeStatuses[node] = newStatus
+}
+
+func (c *VegaMonitoringCollector) UpdateBlockExplorerStatus(node string, newStatus *types.BlockExplorerStatus) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.clearStatusFor(node)
+	c.blockExplorerStatuses[node] = newStatus
+}
+
+func (c *VegaMonitoringCollector) UpdateNodeStatusAsError(node string, newStatus types.NodeDownStatus) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.clearStatusFor(node)
+	c.nodeDownStatuses[node] = newStatus
+}
+
+func (c *VegaMonitoringCollector) clearStatusFor(node string) {
+	delete(c.coreStatuses, node)
 	delete(c.dataNodeStatuses, node)
-	c.dataNodeDown[node] = downStatus
-}
-
-func (c *VegaMonitoringCollector) UpdateBlockExplorerStatus(node string, result *types.BlockExplorerStatus) {
-	delete(c.blockExplorerDown, node)
-	c.blockExplorerStatuses[node] = result
-}
-
-func (c *VegaMonitoringCollector) UpdateBlockExplorerStatusAsError(node string, downStatus types.NodeDownStatus) {
 	delete(c.blockExplorerStatuses, node)
-	c.blockExplorerDown[node] = downStatus
+	delete(c.nodeDownStatuses, node)
 }
 
 // Describe returns all descriptions of the collector.
@@ -57,29 +74,71 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- desc.DataNode.dataNodePerformanceRESTInfoDuration
 	ch <- desc.DataNode.dataNodePerformanceGQLInfoDuration
 	ch <- desc.DataNode.dataNodePerformanceGRPCInfoDuration
-	ch <- desc.DataNode.dataNodeDown
 
 	// BlockExplorer
 	ch <- desc.BlockExplorer.blockExplorerInfo
-	ch <- desc.BlockExplorer.blockExplorerDown
+
+	// Node Down
+	ch <- desc.NodeDown.nodeDown
 }
 
 // Collect returns the current state of all metrics of the collector.
 func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.collectCoreStatuses(ch)
 	c.collectDataNodeStatuses(ch)
 	c.collectBlockExplorerStatuses(ch)
+	c.collectNodeDownStatuses(ch)
+}
+
+func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
+	for nodeName, nodeStatus := range c.coreStatuses {
+		// Core Block Height
+		ch <- prometheus.NewMetricWithTimestamp(
+			nodeStatus.CurrentTime,
+			prometheus.MustNewConstMetric(
+				desc.Core.coreBlockHeight, prometheus.UntypedValue, float64(nodeStatus.CoreBlockHeight),
+				// Labels
+				nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
+			))
+		// Core Time
+		ch <- prometheus.NewMetricWithTimestamp(
+			nodeStatus.CurrentTime,
+			prometheus.MustNewConstMetric(
+				desc.Core.coreTime, prometheus.UntypedValue, float64(nodeStatus.CoreTime.Unix()),
+				// Labels
+				nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
+			))
+		// Core Info
+		ch <- prometheus.NewMetricWithTimestamp(
+			nodeStatus.CurrentTime,
+			prometheus.MustNewConstMetric(
+				desc.Core.coreInfo, prometheus.UntypedValue, 1,
+				// Labels
+				nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
+				// Extra labels
+				nodeStatus.CoreChainId, nodeStatus.CoreAppVersion, nodeStatus.CoreAppVersionHash,
+			))
+	}
 }
 
 func (c *VegaMonitoringCollector) collectDataNodeStatuses(ch chan<- prometheus.Metric) {
 	for nodeName, nodeStatus := range c.dataNodeStatuses {
 		fieldToValue := map[*prometheus.Desc]float64{
-			desc.Core.coreBlockHeight:                         float64(nodeStatus.CoreBlockHeight),
-			desc.DataNode.dataNodeBlockHeight:                 float64(nodeStatus.DataNodeBlockHeight),
-			desc.Core.coreTime:                                float64(nodeStatus.CoreTime.Unix()),
-			desc.DataNode.dataNodeTime:                        float64(nodeStatus.DataNodeTime.Unix()),
-			desc.DataNode.dataNodePerformanceRESTInfoDuration: nodeStatus.RESTReqDuration.Seconds(),
-			desc.DataNode.dataNodePerformanceGQLInfoDuration:  nodeStatus.GQLReqDuration.Seconds(),
-			desc.DataNode.dataNodePerformanceGRPCInfoDuration: nodeStatus.GRPCReqDuration.Seconds(),
+			desc.Core.coreBlockHeight:         float64(nodeStatus.CoreBlockHeight),
+			desc.DataNode.dataNodeBlockHeight: float64(nodeStatus.DataNodeBlockHeight),
+			desc.Core.coreTime:                float64(nodeStatus.CoreTime.Unix()),
+			desc.DataNode.dataNodeTime:        float64(nodeStatus.DataNodeTime.Unix()),
+		}
+		if nodeStatus.RESTReqDuration.Seconds() > 0 {
+			fieldToValue[desc.DataNode.dataNodePerformanceRESTInfoDuration] = nodeStatus.RESTReqDuration.Seconds()
+		}
+		if nodeStatus.GQLReqDuration.Seconds() > 0 {
+			fieldToValue[desc.DataNode.dataNodePerformanceGQLInfoDuration] = nodeStatus.GQLReqDuration.Seconds()
+		}
+		if nodeStatus.GRPCReqDuration.Seconds() > 0 {
+			fieldToValue[desc.DataNode.dataNodePerformanceGRPCInfoDuration] = nodeStatus.GRPCReqDuration.Seconds()
 		}
 
 		for field, value := range fieldToValue {
@@ -100,14 +159,6 @@ func (c *VegaMonitoringCollector) collectDataNodeStatuses(ch chan<- prometheus.M
 				// Extra labels
 				nodeStatus.CoreChainId, nodeStatus.CoreAppVersion, nodeStatus.CoreAppVersionHash,
 			))
-	}
-
-	for nodeName, nodeStatus := range c.dataNodeDown {
-		ch <- prometheus.MustNewConstMetric(
-			desc.DataNode.dataNodeDown, prometheus.UntypedValue, 1,
-			// Labels
-			nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
-		)
 	}
 }
 
@@ -150,11 +201,14 @@ func (c *VegaMonitoringCollector) collectBlockExplorerStatuses(ch chan<- prometh
 				nodeStatus.BlockExplorerVersion, nodeStatus.BlockExplorerVersionHash,
 			))
 	}
+}
 
-	for nodeName, nodeStatus := range c.blockExplorerDown {
+func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.Metric) {
+
+	for nodeName, nodeStatus := range c.nodeDownStatuses {
 		// Block Explorer Down
 		ch <- prometheus.MustNewConstMetric(
-			desc.BlockExplorer.blockExplorerDown, prometheus.UntypedValue, 1,
+			desc.NodeDown.nodeDown, prometheus.UntypedValue, 1,
 			// Labels
 			nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
 		)

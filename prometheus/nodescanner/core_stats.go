@@ -62,8 +62,10 @@ func requestCoreStats(address string, headers []string) (*types.CoreStatus, map[
 
 	headerValues := map[string]string{}
 
-	for _, header := range headers {
-		headerValues[header] = resp.Header.Get(header)
+	if headers != nil {
+		for _, header := range headers {
+			headerValues[header] = resp.Header.Get(header)
+		}
 	}
 
 	return &types.CoreStatus{

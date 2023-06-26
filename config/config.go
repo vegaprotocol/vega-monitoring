@@ -81,10 +81,11 @@ type PrometheusConfig struct {
 type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
+	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode"`
 }
 
 type DataNodeConfig struct {
-	Name        string `long:"Name" comment:"Short name, e.g. api1, be0 or n01"`
+	Name        string `long:"Name" comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes\n For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks\n For other nodes use any name"`
 	REST        string `long:"REST"`
 	GraphQL     string `long:"GraphQL"`
 	GRPC        string `long:"GRPC"`
@@ -93,9 +94,16 @@ type DataNodeConfig struct {
 }
 
 type BlockExplorerConfig struct {
-	Name        string `long:"Name" comment:"Short name, e.g. api1, be0 or n01"`
+	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+}
+
+type LocalNodeConfig struct {
+	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	REST        string `long:"REST"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+	Type        string `long:"Type" comment:"One of: core, datanode, blockexplorer or leave empty"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
