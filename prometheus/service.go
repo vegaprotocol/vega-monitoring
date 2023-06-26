@@ -25,6 +25,8 @@ func NewPrometheusService(cfg *config.PrometheusConfig) *PrometheusService {
 	promRegistry.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
+	prometheus.WrapRegistererWithPrefix("vega_monitoring_", promRegistry).MustRegister(
 		vegaMonitoringCollector,
 	)
 	promHandler := promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{Registry: promRegistry})
