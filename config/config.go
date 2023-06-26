@@ -13,11 +13,9 @@ import (
 )
 
 type Config struct {
-	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko"`
+	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
 
-	LocalNode LocalNodeConfig `group:"LocalNode" namespace:"localnode"`
-
-	DataNode []DataNodeConfig `group:"DataNode" namespace:"datanode"`
+	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs\n stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables\n endpoint needs to have discard_abci_responses set to false"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
@@ -25,48 +23,22 @@ type Config struct {
 		Level string `long:"Level"`
 	} `group:"Logging" namespace:"logging"`
 
-	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore"`
+	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore" comment:"vega-monitoring will create new tables in this database in metrics schema,\n and will start adding data into those tables"`
 
 	Prometheus PrometheusConfig `group:"Prometheus" namespace:"prometheus"`
 
-	Services struct {
-		BlockSigners struct {
-			Enabled bool `long:"enabled"`
-		} `group:"BlockSigners" namespace:"blocksigners"`
-		NetworkHistorySegments struct {
-			Enabled bool `long:"enabled"`
-		} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
-		CometTxs struct {
-			Enabled bool `long:"enabled"`
-		} `group:"CometTxs" namespace:"comettxs"`
-		NetworkBalances struct {
-			Enabled bool `long:"enabled"`
-		} `group:"NetworkBalances" namespace:"networkbalances"`
-		AssetPrices struct {
-			Enabled bool `long:"enabled"`
-		} `group:"AssetPrices" namespace:"assetprices"`
-	} `group:"Services" namespace:"services"`
+	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring" comment:"collected metrics are exposed on prometheus"`
+
+	DataNodeDBExtension DataNodeDBExtensionConfig `group:"DataNodeDBExtension" namespace:"datanodedbextension" comment:"Create extra tables in DataNode database, and continuously fill them in"`
 }
 
 type CoingeckoConfig struct {
 	ApiURL   string            `long:"ApiURL"`
-	AssetIds map[string]string `long:"AssetIds"`
+	AssetIds map[string]string `long:"AssetIds" comment:"use Vega Asset Symbol as key, and coingecko asset id as value, e.g. USDC = \"usd-coin\"\n Vega Assset symbols: https://api.vega.community/api/v2/assets\n Coingecko asset ids: https://api.coingecko.com/api/v3/coins/list"`
 }
 
 type CometBFTConfig struct {
 	ApiURL string `long:"ApiURL"`
-}
-
-type LocalNodeConfig struct {
-	CometURL     string `long:"CometURL"`
-	DataNodeREST string `long:"DataNodeREST"`
-}
-
-type DataNodeConfig struct {
-	Name    string `long:"Name"`
-	REST    string `long:"REST"`
-	GraphQL string `long:"GraphQL"`
-	GRPC    string `long:"GRPC"`
 }
 
 type SQLStoreConfig struct {
@@ -78,16 +50,65 @@ type SQLStoreConfig struct {
 }
 
 type EthereumConfig struct {
-	RPCEndpoint      string `long:"RPCEndpoint"`
+	RPCEndpoint      string `long:"RPCEndpoint" comment:"used to get Asset Pool's asset balances"`
 	EtherscanURL     string `long:"EtherscanURL"`
 	EtherscanApiKey  string `long:"EtherscanApiKey"`
-	AssetPoolAddress string `long:"AssetPoolAddress"`
+	AssetPoolAddress string `long:"AssetPoolAddress" comment:"used to get balances of asssets"`
 }
 
 type PrometheusConfig struct {
 	Port    int    `long:"port"`
 	Path    string `long:"path"`
 	Enabled bool   `long:"enabled"`
+}
+
+type MonitoringConfig struct {
+	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
+	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
+	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode" comment:"Useful for machine with closed ports"`
+}
+
+type DataNodeConfig struct {
+	Name        string `long:"Name" comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes\n For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks\n For other nodes use any name"`
+	REST        string `long:"REST"`
+	GraphQL     string `long:"GraphQL"`
+	GRPC        string `long:"GRPC"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+	Internal    bool   `long:"Internal" comment:"true if node run by Vega Team, otherwise false"`
+}
+
+type BlockExplorerConfig struct {
+	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	REST        string `long:"REST"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+}
+
+type LocalNodeConfig struct {
+	Enabled     bool   `long:"Enabled"`
+	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	REST        string `long:"REST"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
+	Type        string `long:"Type" comment:"One of: core, datanode, blockexplorer or leave empty"`
+}
+
+type DataNodeDBExtensionConfig struct {
+	Enabled bool `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension\n When disabled, then all other config from this section is ignored"`
+
+	BlockSigners struct {
+		Enabled bool `long:"enabled"`
+	} `group:"BlockSigners" namespace:"blocksigners"`
+	NetworkHistorySegments struct {
+		Enabled bool `long:"enabled"`
+	} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
+	CometTxs struct {
+		Enabled bool `long:"enabled"`
+	} `group:"CometTxs" namespace:"comettxs"`
+	NetworkBalances struct {
+		Enabled bool `long:"enabled"`
+	} `group:"NetworkBalances" namespace:"networkbalances"`
+	AssetPrices struct {
+		Enabled bool `long:"enabled"`
+	} `group:"AssetPrices" namespace:"assetprices"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
@@ -130,10 +151,7 @@ func NewDefaultConfig() Config {
 		"WETH": "weth",
 	}
 	// Local Node
-	config.LocalNode.CometURL = "http://localhost:26657"
-	config.LocalNode.DataNodeREST = "http://localhost:3008"
-	// DataNode
-	config.DataNode = []DataNodeConfig{}
+	config.CometBFT.ApiURL = "http://localhost:26657"
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"
@@ -151,12 +169,21 @@ func NewDefaultConfig() Config {
 	config.Prometheus.Enabled = true
 	config.Prometheus.Path = "/metrics"
 	config.Prometheus.Port = 2100
+	// Monitoring
+	config.Monitoring.DataNode = []DataNodeConfig{}
+	config.Monitoring.BlockExplorer = []BlockExplorerConfig{}
+	config.Monitoring.LocalNode.Enabled = false
+	config.Monitoring.LocalNode.Environment = ""
+	config.Monitoring.LocalNode.Name = ""
+	config.Monitoring.LocalNode.REST = ""
+	config.Monitoring.LocalNode.Type = ""
 	// Services
-	config.Services.BlockSigners.Enabled = true
-	config.Services.NetworkHistorySegments.Enabled = true
-	config.Services.CometTxs.Enabled = true
-	config.Services.NetworkBalances.Enabled = true
-	config.Services.AssetPrices.Enabled = true
+	config.DataNodeDBExtension.Enabled = false
+	config.DataNodeDBExtension.BlockSigners.Enabled = true
+	config.DataNodeDBExtension.NetworkHistorySegments.Enabled = true
+	config.DataNodeDBExtension.CometTxs.Enabled = true
+	config.DataNodeDBExtension.NetworkBalances.Enabled = true
+	config.DataNodeDBExtension.AssetPrices.Enabled = true
 
 	return config
 }

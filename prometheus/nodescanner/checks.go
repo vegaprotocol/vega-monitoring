@@ -1,4 +1,4 @@
-package datanode
+package nodescanner
 
 import (
 	"bytes"

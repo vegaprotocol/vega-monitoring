@@ -9,28 +9,30 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vegaprotocol/vega-monitoring/config"
+	vega_collectors "github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 )
 
 type PrometheusService struct {
-	config      *config.PrometheusConfig
-	server      *http.Server
-	promHandler *http.Handler
-	Metrics     *Metrics
+	config                  *config.PrometheusConfig
+	server                  *http.Server
+	promHandler             *http.Handler
+	VegaMonitoringCollector *vega_collectors.VegaMonitoringCollector
 }
 
 func NewPrometheusService(cfg *config.PrometheusConfig) *PrometheusService {
+	vegaMonitoringCollector := vega_collectors.NewVegaMonitoringCollector()
 	promRegistry := prometheus.NewRegistry()
 	promRegistry.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		vegaMonitoringCollector,
 	)
-	metrics := NewMetrics(promRegistry)
 	promHandler := promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{Registry: promRegistry})
 
 	return &PrometheusService{
-		config:      cfg,
-		promHandler: &promHandler,
-		Metrics:     metrics,
+		config:                  cfg,
+		promHandler:             &promHandler,
+		VegaMonitoringCollector: vegaMonitoringCollector,
 	}
 }
 
