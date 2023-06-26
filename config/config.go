@@ -29,23 +29,7 @@ type Config struct {
 
 	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring" comment:"collected metrics are exposed on prometheus"`
 
-	Services struct {
-		BlockSigners struct {
-			Enabled bool `long:"enabled"`
-		} `group:"BlockSigners" namespace:"blocksigners"`
-		NetworkHistorySegments struct {
-			Enabled bool `long:"enabled"`
-		} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
-		CometTxs struct {
-			Enabled bool `long:"enabled"`
-		} `group:"CometTxs" namespace:"comettxs"`
-		NetworkBalances struct {
-			Enabled bool `long:"enabled"`
-		} `group:"NetworkBalances" namespace:"networkbalances"`
-		AssetPrices struct {
-			Enabled bool `long:"enabled"`
-		} `group:"AssetPrices" namespace:"assetprices"`
-	} `group:"Services" namespace:"services"`
+	DataNodeDBExtension DataNodeDBExtensionConfig `group:"DataNodeDBExtension" namespace:"datanodedbextension" comment:"Create extra tables in DataNode database, and continuously fill them in"`
 }
 
 type CoingeckoConfig struct {
@@ -81,7 +65,7 @@ type PrometheusConfig struct {
 type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
-	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode"`
+	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode" comment:"Useful for machine with closed ports"`
 }
 
 type DataNodeConfig struct {
@@ -100,10 +84,31 @@ type BlockExplorerConfig struct {
 }
 
 type LocalNodeConfig struct {
+	Enabled     bool   `long:"Enabled"`
 	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 	Type        string `long:"Type" comment:"One of: core, datanode, blockexplorer or leave empty"`
+}
+
+type DataNodeDBExtensionConfig struct {
+	Enabled bool `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension\n When disabled, then all other config from this section is ignored"`
+
+	BlockSigners struct {
+		Enabled bool `long:"enabled"`
+	} `group:"BlockSigners" namespace:"blocksigners"`
+	NetworkHistorySegments struct {
+		Enabled bool `long:"enabled"`
+	} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
+	CometTxs struct {
+		Enabled bool `long:"enabled"`
+	} `group:"CometTxs" namespace:"comettxs"`
+	NetworkBalances struct {
+		Enabled bool `long:"enabled"`
+	} `group:"NetworkBalances" namespace:"networkbalances"`
+	AssetPrices struct {
+		Enabled bool `long:"enabled"`
+	} `group:"AssetPrices" namespace:"assetprices"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
@@ -166,12 +171,19 @@ func NewDefaultConfig() Config {
 	config.Prometheus.Port = 2100
 	// Monitoring
 	config.Monitoring.DataNode = []DataNodeConfig{}
+	config.Monitoring.BlockExplorer = []BlockExplorerConfig{}
+	config.Monitoring.LocalNode.Enabled = false
+	config.Monitoring.LocalNode.Environment = ""
+	config.Monitoring.LocalNode.Name = ""
+	config.Monitoring.LocalNode.REST = ""
+	config.Monitoring.LocalNode.Type = ""
 	// Services
-	config.Services.BlockSigners.Enabled = true
-	config.Services.NetworkHistorySegments.Enabled = true
-	config.Services.CometTxs.Enabled = true
-	config.Services.NetworkBalances.Enabled = true
-	config.Services.AssetPrices.Enabled = true
+	config.DataNodeDBExtension.Enabled = false
+	config.DataNodeDBExtension.BlockSigners.Enabled = true
+	config.DataNodeDBExtension.NetworkHistorySegments.Enabled = true
+	config.DataNodeDBExtension.CometTxs.Enabled = true
+	config.DataNodeDBExtension.NetworkBalances.Enabled = true
+	config.DataNodeDBExtension.AssetPrices.Enabled = true
 
 	return config
 }

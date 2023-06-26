@@ -28,32 +28,36 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	if err != nil {
 		return
 	}
-
-	svc.StoreService, err = services.NewStoreService(&svc.Config.SQLStore, svc.Log)
-	if err != nil {
-		return
-	}
-
 	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
 	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
 	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
 	if err != nil {
 		return
 	}
-	svc.ReadService, err = read.NewReadService(coingeckoClient, cometClient, ethClient, svc.StoreService, svc.Log)
-	if err != nil {
-		return
+
+	if svc.Config.DataNodeDBExtension.Enabled {
+		svc.StoreService, err = services.NewStoreService(&svc.Config.SQLStore, svc.Log)
+		if err != nil {
+			return
+		}
+
+		svc.ReadService, err = read.NewReadService(coingeckoClient, cometClient, ethClient, svc.StoreService, svc.Log)
+		if err != nil {
+			return
+		}
+
+		svc.UpdateService, err = update.NewUpdateService(svc.ReadService, svc.StoreService, svc.Log)
+		if err != nil {
+			return
+		}
 	}
 
-	svc.UpdateService, err = update.NewUpdateService(svc.ReadService, svc.StoreService, svc.Log)
-	if err != nil {
-		return
+	if svc.Config.Prometheus.Enabled {
+		svc.PrometheusService = prometheus.NewPrometheusService(&svc.Config.Prometheus)
+
+		svc.NodeScannerService = nodescanner.NewNodeScannerService(
+			&svc.Config.Monitoring, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
+		)
 	}
-
-	svc.PrometheusService = prometheus.NewPrometheusService(&svc.Config.Prometheus)
-
-	svc.NodeScannerService = nodescanner.NewNodeScannerService(
-		&svc.Config.Monitoring, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
-	)
 	return
 }

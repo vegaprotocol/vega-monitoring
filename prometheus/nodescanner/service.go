@@ -36,11 +36,15 @@ func NewNodeScannerService(
 func (s *NodeScannerService) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		s.startScannindLocalNode(ctx)
-	}()
+	if s.config.LocalNode.Enabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.startScannindLocalNode(ctx)
+		}()
+	} else {
+		s.log.Info("Not starting Scanning of Local Node", zap.Bool("Monitoring.LocalNode.Enabled", false))
+	}
 
 	wg.Add(1)
 	go func() {
