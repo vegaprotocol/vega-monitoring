@@ -40,7 +40,7 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s.startScannindLocalNode(ctx)
+			s.startScanningLocalNode(ctx)
 		}()
 	} else {
 		s.log.Info("Not starting Scanning of Local Node", zap.Bool("Monitoring.LocalNode.Enabled", false))
@@ -50,21 +50,72 @@ func (s *NodeScannerService) Start(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		time.Sleep(5 * time.Second) // delay by 5 sec
-		s.startScannindDataNodes(ctx)
+		s.startScanningCores(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(15 * time.Second) // delay by 15 sec
+		s.startScanningDataNodes(ctx)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		time.Sleep(25 * time.Second) // delay by 25 sec
-		s.startScannindBlockExplorers(ctx)
+		s.startScanningBlockExplorers(ctx)
 	}()
 
 	wg.Wait()
 	return nil
 }
 
-func (s *NodeScannerService) startScannindDataNodes(ctx context.Context) {
+func (s *NodeScannerService) startScanningCores(ctx context.Context) {
+
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+
+		// Go Cores one-by-one synchroniously
+		for _, node := range s.config.Core {
+			s.log.Debug("start scanning core", zap.String("name", node.Name))
+			coreStatus, _, err := requestCoreStats(node.REST, []string{})
+			if err != nil {
+				s.log.Error("Failed to scan core", zap.String("node", node.Name), zap.Error(err))
+				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
+					Error:       err,
+					Environment: node.Environment,
+					Internal:    true,
+					Type:        types.CoreType,
+				})
+			} else {
+				coreStatus.Environment = node.Environment
+				coreStatus.Internal = true
+				coreStatus.Type = types.CoreType
+				s.collector.UpdateCoreStatus(node.Name, coreStatus)
+				s.log.Debug("successfully scanned core", zap.String("name", node.Name))
+			}
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				continue
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			s.log.Info("Stopping Scanning Cores for Prometheus")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
@@ -109,7 +160,7 @@ func (s *NodeScannerService) startScannindDataNodes(ctx context.Context) {
 	}
 }
 
-func (s *NodeScannerService) startScannindBlockExplorers(ctx context.Context) {
+func (s *NodeScannerService) startScanningBlockExplorers(ctx context.Context) {
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -153,7 +204,7 @@ func (s *NodeScannerService) startScannindBlockExplorers(ctx context.Context) {
 	}
 }
 
-func (s *NodeScannerService) startScannindLocalNode(ctx context.Context) {
+func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 	var (
 		coreStatus          *types.CoreStatus
 		dataNodeStatus      *types.DataNodeStatus

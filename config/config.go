@@ -63,9 +63,16 @@ type PrometheusConfig struct {
 }
 
 type MonitoringConfig struct {
+	Core          []CoreConfig          `group:"Core" namespace:"core"`
 	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode" comment:"Useful for machine with closed ports"`
+}
+
+type CoreConfig struct {
+	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	REST        string `long:"REST"`
+	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 }
 
 type DataNodeConfig struct {
@@ -170,6 +177,7 @@ func NewDefaultConfig() Config {
 	config.Prometheus.Path = "/metrics"
 	config.Prometheus.Port = 2100
 	// Monitoring
+	config.Monitoring.Core = []CoreConfig{}
 	config.Monitoring.DataNode = []DataNodeConfig{}
 	config.Monitoring.BlockExplorer = []BlockExplorerConfig{}
 	config.Monitoring.LocalNode.Enabled = false
