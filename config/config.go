@@ -6,7 +6,6 @@ import (
 	"code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/fsnotify/fsnotify"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/tomwright/dasel"
 	"github.com/tomwright/dasel/storage"
@@ -18,9 +17,7 @@ const MonitoringDbSchema = "metrics"
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
 
-	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs
- stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables
- endpoint needs to have discard_abci_responses set to false"`
+	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs\n stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables\n endpoint needs to have discard_abci_responses set to false"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
@@ -28,8 +25,7 @@ type Config struct {
 		Level string `long:"Level"`
 	} `group:"Logging" namespace:"logging"`
 
-	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore" comment:"vega-monitoring will create new tables in this database in metrics schema,
- and will start adding data into those tables"`
+	SQLStore SQLStoreConfig `group:"Sqlstore" namespace:"sqlstore" comment:"vega-monitoring will create new tables in this database in metrics schema,\n and will start adding data into those tables"`
 
 	Prometheus PrometheusConfig `group:"Prometheus" namespace:"prometheus"`
 
@@ -40,9 +36,7 @@ type Config struct {
 
 type CoingeckoConfig struct {
 	ApiURL   string            `long:"ApiURL"`
-	AssetIds map[string]string `long:"AssetIds" comment:"use Vega Asset Symbol as key, and coingecko asset id as value, e.g. USDC = "usd-coin"
- Vega Assset symbols: https://api.vega.community/api/v2/assets
- Coingecko asset ids: https://api.coingecko.com/api/v3/coins/list"`
+	AssetIds map[string]string `long:"AssetIds" comment:"use Vega Asset Symbol as key, and coingecko asset id as value, e.g. USDC = \"usd-coin\"\n Vega Assset symbols: https://api.vega.community/api/v2/assets\n Coingecko asset ids: https://api.coingecko.com/api/v3/coins/list"`
 }
 
 type CometBFTConfig struct {
@@ -84,9 +78,7 @@ type CoreConfig struct {
 }
 
 type DataNodeConfig struct {
-	Name string `long:"Name"        comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes
- For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks
- For other nodes use any name"`
+	Name        string `long:"Name"        comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes\n For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks\n For other nodes use any name"`
 	REST        string `long:"REST"`
 	GraphQL     string `long:"GraphQL"`
 	GRPC        string `long:"GRPC"`
@@ -109,8 +101,7 @@ type LocalNodeConfig struct {
 }
 
 type DataNodeDBExtensionConfig struct {
-	Enabled bool `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension
- When disabled, then all other config from this section is ignored"`
+	Enabled bool `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension\n When disabled, then all other config from this section is ignored"`
 
 	BlockSigners struct {
 		Enabled bool `long:"enabled"`
@@ -221,37 +212,17 @@ func StoreDefaultConfigInFile(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-func (c SQLStoreConfig) getConnectionConfig() sqlstore.ConnectionConfig {
+func (c SQLStoreConfig) GetConnectionConfig() sqlstore.ConnectionConfig {
 	connConfig := sqlstore.NewDefaultConfig().ConnectionConfig
 	connConfig.Host = c.Host
 	connConfig.Port = c.Port
 	connConfig.Username = c.Username
 	connConfig.Password = c.Password
 	connConfig.Database = c.Database
-
-	return connConfig
-}
-
-func (c SQLStoreConfig) GetConnectionPoolConfig() (*pgxpool.Config, error) {
-	connectionConfig := c.getConnectionConfig()
-
-	poolConfig, err := connectionConfig.GetPoolConfig()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to get pool config for the sqlstore.ConnectionConfig: %w",
-			err,
-		)
-	}
-
-	// ref: https://pkg.go.dev/github.com/jackc/pgx#Conn
-	if poolConfig.ConnConfig.RuntimeParams == nil {
-		poolConfig.ConnConfig.RuntimeParams = map[string]string{}
-	}
-
-	poolConfig.ConnConfig.RuntimeParams["search_path"] = fmt.Sprintf(
+	connConfig.RuntimeParams["search_path"] = fmt.Sprintf(
 		`"$user",public,%s`,
 		MonitoringDbSchema,
 	)
 
-	return poolConfig, nil
+	return connConfig
 }

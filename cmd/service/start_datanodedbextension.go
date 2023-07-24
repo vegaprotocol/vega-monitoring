@@ -17,12 +17,7 @@ func startDataNodeDBExtension(
 	shutdown_wg *sync.WaitGroup,
 	ctx context.Context,
 ) {
-	poolConfig, err := svc.Config.SQLStore.GetConnectionPoolConfig()
-	if err != nil {
-		log.Fatalf("failed to get connection pool config: %w", err)
-	}
-
-	if err := sqlstore.MigrateToLatestSchema(svc.Log, poolConfig); err != nil {
+	if err := sqlstore.MigrateToLatestSchema(svc.Log, svc.Config.SQLStore.GetConnectionConfig()); err != nil {
 		log.Fatalf("Failed to migrate database to latest version %+v\n", err)
 	}
 
