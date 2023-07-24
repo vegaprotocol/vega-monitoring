@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/vegaprotocol/vega-monitoring/cmd"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
-	"go.uber.org/zap"
 )
 
 func startDataNodeDBExtension(
@@ -16,8 +17,12 @@ func startDataNodeDBExtension(
 	shutdown_wg *sync.WaitGroup,
 	ctx context.Context,
 ) {
+	poolConfig, err := svc.Config.SQLStore.GetConnectionPoolConfig()
+	if err != nil {
+		log.Fatalf("failed to get connection pool config: %w", err)
+	}
 
-	if err := sqlstore.MigrateToLatestSchema(svc.Log, svc.Config.SQLStore.GetConnectionConfig()); err != nil {
+	if err := sqlstore.MigrateToLatestSchema(svc.Log, poolConfig); err != nil {
 		log.Fatalf("Failed to migrate database to latest version %+v\n", err)
 	}
 
@@ -184,7 +189,10 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 			svc.Log.Error("Failed to update Network Balances: Partiest Total", zap.Error(err))
 		}
 		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(ctx); err != nil {
-			svc.Log.Error("Failed to update Network Balances: Unrealised Withdrawals", zap.Error(err))
+			svc.Log.Error(
+				"Failed to update Network Balances: Unrealised Withdrawals",
+				zap.Error(err),
+			)
 		}
 		if err := svc.UpdateService.UpdateUnfinalizedDepositsBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Unfinalized Deposits", zap.Error(err))
