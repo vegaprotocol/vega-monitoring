@@ -3,7 +3,7 @@ module github.com/vegaprotocol/vega-monitoring
 go 1.19
 
 require (
-	code.vegaprotocol.io/vega v0.71.5
+	code.vegaprotocol.io/vega v0.72.2-0.20230724191036-2c63dca0be39
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/georgysavva/scany v1.0.0
@@ -115,8 +115,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace code.vegaprotocol.io/vega => /Users/daniel/www/vega/vega
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.23.3
