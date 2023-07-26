@@ -83,6 +83,6 @@ func init() {
 	// Meta-Monitoring: Monitoring Database
 	//
 	desc.MetaMonitoring.monitoringDatabaseHealthy = prometheus.NewDesc(
-		"monitoring_db_healthy", "Healthcheck of data in Monitoring Database", []string{"data_type"}, nil,
+		"monitoring_db_status", "Status of data in Monitoring Database. 1 good, 0 bad", []string{"data_type"}, nil,
 	)
 }
