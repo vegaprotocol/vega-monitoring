@@ -93,7 +93,7 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- desc.NodeDown.nodeDown
 
 	// MetaMonitoring: Monitoring Database
-	ch <- desc.MonitoringDatabase.dataNodeData
+	ch <- desc.MetaMonitoring.monitoringDatabaseHealthy
 }
 
 // Collect returns the current state of all metrics of the collector.
@@ -235,22 +235,23 @@ func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- pr
 	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
 
 	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
-		fieldToValue := map[*prometheus.Desc]*int32{
-			desc.MonitoringDatabase.dataNodeData:               c.monitoringDatabaseStatuses.DataNodeData,
-			desc.MonitoringDatabase.assetPricesData:            c.monitoringDatabaseStatuses.AssetPricesData,
-			desc.MonitoringDatabase.blockSignersData:           c.monitoringDatabaseStatuses.BlockSignersData,
-			desc.MonitoringDatabase.cometTxsData:               c.monitoringDatabaseStatuses.CometTxsData,
-			desc.MonitoringDatabase.networkBalancesData:        c.monitoringDatabaseStatuses.NetworkBalancesData,
-			desc.MonitoringDatabase.networkHistorySegmentsData: c.monitoringDatabaseStatuses.NetworkHistorySegmentsData,
+		fieldToValue := map[string]*int32{
+			"data_node":                c.monitoringDatabaseStatuses.DataNodeData,
+			"asset_prices":             c.monitoringDatabaseStatuses.AssetPricesData,
+			"block_signers":            c.monitoringDatabaseStatuses.BlockSignersData,
+			"comet_txs":                c.monitoringDatabaseStatuses.CometTxsData,
+			"network_balances":         c.monitoringDatabaseStatuses.NetworkBalancesData,
+			"network_history_segments": c.monitoringDatabaseStatuses.NetworkHistorySegmentsData,
 		}
 
-		for field, value := range fieldToValue {
+		for dataType, value := range fieldToValue {
 			if value != nil {
 				ch <- prometheus.NewMetricWithTimestamp(
 					c.monitoringDatabaseStatuses.UpdateTime,
 					prometheus.MustNewConstMetric(
-						field, prometheus.GaugeValue, float64(*value),
-						// no extra Labels
+						desc.MetaMonitoring.monitoringDatabaseHealthy, prometheus.GaugeValue, float64(*value),
+						// Labels
+						dataType,
 					))
 			}
 		}
