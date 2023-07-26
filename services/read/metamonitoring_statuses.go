@@ -8,12 +8,12 @@ import (
 )
 
 type MetaMonitoringStatuses struct {
-	DataNodeData               int32
-	AssetPricesData            int32
-	BlockSignersData           int32
-	CometTxsData               int32
-	NetworkBalancesData        int32
-	NetworkHistorySegmentsData int32
+	DataNodeData               *int32
+	AssetPricesData            *int32
+	BlockSignersData           *int32
+	CometTxsData               *int32
+	NetworkBalancesData        *int32
+	NetworkHistorySegmentsData *int32
 
 	UpdateTime time.Time
 }
@@ -32,21 +32,23 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 		return result, err
 	}
 
+	result.UpdateTime = time.Now()
+
 	for _, check := range checks {
 
 		switch check.CheckName {
 		case "data_node":
-			result.DataNodeData = check.IsHealthy
+			result.DataNodeData = &check.IsHealthy
 		case "asset_prices":
-			result.AssetPricesData = check.IsHealthy
+			result.AssetPricesData = &check.IsHealthy
 		case "block_signers":
-			result.BlockSignersData = check.IsHealthy
+			result.BlockSignersData = &check.IsHealthy
 		case "comet_txs":
-			result.CometTxsData = check.IsHealthy
+			result.CometTxsData = &check.IsHealthy
 		case "network_balances":
-			result.NetworkBalancesData = check.IsHealthy
+			result.NetworkBalancesData = &check.IsHealthy
 		case "network_history_segments":
-			result.NetworkHistorySegmentsData = check.IsHealthy
+			result.NetworkHistorySegmentsData = &check.IsHealthy
 		default:
 			logger.Error("Unknown check name", zap.String("check_name", check.CheckName))
 		}

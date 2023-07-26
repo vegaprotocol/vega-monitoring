@@ -230,34 +230,29 @@ func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.M
 	}
 }
 
-func toFloat64(v bool) float64 {
-	if v {
-		return 1
-	}
-	return 0
-}
-
 func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- prometheus.Metric) {
 
 	twoMinutesAgo := time.Now().Add(2 * time.Minute)
 
 	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
-		fieldToValue := map[*prometheus.Desc]float64{
-			desc.MonitoringDatabase.dataNodeData:               float64(c.monitoringDatabaseStatuses.DataNodeData),
-			desc.MonitoringDatabase.assetPricesData:            float64(c.monitoringDatabaseStatuses.AssetPricesData),
-			desc.MonitoringDatabase.blockSignersData:           float64(c.monitoringDatabaseStatuses.BlockSignersData),
-			desc.MonitoringDatabase.cometTxsData:               float64(c.monitoringDatabaseStatuses.CometTxsData),
-			desc.MonitoringDatabase.networkBalancesData:        float64(c.monitoringDatabaseStatuses.NetworkBalancesData),
-			desc.MonitoringDatabase.networkHistorySegmentsData: float64(c.monitoringDatabaseStatuses.NetworkHistorySegmentsData),
+		fieldToValue := map[*prometheus.Desc]*int32{
+			desc.MonitoringDatabase.dataNodeData:               c.monitoringDatabaseStatuses.DataNodeData,
+			desc.MonitoringDatabase.assetPricesData:            c.monitoringDatabaseStatuses.AssetPricesData,
+			desc.MonitoringDatabase.blockSignersData:           c.monitoringDatabaseStatuses.BlockSignersData,
+			desc.MonitoringDatabase.cometTxsData:               c.monitoringDatabaseStatuses.CometTxsData,
+			desc.MonitoringDatabase.networkBalancesData:        c.monitoringDatabaseStatuses.NetworkBalancesData,
+			desc.MonitoringDatabase.networkHistorySegmentsData: c.monitoringDatabaseStatuses.NetworkHistorySegmentsData,
 		}
 
 		for field, value := range fieldToValue {
-			ch <- prometheus.NewMetricWithTimestamp(
-				c.monitoringDatabaseStatuses.UpdateTime,
-				prometheus.MustNewConstMetric(
-					field, prometheus.GaugeValue, value,
-					// no extra Labels
-				))
+			if value != nil {
+				ch <- prometheus.NewMetricWithTimestamp(
+					c.monitoringDatabaseStatuses.UpdateTime,
+					prometheus.MustNewConstMetric(
+						field, prometheus.GaugeValue, float64(*value),
+						// no extra Labels
+					))
+			}
 		}
 	}
 }

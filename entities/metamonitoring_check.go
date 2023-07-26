@@ -7,5 +7,5 @@ import (
 type MetaMonitoringStatusCheck struct {
 	CheckName  string
 	IsHealthy  int32
-	LastUpdate time.Time
+	LastUpdate *time.Time
 }
