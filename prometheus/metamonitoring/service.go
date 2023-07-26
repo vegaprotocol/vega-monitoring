@@ -57,7 +57,7 @@ func (s *MetaMonitoringStatusService) startUpdatingMetamonitoringStatuses(ctx co
 
 		select {
 		case <-ctx.Done():
-			s.log.Info("Stopping Scanning Cores for Prometheus")
+			s.log.Info("Stopping Meta-Monitoring statues for Prometheus")
 			return
 		case <-ticker.C:
 			continue

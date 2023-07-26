@@ -232,7 +232,7 @@ func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.M
 
 func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- prometheus.Metric) {
 
-	twoMinutesAgo := time.Now().Add(2 * time.Minute)
+	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
 
 	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
 		fieldToValue := map[*prometheus.Desc]*int32{
