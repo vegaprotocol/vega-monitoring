@@ -7,6 +7,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
 	"github.com/vegaprotocol/vega-monitoring/services"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
@@ -14,13 +15,14 @@ import (
 )
 
 type AllServices struct {
-	Config             *config.Config
-	Log                *logging.Logger
-	StoreService       *services.StoreService
-	ReadService        *read.ReadService
-	UpdateService      *update.UpdateService
-	PrometheusService  *prometheus.PrometheusService
-	NodeScannerService *nodescanner.NodeScannerService
+	Config                      *config.Config
+	Log                         *logging.Logger
+	StoreService                *services.StoreService
+	ReadService                 *read.ReadService
+	UpdateService               *update.UpdateService
+	PrometheusService           *prometheus.PrometheusService
+	NodeScannerService          *nodescanner.NodeScannerService
+	MetaMonitoringStatusService *metamonitoring.MetaMonitoringStatusService
 }
 
 func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err error) {
@@ -58,6 +60,12 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		svc.NodeScannerService = nodescanner.NewNodeScannerService(
 			&svc.Config.Monitoring, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 		)
+
+		if svc.Config.DataNodeDBExtension.Enabled {
+			svc.MetaMonitoringStatusService = metamonitoring.NewMetaMonitoringStatusService(
+				svc.ReadService, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
+			)
+		}
 	}
 	return
 }

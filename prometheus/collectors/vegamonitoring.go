@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
+	"github.com/vegaprotocol/vega-monitoring/services/read"
 )
 
 type VegaMonitoringCollector struct {
@@ -16,7 +17,7 @@ type VegaMonitoringCollector struct {
 	nodeDownStatuses      map[string]types.NodeDownStatus
 
 	// Meta-Monitoring
-	monitoringDatabaseStatuses types.MonitoringDatabaseStatuses
+	monitoringDatabaseStatuses read.MetaMonitoringStatuses
 
 	accessMu sync.RWMutex
 }
@@ -65,7 +66,7 @@ func (c *VegaMonitoringCollector) clearStatusFor(node string) {
 	delete(c.nodeDownStatuses, node)
 }
 
-func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses types.MonitoringDatabaseStatuses) {
+func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses read.MetaMonitoringStatuses) {
 	c.accessMu.Lock()
 	defer c.accessMu.Unlock()
 	c.monitoringDatabaseStatuses = newStatuses
@@ -242,12 +243,12 @@ func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- pr
 
 	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
 		fieldToValue := map[*prometheus.Desc]float64{
-			desc.MonitoringDatabase.dataNodeData:               toFloat64(c.monitoringDatabaseStatuses.DataNodeDataHealthy),
-			desc.MonitoringDatabase.assetPricesData:            toFloat64(c.monitoringDatabaseStatuses.AssetPricesDataHealthy),
-			desc.MonitoringDatabase.blockSignersData:           toFloat64(c.monitoringDatabaseStatuses.BlockSignersDataHealthy),
-			desc.MonitoringDatabase.cometTxsData:               toFloat64(c.monitoringDatabaseStatuses.CometTxsDataHealthy),
-			desc.MonitoringDatabase.networkBalancesData:        toFloat64(c.monitoringDatabaseStatuses.NetworkBalancesDataHealthy),
-			desc.MonitoringDatabase.networkHistorySegmentsData: toFloat64(c.monitoringDatabaseStatuses.NetworkHistorySegmentsDataHealthy),
+			desc.MonitoringDatabase.dataNodeData:               float64(c.monitoringDatabaseStatuses.DataNodeData),
+			desc.MonitoringDatabase.assetPricesData:            float64(c.monitoringDatabaseStatuses.AssetPricesData),
+			desc.MonitoringDatabase.blockSignersData:           float64(c.monitoringDatabaseStatuses.BlockSignersData),
+			desc.MonitoringDatabase.cometTxsData:               float64(c.monitoringDatabaseStatuses.CometTxsData),
+			desc.MonitoringDatabase.networkBalancesData:        float64(c.monitoringDatabaseStatuses.NetworkBalancesData),
+			desc.MonitoringDatabase.networkHistorySegmentsData: float64(c.monitoringDatabaseStatuses.NetworkHistorySegmentsData),
 		}
 
 		for field, value := range fieldToValue {

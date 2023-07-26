@@ -18,7 +18,9 @@ type MetaMonitoringStatuses struct {
 	UpdateTime time.Time
 }
 
-func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (*MetaMonitoringStatuses, error) {
+func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonitoringStatuses, error) {
+	result := MetaMonitoringStatuses{}
+
 	logger := s.log.With(zap.String("reader", "MetaMonitoringStatuses"))
 
 	logger.Info("Read Meta-Monitoring Statuses from Monitoring Database")
@@ -27,10 +29,8 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (*MetaMonit
 
 	checks, err := metamonitoringStatusesStore.GetAll(ctx)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
-
-	result := MetaMonitoringStatuses{}
 
 	for _, check := range checks {
 
@@ -55,5 +55,5 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (*MetaMonit
 		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)))
 	}
 
-	return &result, nil
+	return result, nil
 }
