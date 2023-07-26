@@ -3,6 +3,7 @@ package collectors
 import (
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
@@ -13,6 +14,9 @@ type VegaMonitoringCollector struct {
 	dataNodeStatuses      map[string]*types.DataNodeStatus
 	blockExplorerStatuses map[string]*types.BlockExplorerStatus
 	nodeDownStatuses      map[string]types.NodeDownStatus
+
+	// Meta-Monitoring
+	monitoringDatabaseStatuses types.MonitoringDatabaseStatuses
 
 	accessMu sync.RWMutex
 }
@@ -61,6 +65,12 @@ func (c *VegaMonitoringCollector) clearStatusFor(node string) {
 	delete(c.nodeDownStatuses, node)
 }
 
+func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses types.MonitoringDatabaseStatuses) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.monitoringDatabaseStatuses = newStatuses
+}
+
 // Describe returns all descriptions of the collector.
 func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// Core
@@ -80,6 +90,9 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// Node Down
 	ch <- desc.NodeDown.nodeDown
+
+	// MetaMonitoring: Monitoring Database
+	ch <- desc.MonitoringDatabase.dataNodeData
 }
 
 // Collect returns the current state of all metrics of the collector.
@@ -90,6 +103,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectDataNodeStatuses(ch)
 	c.collectBlockExplorerStatuses(ch)
 	c.collectNodeDownStatuses(ch)
+	c.collectMonitoringDatabaseStatuses(ch)
 }
 
 func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
@@ -212,5 +226,37 @@ func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.M
 			// Labels
 			nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
 		)
+	}
+}
+
+func toFloat64(v bool) float64 {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- prometheus.Metric) {
+
+	twoMinutesAgo := time.Now().Add(2 * time.Minute)
+
+	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
+		fieldToValue := map[*prometheus.Desc]float64{
+			desc.MonitoringDatabase.dataNodeData:               toFloat64(c.monitoringDatabaseStatuses.DataNodeDataHealthy),
+			desc.MonitoringDatabase.assetPricesData:            toFloat64(c.monitoringDatabaseStatuses.AssetPricesDataHealthy),
+			desc.MonitoringDatabase.blockSignersData:           toFloat64(c.monitoringDatabaseStatuses.BlockSignersDataHealthy),
+			desc.MonitoringDatabase.cometTxsData:               toFloat64(c.monitoringDatabaseStatuses.CometTxsDataHealthy),
+			desc.MonitoringDatabase.networkBalancesData:        toFloat64(c.monitoringDatabaseStatuses.NetworkBalancesDataHealthy),
+			desc.MonitoringDatabase.networkHistorySegmentsData: toFloat64(c.monitoringDatabaseStatuses.NetworkHistorySegmentsDataHealthy),
+		}
+
+		for field, value := range fieldToValue {
+			ch <- prometheus.NewMetricWithTimestamp(
+				c.monitoringDatabaseStatuses.UpdateTime,
+				prometheus.MustNewConstMetric(
+					field, prometheus.GaugeValue, value,
+					// no extra Labels
+				))
+		}
 	}
 }

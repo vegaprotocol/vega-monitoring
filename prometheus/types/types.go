@@ -63,3 +63,14 @@ type NodeDownStatus struct {
 	Internal    bool
 	Type        NodeType
 }
+
+type MonitoringDatabaseStatuses struct {
+	DataNodeDataHealthy               bool
+	AssetPricesDataHealthy            bool
+	BlockSignersDataHealthy           bool
+	CometTxsDataHealthy               bool
+	NetworkBalancesDataHealthy        bool
+	NetworkHistorySegmentsDataHealthy bool
+
+	UpdateTime time.Time
+}

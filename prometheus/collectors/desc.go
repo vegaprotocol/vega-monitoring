@@ -25,6 +25,15 @@ var desc = struct {
 	NodeDown struct {
 		nodeDown *prometheus.Desc
 	}
+
+	MonitoringDatabase struct {
+		dataNodeData               *prometheus.Desc
+		assetPricesData            *prometheus.Desc
+		blockSignersData           *prometheus.Desc
+		cometTxsData               *prometheus.Desc
+		networkBalancesData        *prometheus.Desc
+		networkHistorySegmentsData *prometheus.Desc
+	}
 }{}
 
 func init() {
@@ -73,5 +82,27 @@ func init() {
 	//
 	desc.NodeDown.nodeDown = prometheus.NewDesc(
 		"node_down", "Node is not responsive", []string{"node", "type", "environment", "internal"}, nil,
+	)
+
+	//
+	// Meta-Monitoring: Monitoring Database
+	//
+	desc.MonitoringDatabase.dataNodeData = prometheus.NewDesc(
+		"monitoring_db_datanode_data", "DataNode data in Monitoring database is healthy", nil, nil,
+	)
+	desc.MonitoringDatabase.assetPricesData = prometheus.NewDesc(
+		"monitoring_db_assetprices_data", "Asset Prices data in Monitoring database is healthy", nil, nil,
+	)
+	desc.MonitoringDatabase.blockSignersData = prometheus.NewDesc(
+		"monitoring_db_blocksigners_data", "Block Signers data in Monitoring database is healthy", nil, nil,
+	)
+	desc.MonitoringDatabase.cometTxsData = prometheus.NewDesc(
+		"monitoring_db_comettxs_data", "Comet Txs data in Monitoring database is healthy", nil, nil,
+	)
+	desc.MonitoringDatabase.networkBalancesData = prometheus.NewDesc(
+		"monitoring_db_networkbalances_data", "Network Balances data in Monitoring database is healthy", nil, nil,
+	)
+	desc.MonitoringDatabase.networkHistorySegmentsData = prometheus.NewDesc(
+		"monitoring_db_networkhistorysegments_data", "Network History Segments data in Monitoring database is healthy", nil, nil,
 	)
 }
