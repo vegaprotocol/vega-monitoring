@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MonitoringDbSchema = "metrics"
+
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
 
@@ -50,7 +52,7 @@ type SQLStoreConfig struct {
 }
 
 type EthereumConfig struct {
-	RPCEndpoint      string `long:"RPCEndpoint" comment:"used to get Asset Pool's asset balances"`
+	RPCEndpoint      string `long:"RPCEndpoint"      comment:"used to get Asset Pool's asset balances"`
 	EtherscanURL     string `long:"EtherscanURL"`
 	EtherscanApiKey  string `long:"EtherscanApiKey"`
 	AssetPoolAddress string `long:"AssetPoolAddress" comment:"used to get balances of asssets"`
@@ -63,39 +65,39 @@ type PrometheusConfig struct {
 }
 
 type MonitoringConfig struct {
-	Core          []CoreConfig          `group:"Core" namespace:"core"`
-	DataNode      []DataNodeConfig      `group:"DataNode" namespace:"datanode"`
+	Core          []CoreConfig          `group:"Core"          namespace:"core"`
+	DataNode      []DataNodeConfig      `group:"DataNode"      namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
-	LocalNode     LocalNodeConfig       `group:"LocalNode" namespace:"localhode" comment:"Useful for machine with closed ports"`
+	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
 }
 
 type CoreConfig struct {
-	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	Name        string `long:"Name"        comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 }
 
 type DataNodeConfig struct {
-	Name        string `long:"Name" comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes\n For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks\n For other nodes use any name"`
+	Name        string `long:"Name"        comment:"For Mainnet Validator nodes use node name from: https://api.vega.community/api/v2/nodes\n For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks\n For other nodes use any name"`
 	REST        string `long:"REST"`
 	GraphQL     string `long:"GraphQL"`
 	GRPC        string `long:"GRPC"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
-	Internal    bool   `long:"Internal" comment:"true if node run by Vega Team, otherwise false"`
+	Internal    bool   `long:"Internal"    comment:"true if node run by Vega Team, otherwise false"`
 }
 
 type BlockExplorerConfig struct {
-	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	Name        string `long:"Name"        comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 }
 
 type LocalNodeConfig struct {
 	Enabled     bool   `long:"Enabled"`
-	Name        string `long:"Name" comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
+	Name        string `long:"Name"        comment:"For nodes run by Vega team use full DNS name, e.g. api1.vega.community, be0.vega.community or n01.stagnet1.vega.rocks"`
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
-	Type        string `long:"Type" comment:"One of: core, datanode, blockexplorer or leave empty"`
+	Type        string `long:"Type"        comment:"One of: core, datanode, blockexplorer or leave empty"`
 }
 
 type DataNodeDBExtensionConfig struct {
@@ -103,19 +105,19 @@ type DataNodeDBExtensionConfig struct {
 
 	BlockSigners struct {
 		Enabled bool `long:"enabled"`
-	} `group:"BlockSigners" namespace:"blocksigners"`
+	} `group:"BlockSigners"           namespace:"blocksigners"`
 	NetworkHistorySegments struct {
 		Enabled bool `long:"enabled"`
 	} `group:"NetworkHistorySegments" namespace:"networkhistorysegments"`
 	CometTxs struct {
 		Enabled bool `long:"enabled"`
-	} `group:"CometTxs" namespace:"comettxs"`
+	} `group:"CometTxs"               namespace:"comettxs"`
 	NetworkBalances struct {
 		Enabled bool `long:"enabled"`
-	} `group:"NetworkBalances" namespace:"networkbalances"`
+	} `group:"NetworkBalances"        namespace:"networkbalances"`
 	AssetPrices struct {
 		Enabled bool `long:"enabled"`
-	} `group:"AssetPrices" namespace:"assetprices"`
+	} `group:"AssetPrices"            namespace:"assetprices"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {
@@ -132,7 +134,6 @@ func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config,
 
 	viper.OnConfigChange(func(event fsnotify.Event) {
 		if event.Op == fsnotify.Write {
-
 			if err := viper.Unmarshal(&config); err != nil {
 				logger.Error("Failed to reload config after config changed", zap.Error(err))
 			} else {
@@ -142,7 +143,10 @@ func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config,
 	})
 	viper.WatchConfig()
 
-	logger.Info("Read config from file. Watching for config file changes enabled.", zap.String("file", configFilePath))
+	logger.Info(
+		"Read config from file. Watching for config file changes enabled.",
+		zap.String("file", configFilePath),
+	)
 
 	return &config, nil
 }
@@ -208,13 +212,17 @@ func StoreDefaultConfigInFile(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-func (c *SQLStoreConfig) GetConnectionConfig() sqlstore.ConnectionConfig {
+func (c SQLStoreConfig) GetConnectionConfig() sqlstore.ConnectionConfig {
 	connConfig := sqlstore.NewDefaultConfig().ConnectionConfig
 	connConfig.Host = c.Host
 	connConfig.Port = c.Port
 	connConfig.Username = c.Username
 	connConfig.Password = c.Password
 	connConfig.Database = c.Database
+	connConfig.RuntimeParams["search_path"] = fmt.Sprintf(
+		`"$user",public,%s`,
+		MonitoringDbSchema,
+	)
 
 	return connConfig
 }

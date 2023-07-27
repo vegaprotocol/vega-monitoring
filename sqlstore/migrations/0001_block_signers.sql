@@ -2,7 +2,7 @@
 
 CREATE extension IF NOT EXISTS timescaledb;
 
-CREATE SCHEMA metrics;
+CREATE SCHEMA IF NOT EXISTS metrics;
 
 CREATE TYPE metrics.signer_role_type AS enum('ROLE_PROPOSER', 'ROLE_SIGNER');
 
