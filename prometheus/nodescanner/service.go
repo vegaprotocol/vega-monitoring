@@ -226,22 +226,28 @@ func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 		switch nodeType {
 		case types.CoreType:
 			coreStatus, _, err = requestCoreStats(node.REST, nil)
-			coreStatus.Environment = node.Environment
-			coreStatus.Internal = true
-			coreStatus.Type = types.CoreType
-			s.collector.UpdateCoreStatus(node.Name, coreStatus)
+			if err != nil {
+				coreStatus.Environment = node.Environment
+				coreStatus.Internal = true
+				coreStatus.Type = types.CoreType
+				s.collector.UpdateCoreStatus(node.Name, coreStatus)
+			}
 		case types.DataNodeType:
 			dataNodeStatus, err = requestDataNodeStats(node.REST)
-			dataNodeStatus.Environment = node.Environment
-			dataNodeStatus.Internal = true
-			dataNodeStatus.Type = types.DataNodeType
-			s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
+			if err != nil {
+				dataNodeStatus.Environment = node.Environment
+				dataNodeStatus.Internal = true
+				dataNodeStatus.Type = types.DataNodeType
+				s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
+			}
 		case types.BlockExplorerType:
 			blockExplorerStatus, err = requestBlockExplorerStats(node.REST)
-			blockExplorerStatus.Environment = node.Environment
-			blockExplorerStatus.Internal = true
-			blockExplorerStatus.Type = types.BlockExplorerType
-			s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+			if err != nil {
+				blockExplorerStatus.Environment = node.Environment
+				blockExplorerStatus.Internal = true
+				blockExplorerStatus.Type = types.BlockExplorerType
+				s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+			}
 		default:
 			log.Fatalf("Failed to scan local node, unknow node type %s", s.config.LocalNode.Type)
 		}
