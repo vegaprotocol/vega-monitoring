@@ -3,7 +3,7 @@ module github.com/vegaprotocol/vega-monitoring
 go 1.19
 
 require (
-	code.vegaprotocol.io/vega v0.72.2-0.20230724191036-2c63dca0be39
+	code.vegaprotocol.io/vega v0.72.2-0.20230727033100-e9f8609a885d
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/georgysavva/scany v1.0.0
