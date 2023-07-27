@@ -3,9 +3,11 @@ package collectors
 import (
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
+	"github.com/vegaprotocol/vega-monitoring/services/read"
 )
 
 type VegaMonitoringCollector struct {
@@ -13,6 +15,9 @@ type VegaMonitoringCollector struct {
 	dataNodeStatuses      map[string]*types.DataNodeStatus
 	blockExplorerStatuses map[string]*types.BlockExplorerStatus
 	nodeDownStatuses      map[string]types.NodeDownStatus
+
+	// Meta-Monitoring
+	monitoringDatabaseStatuses read.MetaMonitoringStatuses
 
 	accessMu sync.RWMutex
 }
@@ -61,6 +66,12 @@ func (c *VegaMonitoringCollector) clearStatusFor(node string) {
 	delete(c.nodeDownStatuses, node)
 }
 
+func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses read.MetaMonitoringStatuses) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.monitoringDatabaseStatuses = newStatuses
+}
+
 // Describe returns all descriptions of the collector.
 func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// Core
@@ -80,6 +91,9 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// Node Down
 	ch <- desc.NodeDown.nodeDown
+
+	// MetaMonitoring: Monitoring Database
+	ch <- desc.MetaMonitoring.monitoringDatabaseHealthy
 }
 
 // Collect returns the current state of all metrics of the collector.
@@ -90,6 +104,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectDataNodeStatuses(ch)
 	c.collectBlockExplorerStatuses(ch)
 	c.collectNodeDownStatuses(ch)
+	c.collectMonitoringDatabaseStatuses(ch)
 }
 
 func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
@@ -212,5 +227,33 @@ func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.M
 			// Labels
 			nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
 		)
+	}
+}
+
+func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- prometheus.Metric) {
+
+	twoMinutesAgo := time.Now().Add(-2 * time.Minute)
+
+	if twoMinutesAgo.Before(c.monitoringDatabaseStatuses.UpdateTime) {
+		fieldToValue := map[string]*int32{
+			"data_node":                c.monitoringDatabaseStatuses.DataNodeData,
+			"asset_prices":             c.monitoringDatabaseStatuses.AssetPricesData,
+			"block_signers":            c.monitoringDatabaseStatuses.BlockSignersData,
+			"comet_txs":                c.monitoringDatabaseStatuses.CometTxsData,
+			"network_balances":         c.monitoringDatabaseStatuses.NetworkBalancesData,
+			"network_history_segments": c.monitoringDatabaseStatuses.NetworkHistorySegmentsData,
+		}
+
+		for dataType, value := range fieldToValue {
+			if value != nil {
+				ch <- prometheus.NewMetricWithTimestamp(
+					c.monitoringDatabaseStatuses.UpdateTime,
+					prometheus.MustNewConstMetric(
+						desc.MetaMonitoring.monitoringDatabaseHealthy, prometheus.GaugeValue, float64(*value),
+						// Labels
+						dataType,
+					))
+			}
+		}
 	}
 }

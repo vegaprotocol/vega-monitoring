@@ -83,6 +83,22 @@ func startService(args StartArgs) {
 			}
 		}()
 
+		if svc.Config.DataNodeDBExtension.Enabled {
+			//
+			// start: MetaMonitoring Statuses
+			//
+			shutdown_wg.Add(1)
+			go func() {
+				defer shutdown_wg.Done()
+				svc.Log.Info("Starting MetaMonitoring Statuses service in 15sec", zap.Bool("Prometheus.Enabled", true), zap.Bool("DataNodeDBExtension.Enabled", true))
+				time.Sleep(15 * time.Second)
+				if err := svc.MetaMonitoringStatusService.Start(ctx); err != nil {
+					svc.Log.Error("Failed to start MetaMonitoring Statuses service", zap.Error(err))
+					cancel()
+				}
+			}()
+		}
+
 	} else {
 		svc.Log.Info("Not starting Prometheus Endpoint", zap.Bool("Prometheus.Enabled", false))
 		svc.Log.Info("Not starting Node Scanner service", zap.Bool("Prometheus.Enabled", false))

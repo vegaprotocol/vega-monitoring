@@ -5,6 +5,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
+	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
 type ReadService struct {
@@ -16,6 +17,7 @@ type ReadService struct {
 }
 
 type StoreReadService interface {
+	NewMetamonitoringStatus() *sqlstore.MetamonitoringStatus
 }
 
 func NewReadService(

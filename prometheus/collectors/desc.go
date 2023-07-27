@@ -25,6 +25,10 @@ var desc = struct {
 	NodeDown struct {
 		nodeDown *prometheus.Desc
 	}
+
+	MetaMonitoring struct {
+		monitoringDatabaseHealthy *prometheus.Desc
+	}
 }{}
 
 func init() {
@@ -73,5 +77,12 @@ func init() {
 	//
 	desc.NodeDown.nodeDown = prometheus.NewDesc(
 		"node_down", "Node is not responsive", []string{"node", "type", "environment", "internal"}, nil,
+	)
+
+	//
+	// Meta-Monitoring: Monitoring Database
+	//
+	desc.MetaMonitoring.monitoringDatabaseHealthy = prometheus.NewDesc(
+		"monitoring_db_status", "Status of data in Monitoring Database. 1 good, 0 bad", []string{"data_type"}, nil,
 	)
 }

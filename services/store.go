@@ -56,6 +56,10 @@ func (s *StoreService) NewAssetPrices() *sqlstore.AssetPrices {
 	return sqlstore.NewAssetPrices(s.connSource)
 }
 
+func (s *StoreService) NewMetamonitoringStatus() *sqlstore.MetamonitoringStatus {
+	return sqlstore.NewMetamonitoringStatus(s.connSource)
+}
+
 //
 // Data Node tables
 //
