@@ -54,7 +54,7 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 		}
 	}
 	if len(checks) != 6 {
-		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)))
+		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
 	}
 
 	return result, nil
