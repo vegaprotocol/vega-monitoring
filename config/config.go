@@ -69,6 +69,8 @@ type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode"      namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
+
+	Level string `long:"Level"`
 }
 
 type CoreConfig struct {
@@ -189,6 +191,7 @@ func NewDefaultConfig() Config {
 	config.Monitoring.LocalNode.Name = ""
 	config.Monitoring.LocalNode.REST = ""
 	config.Monitoring.LocalNode.Type = ""
+	config.Monitoring.Level = "Info"
 	// Services
 	config.DataNodeDBExtension.Enabled = false
 	config.DataNodeDBExtension.BlockSigners.Enabled = true
