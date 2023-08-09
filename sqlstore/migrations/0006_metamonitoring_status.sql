@@ -48,7 +48,7 @@ CREATE VIEW metrics.metamonitoring_status AS (
       last(vega_time, vega_time) AS last_update
     FROM last_block
     WHERE
-      vega_time > NOW() - INTERVAL '20 min'
+      vega_time > NOW() - INTERVAL '3 min'
   )
   ORDER BY check_name
 );
