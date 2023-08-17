@@ -69,6 +69,7 @@ type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode"      namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
+	EthereumNodes []string              `group:"EthereumNodes" namespace:"ethereumnodes"     comment:"List of Ethereum RCP endpoints to monitor"`
 
 	Level string `long:"Level"`
 }
@@ -191,6 +192,7 @@ func NewDefaultConfig() Config {
 	config.Monitoring.LocalNode.Name = ""
 	config.Monitoring.LocalNode.REST = ""
 	config.Monitoring.LocalNode.Type = ""
+	config.Monitoring.EthereumNodes = []string{}
 	config.Monitoring.Level = "Info"
 	// Services
 	config.DataNodeDBExtension.Enabled = false

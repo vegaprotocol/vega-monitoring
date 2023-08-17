@@ -29,6 +29,8 @@ var desc = struct {
 	MetaMonitoring struct {
 		monitoringDatabaseHealthy *prometheus.Desc
 	}
+
+	EthereumNodeStatus *prometheus.Desc
 }{}
 
 func init() {
@@ -84,5 +86,12 @@ func init() {
 	//
 	desc.MetaMonitoring.monitoringDatabaseHealthy = prometheus.NewDesc(
 		"monitoring_db_status", "Status of data in Monitoring Database. 1 good, 0 bad", []string{"data_type"}, nil,
+	)
+
+	//
+	// Ethereum Nodes Statuses
+	//
+	desc.EthereumNodeStatus = prometheus.NewDesc(
+		"ethereum_node_status", "Status of an Ethereum Node. 1 good, 0 bad", []string{"rpc_endpoint"}, nil,
 	)
 }

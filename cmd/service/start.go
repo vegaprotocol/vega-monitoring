@@ -83,6 +83,20 @@ func startService(args StartArgs) {
 			}
 		}()
 
+		//
+		// start: Ethereum Node Scanner
+		//
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			svc.Log.Info("Starting Ethereum Node Scanner service in 20sec", zap.Bool("Prometheus.Enabled", true))
+			time.Sleep(20 * time.Second)
+			if err := svc.EthereumNodeScannerService.Start(ctx); err != nil {
+				svc.Log.Error("Failed to start Ethereum Node Scanner service", zap.Error(err))
+				cancel()
+			}
+		}()
+
 		if svc.Config.DataNodeDBExtension.Enabled {
 			//
 			// start: MetaMonitoring Statuses
