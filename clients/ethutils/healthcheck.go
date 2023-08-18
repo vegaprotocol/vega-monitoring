@@ -2,10 +2,13 @@ package ethutils
 
 import (
 	"context"
+	"math/big"
 	"sync"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"go.uber.org/zap"
@@ -57,6 +60,28 @@ func CheckETHEndpoint(ctx context.Context, log *logging.Logger, endpoint config.
 		log.Debug("Latest Eth block is far behind", zap.String("endpoint", endpoint.RPCEndpoint), zap.Duration("time behind", timeDiff))
 		return false
 	}
+	if len(endpoint.VegaCollateralBridgeAddress) > 0 {
+		bridgeAddress := common.HexToAddress(endpoint.VegaCollateralBridgeAddress)
+		filterQuery := ethereum.FilterQuery{
+			Addresses: []common.Address{bridgeAddress},
+			FromBlock: big.NewInt(0).Sub(latestBlock.Number, big.NewInt(7000)), // one day of blocks
+		}
+		logs, err := client.FilterLogs(ctx, filterQuery)
+		if err != nil {
+			log.Debug("Failed to eth_getLogs",
+				zap.String("endpoint", endpoint.RPCEndpoint),
+				zap.String("collateralBridge", endpoint.VegaCollateralBridgeAddress),
+				zap.Error(err),
+			)
+			return false
+		}
+		log.Debug("Successfully fetched eth_getLogs",
+			zap.String("endpoint", endpoint.RPCEndpoint),
+			zap.String("collateralBridge", endpoint.VegaCollateralBridgeAddress),
+			zap.Int("count", len(logs)),
+		)
+	}
+
 	log.Debug("Node is healthy", zap.String("endpoint", endpoint.RPCEndpoint), zap.Duration("time behind", timeDiff))
 	return true
 }

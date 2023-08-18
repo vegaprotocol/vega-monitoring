@@ -34,12 +34,14 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
 	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
-	ethClient, err := ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
-	if err != nil {
-		return
-	}
 
 	if svc.Config.DataNodeDBExtension.Enabled {
+		var ethClient *ethutils.EthClient
+		ethClient, err = ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
+		if err != nil {
+			return
+		}
+
 		svc.StoreService, err = services.NewStoreService(&svc.Config.SQLStore, svc.Log)
 		if err != nil {
 			return
