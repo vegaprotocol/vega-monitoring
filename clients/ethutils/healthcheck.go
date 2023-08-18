@@ -64,7 +64,7 @@ func CheckETHEndpoint(ctx context.Context, log *logging.Logger, endpoint config.
 		bridgeAddress := common.HexToAddress(endpoint.VegaCollateralBridgeAddress)
 		filterQuery := ethereum.FilterQuery{
 			Addresses: []common.Address{bridgeAddress},
-			FromBlock: big.NewInt(0).Sub(latestBlock.Number, big.NewInt(7000)), // one day of blocks
+			FromBlock: big.NewInt(0).Sub(latestBlock.Number, big.NewInt(600)), // two hours of blocks
 		}
 		logs, err := client.FilterLogs(ctx, filterQuery)
 		if err != nil {
