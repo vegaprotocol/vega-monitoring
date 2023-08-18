@@ -69,7 +69,7 @@ type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode"      namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
-	EthereumNodes []string              `group:"EthereumNodes" namespace:"ethereumnodes"     comment:"List of Ethereum RCP endpoints to monitor"`
+	EthereumNode  []EthereumNodeConfig  `group:"EthereumNode"  namespace:"ethereumnode"`
 
 	Level string `long:"Level"`
 }
@@ -101,6 +101,11 @@ type LocalNodeConfig struct {
 	REST        string `long:"REST"`
 	Environment string `long:"Environment" comment:"one of: mainnet, mirror, devnet1, stagnet1, fairground"`
 	Type        string `long:"Type"        comment:"One of: core, datanode, blockexplorer or leave empty"`
+}
+
+type EthereumNodeConfig struct {
+	RPCEndpoint                 string `long:"RPCEndpoint"                  comment:"URL of the node"`
+	VegaCollateralBridgeAddress string `long:"VegaCollateralBridgeAddress"  comment:"HEX address of CollateralBridge for Vega network"`
 }
 
 type DataNodeDBExtensionConfig struct {
@@ -187,12 +192,12 @@ func NewDefaultConfig() Config {
 	config.Monitoring.Core = []CoreConfig{}
 	config.Monitoring.DataNode = []DataNodeConfig{}
 	config.Monitoring.BlockExplorer = []BlockExplorerConfig{}
+	config.Monitoring.EthereumNode = []EthereumNodeConfig{}
 	config.Monitoring.LocalNode.Enabled = false
 	config.Monitoring.LocalNode.Environment = ""
 	config.Monitoring.LocalNode.Name = ""
 	config.Monitoring.LocalNode.REST = ""
 	config.Monitoring.LocalNode.Type = ""
-	config.Monitoring.EthereumNodes = []string{}
 	config.Monitoring.Level = "Info"
 	// Services
 	config.DataNodeDBExtension.Enabled = false

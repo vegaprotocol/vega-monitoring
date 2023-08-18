@@ -39,13 +39,16 @@ func init() {
 }
 
 func RunCheckEthNode(args CheckEthNodeArgs) error {
-	ethNodes := args.EthNodeURLs
+	var ethNodes []config.EthereumNodeConfig
 	cfg, log, err := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
-	if ethNodes == nil {
-		if err != nil {
-			return fmt.Errorf("Required --url flag or config.toml file")
+	if args.EthNodeURLs != nil && len(args.EthNodeURLs) > 0 {
+		for _, node := range args.EthNodeURLs {
+			ethNodes = append(ethNodes, config.EthereumNodeConfig{RPCEndpoint: node})
 		}
-		ethNodes = cfg.Monitoring.EthereumNodes
+	} else if err != nil {
+		return fmt.Errorf("Required --url flag or config.toml file")
+	} else {
+		ethNodes = cfg.Monitoring.EthereumNode
 	}
 
 	results := ethutils.CheckETHEndpointList(context.Background(), log, ethNodes)

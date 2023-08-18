@@ -64,7 +64,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		)
 
 		svc.EthereumNodeScannerService = ethnodescanner.NewEthNodeScannerService(
-			svc.Config.Monitoring.EthereumNodes, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
+			svc.Config.Monitoring.EthereumNode, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 		)
 
 		if svc.Config.DataNodeDBExtension.Enabled {

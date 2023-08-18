@@ -6,27 +6,28 @@ import (
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
+	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 	"go.uber.org/zap"
 )
 
 type EthNodeScannerService struct {
-	ethNodeList []string
-	collector   *collectors.VegaMonitoringCollector
-	log         *logging.Logger
+	config    []config.EthereumNodeConfig
+	collector *collectors.VegaMonitoringCollector
+	log       *logging.Logger
 }
 
 func NewEthNodeScannerService(
-	ethNodeList []string,
+	config []config.EthereumNodeConfig,
 	collector *collectors.VegaMonitoringCollector,
 	log *logging.Logger,
 ) *EthNodeScannerService {
 	log = log.With(zap.String("service", "eth-node-scanner"))
 
 	return &EthNodeScannerService{
-		ethNodeList: ethNodeList,
-		collector:   collector,
-		log:         log,
+		config:    config,
+		collector: collector,
+		log:       log,
 	}
 }
 
@@ -37,7 +38,7 @@ func (s *EthNodeScannerService) Start(ctx context.Context) error {
 
 	for {
 		updateTime := time.Now()
-		statuses := ethutils.CheckETHEndpointList(ctx, s.log, s.ethNodeList)
+		statuses := ethutils.CheckETHEndpointList(ctx, s.log, s.config)
 
 		s.collector.UpdateEthereumNodeStatuses(statuses, updateTime)
 
