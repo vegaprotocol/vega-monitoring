@@ -13,13 +13,13 @@ func GetConfigAndLogger(configFilePath string, forceDebug bool) (*Config, *loggi
 	}
 	cfg, err := ReadConfigAndWatch(configFilePath, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, logger, err
 	}
 	if !forceDebug {
 
 		logLevel, err := logging.ParseLevel(cfg.Logging.Level)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse log level %s, %w", cfg.Logging.Level, err)
+			return nil, logger, fmt.Errorf("failed to parse log level %s, %w", cfg.Logging.Level, err)
 		}
 		logger.SetLevel(logLevel)
 	}

@@ -63,3 +63,9 @@ type NodeDownStatus struct {
 	Internal    bool
 	Type        NodeType
 }
+
+type EthereumNodeStatuses struct {
+	NodeHealthy map[string]bool
+
+	UpdateTime time.Time
+}

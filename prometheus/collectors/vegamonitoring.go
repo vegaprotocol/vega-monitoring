@@ -19,6 +19,9 @@ type VegaMonitoringCollector struct {
 	// Meta-Monitoring
 	monitoringDatabaseStatuses read.MetaMonitoringStatuses
 
+	// Ethereum Node Statuses
+	ethNodeStatuses types.EthereumNodeStatuses
+
 	accessMu sync.RWMutex
 }
 
@@ -72,6 +75,15 @@ func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses read.Me
 	c.monitoringDatabaseStatuses = newStatuses
 }
 
+func (c *VegaMonitoringCollector) UpdateEthereumNodeStatuses(nodeHealthy map[string]bool, updateTime time.Time) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.ethNodeStatuses = types.EthereumNodeStatuses{
+		NodeHealthy: nodeHealthy,
+		UpdateTime:  updateTime,
+	}
+}
+
 // Describe returns all descriptions of the collector.
 func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// Core
@@ -94,6 +106,9 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// MetaMonitoring: Monitoring Database
 	ch <- desc.MetaMonitoring.monitoringDatabaseHealthy
+
+	// Ethereum Node Statuses
+	ch <- desc.EthereumNodeStatus
 }
 
 // Collect returns the current state of all metrics of the collector.
@@ -105,6 +120,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectBlockExplorerStatuses(ch)
 	c.collectNodeDownStatuses(ch)
 	c.collectMonitoringDatabaseStatuses(ch)
+	c.collectEthereumNodeStatuses(ch)
 }
 
 func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
@@ -255,5 +271,22 @@ func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- pr
 					))
 			}
 		}
+	}
+}
+
+func (c *VegaMonitoringCollector) collectEthereumNodeStatuses(ch chan<- prometheus.Metric) {
+
+	for ethNodeName, ethNodeStatus := range c.ethNodeStatuses.NodeHealthy {
+		status := 1.0
+		if !ethNodeStatus {
+			status = 0
+		}
+		ch <- prometheus.NewMetricWithTimestamp(
+			c.ethNodeStatuses.UpdateTime,
+			prometheus.MustNewConstMetric(
+				desc.EthereumNodeStatus, prometheus.GaugeValue, status,
+				// Labels
+				ethNodeName,
+			))
 	}
 }
