@@ -75,3 +75,13 @@ Then run this to create all extra tables for Vega Network Monitoring
 ```bash
 ./vega-monitoring service start
 ```
+
+## Other tools
+
+### Backup Grafana config
+
+Pull `Alerts`, `Dashboards` and `Data Sources` config from Grafana API and store in [./grafana](grafana) directory.
+
+```bash
+go run main.go grafana download-config --url [grafana base url] --api-token [service account token]
+```
