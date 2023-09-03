@@ -111,10 +111,23 @@ func downloadAlertConfig(
 	alertConfigDir string,
 ) error {
 	fmt.Printf("Downloading 'Alert' config\n")
-	rulesJSON, err := grafanaCleint.GetAlertRulesAsPrettyJSON()
+	alertList, err := grafanaCleint.GetAlertList()
 	if err != nil {
 		return err
 	}
+	alertJSONs := map[string][]byte{}
+	for _, alert := range alertList {
+		filename := fmt.Sprintf("%s - %s.json", alert.RuleGroup, alert.Title)
+		alertJSONs[filename], err = grafanaCleint.GetAlertAsPrettyJSON(alert.UID)
+		if err != nil {
+			return fmt.Errorf("failed to get dashboard for %s, %w", alert.Title, err)
+		}
+	}
+
+	// rulesJSON, err := grafanaCleint.GetAllAlertRulesAsPrettyJSON()
+	// if err != nil {
+	// 	return err
+	// }
 	rulesYAML, err := grafanaCleint.GetAlertRulesAsYAML()
 	if err != nil {
 		return err
@@ -152,28 +165,34 @@ func downloadAlertConfig(
 		return err
 	}
 
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "alert-rules.json"), rulesJSON, 0644); err != nil {
-		return err
+	for filename, alertJSON := range alertJSONs {
+		if err = os.WriteFile(filepath.Join(alertConfigDir, filename), alertJSON, 0644); err != nil {
+			return err
+		}
 	}
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "alert-rules.yaml"), rulesYAML, 0644); err != nil {
-		return err
-	}
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "contact-points.json"), contactPointsJSON, 0644); err != nil {
-		return err
-	}
-	// if err = os.WriteFile(filepath.Join(alertConfigDir, "contact-points.yaml"), contactPointsYAML, 0644); err != nil {
+
+	// if err = os.WriteFile(filepath.Join(alertConfigDir, "alert-rules.json"), rulesJSON, 0644); err != nil {
 	// 	return err
 	// }
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "notification-policies.json"), notificationPoliciesJSON, 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(alertConfigDir, "config - alert-rules.yaml"), rulesYAML, 0644); err != nil {
 		return err
 	}
-	// if err = os.WriteFile(filepath.Join(alertConfigDir, "notification-policies.yaml"), notificationPoliciesYAML, 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(alertConfigDir, "config - contact-points.json"), contactPointsJSON, 0644); err != nil {
+		return err
+	}
+	// if err = os.WriteFile(filepath.Join(alertConfigDir, "config - contact-points.yaml"), contactPointsYAML, 0644); err != nil {
 	// 	return err
 	// }
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "mute-timings.json"), muteTimingsJSON, 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(alertConfigDir, "config - notification-policies.json"), notificationPoliciesJSON, 0644); err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(alertConfigDir, "alert-templates.json"), templatesJSON, 0644); err != nil {
+	// if err = os.WriteFile(filepath.Join(alertConfigDir, "config - notification-policies.yaml"), notificationPoliciesYAML, 0644); err != nil {
+	// 	return err
+	// }
+	if err = os.WriteFile(filepath.Join(alertConfigDir, "config - mute-timings.json"), muteTimingsJSON, 0644); err != nil {
+		return err
+	}
+	if err = os.WriteFile(filepath.Join(alertConfigDir, "config - alert-templates.json"), templatesJSON, 0644); err != nil {
 		return err
 	}
 

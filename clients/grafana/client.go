@@ -33,7 +33,22 @@ func NewGrafanaClient(
 // Alerts
 //
 
-func (c *GrafanaClient) GetAlertRulesAsPrettyJSON() ([]byte, error) {
+type Alert struct {
+	UID       string `json:"uid"`
+	Title     string `json:"title"`
+	RuleGroup string `json:"ruleGroup"`
+}
+
+func (c *GrafanaClient) GetAlertList() (alerts []Alert, err error) {
+	err = c.GetJSON("/api/v1/provisioning/alert-rules", &alerts)
+	return
+}
+
+func (c *GrafanaClient) GetAlertAsPrettyJSON(uid string) ([]byte, error) {
+	return c.GetPrettyJSON(fmt.Sprintf("/api/v1/provisioning/alert-rules/%s", uid))
+}
+
+func (c *GrafanaClient) GetAllAlertRulesAsPrettyJSON() ([]byte, error) {
 	return c.GetPrettyJSON("/api/v1/provisioning/alert-rules")
 }
 func (c *GrafanaClient) GetAlertRulesAsYAML() ([]byte, error) {
