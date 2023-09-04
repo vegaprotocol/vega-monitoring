@@ -7,6 +7,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/cmd/comet"
 	"github.com/vegaprotocol/vega-monitoring/cmd/etherscan"
 	"github.com/vegaprotocol/vega-monitoring/cmd/ethutils"
+	"github.com/vegaprotocol/vega-monitoring/cmd/grafana"
 	"github.com/vegaprotocol/vega-monitoring/cmd/service"
 	"github.com/vegaprotocol/vega-monitoring/cmd/sqlstore"
 	"github.com/vegaprotocol/vega-monitoring/cmd/update"
@@ -27,4 +28,5 @@ func init() {
 	rootCmd.RootCmd.AddCommand(sqlstore.SQLStoreCmd)
 	rootCmd.RootCmd.AddCommand(update.UpdateCmd)
 	rootCmd.RootCmd.AddCommand(version.VersionCmd)
+	rootCmd.RootCmd.AddCommand(grafana.GrafanaCmd)
 }
