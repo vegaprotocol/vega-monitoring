@@ -54,3 +54,11 @@ func requestBlockExplorerStats(address string) (*types.BlockExplorerStatus, erro
 		BlockExplorerVersionHash: payload.VersionHash,
 	}, nil
 }
+
+func getUnhealthyBlockExplorerStats() *types.BlockExplorerStatus {
+	return &types.BlockExplorerStatus{
+		CoreStatus:               *getUnhealthyCoreStats(),
+		BlockExplorerVersion:     "",
+		BlockExplorerVersionHash: "",
+	}
+}
