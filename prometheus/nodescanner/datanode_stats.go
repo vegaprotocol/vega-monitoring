@@ -40,6 +40,7 @@ func requestDataNodeStats(address string) (*types.DataNodeStatus, error) {
 		CoreStatus:          *coreStatus,
 		DataNodeTime:        dataNodeTime,
 		DataNodeBlockHeight: dataNodeBlockHeight,
+		DataNodeScore:       1,
 	}, nil
 }
 
@@ -48,5 +49,6 @@ func getUnhealthyDataNodeStats() *types.DataNodeStatus {
 		CoreStatus:          *getUnhealthyCoreStats(),
 		DataNodeTime:        time.Unix(0, 0),
 		DataNodeBlockHeight: 0,
+		DataNodeScore:       0,
 	}
 }

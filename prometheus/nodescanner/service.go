@@ -150,9 +150,13 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 				dataNodeStatus.GQLReqDuration = time.Hour
 				dataNodeStatus.GRPCReqDuration = time.Hour
 			} else {
-				dataNodeStatus.RESTReqDuration, _ = checkREST(node.REST)
-				dataNodeStatus.GQLReqDuration, _ = checkGQL(node.GraphQL)
-				dataNodeStatus.GRPCReqDuration, _ = checkGRPC(node.GRPC)
+				var score uint64
+				dataNodeStatus.RESTReqDuration, score, _ = checkREST(node.REST)
+				dataNodeStatus.DataNodeScore += score
+				dataNodeStatus.GQLReqDuration, score, _ = checkGQL(node.GraphQL)
+				dataNodeStatus.DataNodeScore += score
+				dataNodeStatus.GRPCReqDuration, score, _ = checkGRPC(node.GRPC)
+				dataNodeStatus.DataNodeScore += score
 			}
 			dataNodeStatus.Environment = node.Environment
 			dataNodeStatus.Internal = node.Internal
