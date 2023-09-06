@@ -12,6 +12,7 @@ var desc = struct {
 	DataNode struct {
 		dataNodeBlockHeight *prometheus.Desc
 		dataNodeTime        *prometheus.Desc
+		dataNodeScore       *prometheus.Desc
 
 		dataNodePerformanceRESTInfoDuration *prometheus.Desc
 		dataNodePerformanceGQLInfoDuration  *prometheus.Desc
@@ -51,6 +52,9 @@ func init() {
 	)
 	desc.DataNode.dataNodeTime = prometheus.NewDesc(
 		"datanode_time", "Current Block Time of Data-Node", []string{"node", "type", "environment", "internal"}, nil,
+	)
+	desc.DataNode.dataNodeScore = prometheus.NewDesc(
+		"datanode_score", "Cumulative score of Data-Node APIs: gRPC, REST, GraphQL", []string{"node", "type", "environment", "internal"}, nil,
 	)
 
 	desc.DataNode.dataNodePerformanceRESTInfoDuration = prometheus.NewDesc(

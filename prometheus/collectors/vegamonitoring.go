@@ -84,6 +84,7 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// DataNode
 	ch <- desc.DataNode.dataNodeBlockHeight
 	ch <- desc.DataNode.dataNodeTime
+	ch <- desc.DataNode.dataNodeScore
 	ch <- desc.DataNode.dataNodePerformanceRESTInfoDuration
 	ch <- desc.DataNode.dataNodePerformanceGQLInfoDuration
 	ch <- desc.DataNode.dataNodePerformanceGRPCInfoDuration
@@ -143,19 +144,14 @@ func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metri
 func (c *VegaMonitoringCollector) collectDataNodeStatuses(ch chan<- prometheus.Metric) {
 	for nodeName, nodeStatus := range c.dataNodeStatuses {
 		fieldToValue := map[*prometheus.Desc]float64{
-			desc.Core.coreBlockHeight:         float64(nodeStatus.CoreBlockHeight),
-			desc.DataNode.dataNodeBlockHeight: float64(nodeStatus.DataNodeBlockHeight),
-			desc.Core.coreTime:                float64(nodeStatus.CoreTime.Unix()),
-			desc.DataNode.dataNodeTime:        float64(nodeStatus.DataNodeTime.Unix()),
-		}
-		if nodeStatus.RESTReqDuration.Seconds() > 0 {
-			fieldToValue[desc.DataNode.dataNodePerformanceRESTInfoDuration] = nodeStatus.RESTReqDuration.Seconds()
-		}
-		if nodeStatus.GQLReqDuration.Seconds() > 0 {
-			fieldToValue[desc.DataNode.dataNodePerformanceGQLInfoDuration] = nodeStatus.GQLReqDuration.Seconds()
-		}
-		if nodeStatus.GRPCReqDuration.Seconds() > 0 {
-			fieldToValue[desc.DataNode.dataNodePerformanceGRPCInfoDuration] = nodeStatus.GRPCReqDuration.Seconds()
+			desc.Core.coreBlockHeight:                         float64(nodeStatus.CoreBlockHeight),
+			desc.DataNode.dataNodeBlockHeight:                 float64(nodeStatus.DataNodeBlockHeight),
+			desc.Core.coreTime:                                float64(nodeStatus.CoreTime.Unix()),
+			desc.DataNode.dataNodeTime:                        float64(nodeStatus.DataNodeTime.Unix()),
+			desc.DataNode.dataNodeScore:                       float64(nodeStatus.DataNodeScore),
+			desc.DataNode.dataNodePerformanceRESTInfoDuration: nodeStatus.RESTReqDuration.Seconds(),
+			desc.DataNode.dataNodePerformanceGQLInfoDuration:  nodeStatus.GQLReqDuration.Seconds(),
+			desc.DataNode.dataNodePerformanceGRPCInfoDuration: nodeStatus.GRPCReqDuration.Seconds(),
 		}
 
 		for field, value := range fieldToValue {

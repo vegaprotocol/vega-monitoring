@@ -48,6 +48,8 @@ type DataNodeStatus struct {
 	RESTReqDuration time.Duration
 	GQLReqDuration  time.Duration
 	GRPCReqDuration time.Duration
+
+	DataNodeScore uint64
 }
 
 type BlockExplorerStatus struct {
