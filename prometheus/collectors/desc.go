@@ -22,10 +22,6 @@ var desc = struct {
 		blockExplorerInfo *prometheus.Desc
 	}
 
-	NodeDown struct {
-		nodeDown *prometheus.Desc
-	}
-
 	MetaMonitoring struct {
 		monitoringDatabaseHealthy *prometheus.Desc
 	}
@@ -72,13 +68,6 @@ func init() {
 	//
 	desc.BlockExplorer.blockExplorerInfo = prometheus.NewDesc(
 		"blockexplorer_info", "Basic information about block explorer", []string{"node", "type", "environment", "internal", "version", "version_hash"}, nil,
-	)
-
-	//
-	// Node Down
-	//
-	desc.NodeDown.nodeDown = prometheus.NewDesc(
-		"node_down", "Node is not responsive", []string{"node", "type", "environment", "internal"}, nil,
 	)
 
 	//

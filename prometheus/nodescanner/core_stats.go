@@ -79,3 +79,14 @@ func requestCoreStats(address string, headers []string) (*types.CoreStatus, map[
 		headerValues,
 		nil
 }
+
+func getUnhealthyCoreStats() *types.CoreStatus {
+	return &types.CoreStatus{
+		CurrentTime:        time.Now().UTC(),
+		CoreTime:           time.Unix(0, 0),
+		CoreBlockHeight:    0,
+		CoreChainId:        "",
+		CoreAppVersion:     "",
+		CoreAppVersionHash: "",
+	}
+}

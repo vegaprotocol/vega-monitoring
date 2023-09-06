@@ -42,3 +42,11 @@ func requestDataNodeStats(address string) (*types.DataNodeStatus, error) {
 		DataNodeBlockHeight: dataNodeBlockHeight,
 	}, nil
 }
+
+func getUnhealthyDataNodeStats() *types.DataNodeStatus {
+	return &types.DataNodeStatus{
+		CoreStatus:          *getUnhealthyCoreStats(),
+		DataNodeTime:        time.Unix(0, 0),
+		DataNodeBlockHeight: 0,
+	}
+}

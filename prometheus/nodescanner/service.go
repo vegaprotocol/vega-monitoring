@@ -109,19 +109,14 @@ func (s *NodeScannerService) startScanningCores(ctx context.Context) {
 			coreStatus, _, err := requestCoreStats(node.REST, []string{})
 			if err != nil {
 				s.log.Error("Failed to scan Core", zap.String("node", node.Name), zap.Error(err))
-				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
-					Error:       err,
-					Environment: node.Environment,
-					Internal:    true,
-					Type:        types.CoreType,
-				})
-			} else {
-				coreStatus.Environment = node.Environment
-				coreStatus.Internal = true
-				coreStatus.Type = types.CoreType
-				s.collector.UpdateCoreStatus(node.Name, coreStatus)
-				s.log.Debug("Scanned Core", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *coreStatus))
+				coreStatus = getUnhealthyCoreStats()
 			}
+			coreStatus.Environment = node.Environment
+			coreStatus.Internal = true
+			coreStatus.Type = types.CoreType
+			s.collector.UpdateCoreStatus(node.Name, coreStatus)
+			s.log.Debug("Scanned Core", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *coreStatus))
+
 			select {
 			case <-ctx.Done():
 				break
@@ -150,22 +145,21 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 			dataNodeStatus, err := requestDataNodeStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to scan Data Node", zap.String("node", node.Name), zap.Error(err))
-				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
-					Error:       err,
-					Environment: node.Environment,
-					Internal:    node.Internal,
-					Type:        types.DataNodeType,
-				})
+				dataNodeStatus = getUnhealthyDataNodeStats()
+				dataNodeStatus.RESTReqDuration = time.Hour
+				dataNodeStatus.GQLReqDuration = time.Hour
+				dataNodeStatus.GRPCReqDuration = time.Hour
 			} else {
-				dataNodeStatus.Environment = node.Environment
-				dataNodeStatus.Internal = node.Internal
-				dataNodeStatus.Type = types.DataNodeType
 				dataNodeStatus.RESTReqDuration, _ = checkREST(node.REST)
 				dataNodeStatus.GQLReqDuration, _ = checkGQL(node.GraphQL)
 				dataNodeStatus.GRPCReqDuration, _ = checkGRPC(node.GRPC)
-				s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
-				s.log.Debug("Scanned Data Node", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *dataNodeStatus))
 			}
+			dataNodeStatus.Environment = node.Environment
+			dataNodeStatus.Internal = node.Internal
+			dataNodeStatus.Type = types.DataNodeType
+			s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
+			s.log.Debug("Scanned Data Node", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *dataNodeStatus))
+
 			select {
 			case <-ctx.Done():
 				break
@@ -196,19 +190,14 @@ func (s *NodeScannerService) startScanningBlockExplorers(ctx context.Context) {
 			blockExplorerStatus, err := requestBlockExplorerStats(node.REST)
 			if err != nil {
 				s.log.Error("Failed to scan Block Explorer", zap.String("node", node.Name), zap.String("rest", node.REST), zap.Error(err))
-				s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
-					Error:       err,
-					Environment: node.Environment,
-					Internal:    true,
-					Type:        types.BlockExplorerType,
-				})
-			} else {
-				blockExplorerStatus.Environment = node.Environment
-				blockExplorerStatus.Internal = true
-				blockExplorerStatus.Type = types.BlockExplorerType
-				s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
-				s.log.Debug("Scanned Block Explorer", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *blockExplorerStatus))
+				blockExplorerStatus = getUnhealthyBlockExplorerStats()
 			}
+			blockExplorerStatus.Environment = node.Environment
+			blockExplorerStatus.Internal = true
+			blockExplorerStatus.Type = types.BlockExplorerType
+			s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+			s.log.Debug("Scanned Block Explorer", zap.String("name", node.Name), zap.String("rest", node.REST), zap.Any("status", *blockExplorerStatus))
+
 			select {
 			case <-ctx.Done():
 				break
@@ -239,71 +228,59 @@ func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 
 	for {
 		s.log.Debug("Scanning Local Node", zap.String("name", node.Name), zap.String("type", node.Type), zap.String("rest", node.REST))
-		var err error = nil
+		var err error
 
 		switch nodeType {
 		case types.CoreType:
 			coreStatus, _, err = requestCoreStats(node.REST, nil)
-			if err == nil {
-				coreStatus.Environment = node.Environment
-				coreStatus.Internal = true
-				coreStatus.Type = types.CoreType
-				s.collector.UpdateCoreStatus(node.Name, coreStatus)
-				s.log.Debug(
-					"Scanned Local Node",
-					zap.String("name", node.Name),
-					zap.String("type", node.Type),
-					zap.String("rest", node.REST),
-					zap.Any("status", *coreStatus),
-				)
+			if err != nil {
+				coreStatus = getUnhealthyCoreStats()
 			}
-		case types.DataNodeType:
-			dataNodeStatus, err = requestDataNodeStats(node.REST)
-			if err == nil {
-				dataNodeStatus.Environment = node.Environment
-				dataNodeStatus.Internal = true
-				dataNodeStatus.Type = types.DataNodeType
-				s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
-				s.log.Debug(
-					"Scanned Local Node",
-					zap.String("name", node.Name),
-					zap.String("type", node.Type),
-					zap.String("rest", node.REST),
-					zap.Any("status", *dataNodeStatus),
-				)
-			}
-		case types.BlockExplorerType:
-			blockExplorerStatus, err = requestBlockExplorerStats(node.REST)
-			if err == nil {
-				blockExplorerStatus.Environment = node.Environment
-				blockExplorerStatus.Internal = true
-				blockExplorerStatus.Type = types.BlockExplorerType
-				s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
-				s.log.Debug(
-					"Scanned Local Node",
-					zap.String("name", node.Name),
-					zap.String("type", node.Type),
-					zap.String("rest", node.REST),
-					zap.Any("status", *blockExplorerStatus),
-				)
-			}
-		default:
-			log.Fatalf("Failed to start scanning Local Node, unknow node type %s", s.config.LocalNode.Type)
-		}
-
-		if err != nil {
-			s.log.Error("Failed to scan Local Node",
+			coreStatus.Environment = node.Environment
+			coreStatus.Internal = true
+			coreStatus.Type = types.CoreType
+			s.collector.UpdateCoreStatus(node.Name, coreStatus)
+			s.log.Debug(
+				"Scanned Local Node",
 				zap.String("name", node.Name),
 				zap.String("type", node.Type),
 				zap.String("rest", node.REST),
-				zap.Error(err),
+				zap.Any("status", *coreStatus),
 			)
-			s.collector.UpdateNodeStatusAsError(node.Name, types.NodeDownStatus{
-				Error:       err,
-				Environment: node.Environment,
-				Internal:    true,
-				Type:        nodeType,
-			})
+		case types.DataNodeType:
+			dataNodeStatus, err = requestDataNodeStats(node.REST)
+			if err != nil {
+				dataNodeStatus = getUnhealthyDataNodeStats()
+			}
+			dataNodeStatus.Environment = node.Environment
+			dataNodeStatus.Internal = true
+			dataNodeStatus.Type = types.DataNodeType
+			s.collector.UpdateDataNodeStatus(node.Name, dataNodeStatus)
+			s.log.Debug(
+				"Scanned Local Node",
+				zap.String("name", node.Name),
+				zap.String("type", node.Type),
+				zap.String("rest", node.REST),
+				zap.Any("status", *dataNodeStatus),
+			)
+		case types.BlockExplorerType:
+			blockExplorerStatus, err = requestBlockExplorerStats(node.REST)
+			if err != nil {
+				blockExplorerStatus = getUnhealthyBlockExplorerStats()
+			}
+			blockExplorerStatus.Environment = node.Environment
+			blockExplorerStatus.Internal = true
+			blockExplorerStatus.Type = types.BlockExplorerType
+			s.collector.UpdateBlockExplorerStatus(node.Name, blockExplorerStatus)
+			s.log.Debug(
+				"Scanned Local Node",
+				zap.String("name", node.Name),
+				zap.String("type", node.Type),
+				zap.String("rest", node.REST),
+				zap.Any("status", *blockExplorerStatus),
+			)
+		default:
+			log.Fatalf("Failed to start scanning Local Node, unknow node type %s", s.config.LocalNode.Type)
 		}
 
 		select {

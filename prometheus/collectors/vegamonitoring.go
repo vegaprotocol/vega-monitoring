@@ -14,7 +14,6 @@ type VegaMonitoringCollector struct {
 	coreStatuses          map[string]*types.CoreStatus
 	dataNodeStatuses      map[string]*types.DataNodeStatus
 	blockExplorerStatuses map[string]*types.BlockExplorerStatus
-	nodeDownStatuses      map[string]types.NodeDownStatus
 
 	// Meta-Monitoring
 	monitoringDatabaseStatuses read.MetaMonitoringStatuses
@@ -30,7 +29,6 @@ func NewVegaMonitoringCollector() *VegaMonitoringCollector {
 		coreStatuses:          map[string]*types.CoreStatus{},
 		dataNodeStatuses:      map[string]*types.DataNodeStatus{},
 		blockExplorerStatuses: map[string]*types.BlockExplorerStatus{},
-		nodeDownStatuses:      map[string]types.NodeDownStatus{},
 	}
 }
 
@@ -55,18 +53,10 @@ func (c *VegaMonitoringCollector) UpdateBlockExplorerStatus(node string, newStat
 	c.blockExplorerStatuses[node] = newStatus
 }
 
-func (c *VegaMonitoringCollector) UpdateNodeStatusAsError(node string, newStatus types.NodeDownStatus) {
-	c.accessMu.Lock()
-	defer c.accessMu.Unlock()
-	c.clearStatusFor(node)
-	c.nodeDownStatuses[node] = newStatus
-}
-
 func (c *VegaMonitoringCollector) clearStatusFor(node string) {
 	delete(c.coreStatuses, node)
 	delete(c.dataNodeStatuses, node)
 	delete(c.blockExplorerStatuses, node)
-	delete(c.nodeDownStatuses, node)
 }
 
 func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses read.MetaMonitoringStatuses) {
@@ -101,9 +91,6 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// BlockExplorer
 	ch <- desc.BlockExplorer.blockExplorerInfo
 
-	// Node Down
-	ch <- desc.NodeDown.nodeDown
-
 	// MetaMonitoring: Monitoring Database
 	ch <- desc.MetaMonitoring.monitoringDatabaseHealthy
 
@@ -118,7 +105,6 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectCoreStatuses(ch)
 	c.collectDataNodeStatuses(ch)
 	c.collectBlockExplorerStatuses(ch)
-	c.collectNodeDownStatuses(ch)
 	c.collectMonitoringDatabaseStatuses(ch)
 	c.collectEthereumNodeStatuses(ch)
 }
@@ -231,18 +217,6 @@ func (c *VegaMonitoringCollector) collectBlockExplorerStatuses(ch chan<- prometh
 				// Extra labels
 				nodeStatus.BlockExplorerVersion, nodeStatus.BlockExplorerVersionHash,
 			))
-	}
-}
-
-func (c *VegaMonitoringCollector) collectNodeDownStatuses(ch chan<- prometheus.Metric) {
-
-	for nodeName, nodeStatus := range c.nodeDownStatuses {
-		// Block Explorer Down
-		ch <- prometheus.MustNewConstMetric(
-			desc.NodeDown.nodeDown, prometheus.UntypedValue, 1,
-			// Labels
-			nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
-		)
 	}
 }
 
