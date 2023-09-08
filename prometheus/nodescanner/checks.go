@@ -3,9 +3,11 @@ package nodescanner
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func checkREST(address string) (time.Duration, uint64, error) {
+func CheckREST(address string) (time.Duration, uint64, error) {
 	var score uint64 = 0
 	s, err := url.JoinPath(address, "api/v2/info")
 	if err != nil {
@@ -45,7 +47,7 @@ func checkREST(address string) (time.Duration, uint64, error) {
 	return time.Since(now), score, err
 }
 
-func checkGQL(address string) (time.Duration, uint64, error) {
+func CheckGQL(address string) (time.Duration, uint64, error) {
 	var score uint64 = 0
 	s := address
 	if strings.HasPrefix(s, "https://") {
@@ -74,7 +76,7 @@ func checkGQL(address string) (time.Duration, uint64, error) {
 	return time.Since(now), score, err
 }
 
-func checkGRPC(address string) (time.Duration, uint64, error) {
+func CheckGRPC(address string) (time.Duration, uint64, error) {
 	var score uint64 = 0
 	useTLS := strings.HasPrefix(address, "tls://")
 
@@ -105,4 +107,60 @@ func checkGRPC(address string) (time.Duration, uint64, error) {
 	score += 1
 
 	return time.Since(now), score, err
+}
+
+func CheckDataDepth(address string) (uint64, uint64, uint64, error) {
+	dayAgo := time.Now().Add(-24 * time.Hour)
+	weekAgo := time.Now().Add(-6.5 * 24 * time.Hour)
+	firstTrade := time.Date(2023, 5, 23, 16, 0, 0, 0, time.UTC)
+
+	count, err := GetTradesCount(address, dayAgo)
+	if err != nil || count == 0 {
+		return 0, 0, 0, err
+	}
+	count, err = GetTradesCount(address, weekAgo)
+	if err != nil || count == 0 {
+		return 1, 0, 0, err
+	}
+	count, err = GetTradesCount(address, firstTrade)
+	if err != nil || count == 0 {
+		return 1, 1, 0, err
+	}
+
+	return 1, 1, 1, nil
+}
+
+func GetTradesCount(address string, dateRangeEnd time.Time) (uint64, error) {
+	s, err := url.JoinPath(address, "api/v2/trades")
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s, nil)
+	if err != nil {
+		return 0, err
+	}
+	q := req.URL.Query()
+	q.Add("dateRange.endTimestamp", strconv.FormatInt(dateRangeEnd.UTC().UnixNano(), 10))
+	req.URL.RawQuery = q.Encode()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("unexpected http status code: %v", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	payload := struct {
+		Trades struct {
+			Edges []struct{}
+		}
+	}{}
+	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return 0, fmt.Errorf("failed to parse trades response: %w", err)
+	}
+	return uint64(len(payload.Trades.Edges)), nil
 }

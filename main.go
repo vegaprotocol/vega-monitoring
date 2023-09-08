@@ -5,6 +5,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/cmd/binance"
 	"github.com/vegaprotocol/vega-monitoring/cmd/coingecko"
 	"github.com/vegaprotocol/vega-monitoring/cmd/comet"
+	"github.com/vegaprotocol/vega-monitoring/cmd/datanode"
 	"github.com/vegaprotocol/vega-monitoring/cmd/etherscan"
 	"github.com/vegaprotocol/vega-monitoring/cmd/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/cmd/grafana"
@@ -29,4 +30,5 @@ func init() {
 	rootCmd.RootCmd.AddCommand(update.UpdateCmd)
 	rootCmd.RootCmd.AddCommand(version.VersionCmd)
 	rootCmd.RootCmd.AddCommand(grafana.GrafanaCmd)
+	rootCmd.RootCmd.AddCommand(datanode.DataNodeCmd)
 }

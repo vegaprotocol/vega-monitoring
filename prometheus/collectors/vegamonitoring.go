@@ -148,7 +148,6 @@ func (c *VegaMonitoringCollector) collectDataNodeStatuses(ch chan<- prometheus.M
 			desc.DataNode.dataNodeBlockHeight:                 float64(nodeStatus.DataNodeBlockHeight),
 			desc.Core.coreTime:                                float64(nodeStatus.CoreTime.Unix()),
 			desc.DataNode.dataNodeTime:                        float64(nodeStatus.DataNodeTime.Unix()),
-			desc.DataNode.dataNodeScore:                       float64(nodeStatus.DataNodeScore),
 			desc.DataNode.dataNodePerformanceRESTInfoDuration: nodeStatus.RESTReqDuration.Seconds(),
 			desc.DataNode.dataNodePerformanceGQLInfoDuration:  nodeStatus.GQLReqDuration.Seconds(),
 			desc.DataNode.dataNodePerformanceGRPCInfoDuration: nodeStatus.GRPCReqDuration.Seconds(),
@@ -171,6 +170,19 @@ func (c *VegaMonitoringCollector) collectDataNodeStatuses(ch chan<- prometheus.M
 				nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
 				// Extra labels
 				nodeStatus.CoreChainId, nodeStatus.CoreAppVersion, nodeStatus.CoreAppVersionHash,
+			))
+		// Data Node Score
+		ch <- prometheus.NewMetricWithTimestamp(
+			nodeStatus.CurrentTime,
+			prometheus.MustNewConstMetric(
+				desc.DataNode.dataNodeScore, prometheus.GaugeValue, float64(nodeStatus.GetScore()),
+				// Labels
+				nodeName, string(nodeStatus.Type), nodeStatus.Environment, strconv.FormatBool(nodeStatus.Internal),
+				// Extra labels
+				strconv.FormatUint(nodeStatus.GRPCScore, 10), strconv.FormatUint(nodeStatus.RESTScore, 10),
+				strconv.FormatUint(nodeStatus.GQLScore, 10), strconv.FormatUint(nodeStatus.GetUpToDateScore(), 10),
+				strconv.FormatUint(nodeStatus.Data1DayScore, 10), strconv.FormatUint(nodeStatus.Data1WeekScore, 10),
+				strconv.FormatUint(nodeStatus.DataArchivalScore, 10),
 			))
 	}
 }

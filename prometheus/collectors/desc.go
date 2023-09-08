@@ -54,7 +54,10 @@ func init() {
 		"datanode_time", "Current Block Time of Data-Node", []string{"node", "type", "environment", "internal"}, nil,
 	)
 	desc.DataNode.dataNodeScore = prometheus.NewDesc(
-		"datanode_score", "Cumulative score of Data-Node APIs: gRPC, REST, GraphQL", []string{"node", "type", "environment", "internal"}, nil,
+		"datanode_score", "Cumulative score of Data-Node APIs: gRPC, REST, GraphQL", []string{
+			"node", "type", "environment", "internal",
+			"grpc_score", "rest_score", "gql_score", "up_to_date_score", "data_1_day_score", "data_1_week_score", "data_archival_score",
+		}, nil,
 	)
 
 	desc.DataNode.dataNodePerformanceRESTInfoDuration = prometheus.NewDesc(
