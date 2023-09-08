@@ -49,7 +49,12 @@ type DataNodeStatus struct {
 	GQLReqDuration  time.Duration
 	GRPCReqDuration time.Duration
 
-	DataNodeScore uint64
+	GRPCScore         uint64
+	RESTScore         uint64
+	GQLScore          uint64
+	Data1DayScore     uint64
+	Data1WeekScore    uint64
+	DataArchivalScore uint64
 }
 
 type BlockExplorerStatus struct {
@@ -70,4 +75,32 @@ type EthereumNodeStatuses struct {
 	NodeHealthy map[string]bool
 
 	UpdateTime time.Time
+}
+
+func (s *DataNodeStatus) GetUpToDateScore() uint64 {
+	if s.CoreBlockHeight == 0 || s.DataNodeBlockHeight == 0 {
+		return 0
+	}
+	if s.CurrentTime.Sub(s.CoreTime) > 30*time.Second || s.CurrentTime.Sub(s.DataNodeTime) > 30*time.Second {
+		return 0
+	}
+	if s.CurrentTime.Sub(s.CoreTime) > 10*time.Second || s.CurrentTime.Sub(s.DataNodeTime) > 10*time.Second {
+		return 1
+	}
+	return 2
+}
+
+func (s *DataNodeStatus) GetScore() uint64 {
+	upToDateScore := s.GetUpToDateScore()
+	if upToDateScore == 0 {
+		return 0
+	}
+	score := upToDateScore + s.GRPCScore + s.RESTScore + s.GQLScore + s.Data1DayScore + s.Data1WeekScore
+	if s.Data1DayScore == 0 {
+		score /= 2
+	}
+	if s.Data1WeekScore == 0 {
+		score /= 2
+	}
+	return score
 }

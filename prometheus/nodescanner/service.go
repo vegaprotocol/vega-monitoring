@@ -140,6 +140,7 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 
 	for {
 		// Go DataNode one-by-one synchroniusly
+		start := time.Now()
 		for _, node := range s.config.DataNode {
 			s.log.Debug("Scanning Data Node", zap.String("name", node.Name), zap.String("rest", node.REST))
 			dataNodeStatus, err := requestDataNodeStats(node.REST)
@@ -150,13 +151,10 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 				dataNodeStatus.GQLReqDuration = time.Hour
 				dataNodeStatus.GRPCReqDuration = time.Hour
 			} else {
-				var score uint64
-				dataNodeStatus.RESTReqDuration, score, _ = checkREST(node.REST)
-				dataNodeStatus.DataNodeScore += score
-				dataNodeStatus.GQLReqDuration, score, _ = checkGQL(node.GraphQL)
-				dataNodeStatus.DataNodeScore += score
-				dataNodeStatus.GRPCReqDuration, score, _ = checkGRPC(node.GRPC)
-				dataNodeStatus.DataNodeScore += score
+				dataNodeStatus.RESTReqDuration, dataNodeStatus.RESTScore, _ = CheckREST(node.REST)
+				dataNodeStatus.GQLReqDuration, dataNodeStatus.GQLScore, _ = CheckGQL(node.GraphQL)
+				dataNodeStatus.GRPCReqDuration, dataNodeStatus.GRPCScore, _ = CheckGRPC(node.GRPC)
+				dataNodeStatus.Data1DayScore, dataNodeStatus.Data1WeekScore, dataNodeStatus.DataArchivalScore, _ = CheckDataDepth(node.REST)
 			}
 			dataNodeStatus.Environment = node.Environment
 			dataNodeStatus.Internal = node.Internal
@@ -171,6 +169,7 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 				continue
 			}
 		}
+		s.log.Info("Finished scanning data nodes", zap.Int("count", len(s.config.DataNode)), zap.Duration("time", time.Since(start)))
 
 		select {
 		case <-ctx.Done():
