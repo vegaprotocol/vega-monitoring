@@ -73,24 +73,22 @@ func (bs *BlockSigner) Upsert(ctx context.Context, newBlockSigner *entities.Bloc
 }
 
 func (bs *BlockSigner) FlushUpsert(ctx context.Context) ([]*entities.BlockSigner, error) {
-	var blockCtx context.Context
-	var cancel context.CancelFunc
-	blockCtx, cancel = context.WithCancel(ctx)
+	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
 	defer cancel()
 
 	blockCtx, err := bs.WithTransaction(blockCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add transaction to context:%w", err)
+		return nil, NewUpsertErr(StoreBlockSigner, ErrAcquireTx, err)
 	}
 
 	for _, data := range bs.blockSigner {
 		if err := bs.Upsert(blockCtx, data); err != nil {
-			return nil, err
+			return nil, NewUpsertErr(StoreBlockSigner, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := bs.Commit(blockCtx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction to FlushUpsert Block Signers: %w", err)
+		return nil, NewUpsertErr(StoreBlockSigner, ErrUpsertCommit, err)
 	}
 
 	flushed := bs.blockSigner

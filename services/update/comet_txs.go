@@ -65,7 +65,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		}
 		count, err := UpdateCometTxsRange(batchFirstBlock, batchLastBlock, us.readService, serviceStore, logger)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update comet txs range: %w", err)
 		}
 		totalCount += count
 	}
@@ -105,7 +105,7 @@ func UpdateCometTxsRange(
 	storedData, err := serviceStore.FlushUpsertWithoutTime(context.Background())
 	storedCount := len(storedData)
 	if err != nil {
-		return storedCount, err
+		return storedCount, fmt.Errorf("failed to flush comet txs range: %w", err)
 	}
 	logger.Info(
 		"stored data in SQLStore",

@@ -2,7 +2,6 @@ package sqlstore
 
 import (
 	"context"
-	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
@@ -50,24 +49,22 @@ func (nhs *NetworkHistorySegment) UpsertWithoutTime(ctx context.Context, newSegm
 }
 
 func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([]*datanode.NetworkHistorySegment, error) {
-	var blockCtx context.Context
-	var cancel context.CancelFunc
-	blockCtx, cancel = context.WithCancel(ctx)
+	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
 	defer cancel()
 
 	blockCtx, err := nhs.WithTransaction(blockCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add transaction to context:%w", err)
+		return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrAcquireTx, err)
 	}
 
 	for _, segment := range nhs.segments {
 		if err := nhs.UpsertWithoutTime(blockCtx, segment); err != nil {
-			return nil, err
+			return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := nhs.Commit(blockCtx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction to FlushUpsertWithoutTime Network History Segments: %w", err)
+		return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrUpsertCommit, err)
 	}
 
 	flushed := nhs.segments

@@ -2,7 +2,6 @@ package sqlstore
 
 import (
 	"context"
-	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/vegaprotocol/vega-monitoring/entities"
@@ -50,24 +49,22 @@ func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance
 }
 
 func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBalance, error) {
-	var blockCtx context.Context
-	var cancel context.CancelFunc
-	blockCtx, cancel = context.WithCancel(ctx)
+	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
 	defer cancel()
 
 	blockCtx, err := c.WithTransaction(blockCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Flush Upsert Network Balances, failed to add transaction to context:%w", err)
+		return nil, NewUpsertErr(StoreNetworkBalances, ErrAcquireTx, err)
 	}
 
 	for _, tx := range c.NetworkBalances {
 		if err := c.UpsertWithoutAssetId(blockCtx, tx); err != nil {
-			return nil, err
+			return nil, NewUpsertErr(StoreNetworkBalances, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := c.Commit(blockCtx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction to Flush Upsert Network Balances: %w", err)
+		return nil, NewUpsertErr(StoreNetworkBalances, ErrUpsertCommit, err)
 	}
 
 	flushed := c.NetworkBalances

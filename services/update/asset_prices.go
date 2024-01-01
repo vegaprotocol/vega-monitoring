@@ -27,7 +27,7 @@ func (us *UpdateService) UpdateAssetPrices(ctx context.Context) error {
 	logger.Debug("flushing asset prices")
 	storedPrices, err := assetPricesStore.FlushUpsert(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to update Asset Prices, %w", err)
+		return fmt.Errorf("failed to flush asset prices %w", err)
 	}
 	logger.Info(
 		"Stored Asset Prices in SQLStore",

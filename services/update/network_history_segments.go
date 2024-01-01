@@ -36,7 +36,7 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 
 	storedData, err := segmentStore.FlushUpsertWithoutTime(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to flush network history segments: %w", err)
 	}
 	logger.Info(
 		"Stored Segment data in SQLStore",

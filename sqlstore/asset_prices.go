@@ -2,7 +2,6 @@ package sqlstore
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
@@ -48,24 +47,22 @@ func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.Pri
 }
 
 func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData, error) {
-	var blockCtx context.Context
-	var cancel context.CancelFunc
-	blockCtx, cancel = context.WithCancel(ctx)
+	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
 	defer cancel()
 
 	blockCtx, err := ap.WithTransaction(blockCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add transaction to context:%w", err)
+		return nil, NewUpsertErr(StoreAssetPool, ErrAcquireTx, err)
 	}
 
 	for _, data := range ap.assetPrices {
 		if err := ap.Upsert(blockCtx, data); err != nil {
-			return nil, err
+			return nil, NewUpsertErr(StoreAssetPool, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := ap.Commit(blockCtx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction to FlushUpsert Asset Prices: %w", err)
+		return nil, NewUpsertErr(StoreAssetPool, ErrUpsertCommit, err)
 	}
 
 	flushed := ap.assetPrices

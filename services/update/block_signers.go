@@ -70,7 +70,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		}
 		count, err := UpdateBlockRange(batchFirstBlock, batchLastBlock, us.readService, blockSigner, logger)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update block range: %w", err)
 		}
 		totalCount += count
 	}
@@ -94,7 +94,7 @@ func UpdateBlockRange(
 
 	blocks, err := readService.GetBlockSigners(fromBlock, toBlock)
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("failed to get block signers: %w", err)
 	}
 	logger.Info(
 		"fetched data from CometBFT",
@@ -106,7 +106,7 @@ func UpdateBlockRange(
 	for _, block := range blocks {
 		valData, err := readService.GetValidatorForAddressAtBlock(block.ProposerAddress, block.Height)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("failed to get validator for address at block(1): %w", err)
 		}
 		blockSignerStore.Add(&entities.BlockSigner{
 			VegaTime: block.Time,
@@ -116,7 +116,7 @@ func UpdateBlockRange(
 		for _, signerAddress := range block.SignerAddresses {
 			valData, err := readService.GetValidatorForAddressAtBlock(signerAddress, block.Height)
 			if err != nil {
-				return 0, err
+				return 0, fmt.Errorf("failed to get validator for address at block(2): %w", err)
 			}
 			blockSignerStore.Add(&entities.BlockSigner{
 				VegaTime: block.Time,
@@ -129,7 +129,7 @@ func UpdateBlockRange(
 	storedData, err := blockSignerStore.FlushUpsert(context.Background())
 	storedCount := len(storedData)
 	if err != nil {
-		return storedCount, err
+		return storedCount, fmt.Errorf("failed to flush block signers: %w", err)
 	}
 	logger.Info(
 		"stored data in SQLStore",
