@@ -41,7 +41,18 @@
                     "to": "/home/runner/go/pkg/mod/code.vegaprotocol.io",
                     "from": "${workspaceFolder}/vendor/code.vegaprotocol.io"
                 }
+            ],
+        },
+        {
+            "name": "vega-monitoring service start",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": [
+                "service", "start", 
+                "--config", "${workspaceFolder}/config.toml",
             ]
-        }
+        },
     ]
 }
