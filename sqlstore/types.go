@@ -16,6 +16,7 @@ const (
 	StoreCometTxs              StoreType = "comet txs"
 	StoreNetworkBalances       StoreType = "network balances"
 	StoreNetworkHistorySegment StoreType = "network history segment"
+	StoreMonitoringStatus      StoreType = "monitoring status"
 )
 
 var (
