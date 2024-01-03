@@ -14,6 +14,10 @@ type MonitoringStatus struct {
 	mutex    *sync.Mutex
 }
 
+type MonitoringStatusAdder interface {
+	Add(item entities.MonitoringStatus)
+}
+
 func NewMonitoringStatus(connectionSource *vega_sqlstore.ConnectionSource) *MonitoringStatus {
 	return &MonitoringStatus{
 		ConnectionSource: connectionSource,
@@ -51,6 +55,10 @@ func (ms *MonitoringStatus) UpsertSingle(ctx context.Context, entity entities.Mo
 }
 
 func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.MonitoringStatus, error) {
+	if len(ms.statuses) < 1 {
+		return []entities.MonitoringStatus{}, nil
+	}
+
 	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
 	defer cancel()
 
