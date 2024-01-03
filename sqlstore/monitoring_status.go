@@ -2,6 +2,7 @@ package sqlstore
 
 import (
 	"context"
+	"sync"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/vegaprotocol/vega-monitoring/entities"
@@ -10,23 +11,21 @@ import (
 type MonitoringStatus struct {
 	*vega_sqlstore.ConnectionSource
 	statuses []entities.MonitoringStatus
+	mutex    *sync.Mutex
 }
 
-func NewMonitoringStatus(connectionSource *vega_sqlstore.ConnectionSource) *BlockSigner {
-	return &BlockSigner{
+func NewMonitoringStatus(connectionSource *vega_sqlstore.ConnectionSource) *MonitoringStatus {
+	return &MonitoringStatus{
 		ConnectionSource: connectionSource,
+		statuses:         []entities.MonitoringStatus{},
 	}
 }
 
 func (ms *MonitoringStatus) Add(status entities.MonitoringStatus) {
+	ms.mutex.Lock()
 	ms.statuses = append(ms.statuses, status)
+	ms.mutex.Unlock()
 }
-
-// CREATE TABLE IF NOT EXISTS metrics.monitoring_status (
-// 	status_time           TIMESTAMP WITH TIME ZONE NOT NULL,
-// 	is_healthy          BOOLEAN NOT NULL,
-// 	monitoring_service  metrics.monitoring_service_type NOT NULL,
-// 	unhealthy_reason    S
 
 func (ms *MonitoringStatus) UpsertSingle(ctx context.Context, entity entities.MonitoringStatus) error {
 	_, err := ms.Connection.Exec(ctx, `
@@ -60,7 +59,12 @@ func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.Monitor
 		return nil, NewUpsertErr(StoreMonitoringStatus, ErrAcquireTx, err)
 	}
 
-	for _, tx := range ms.statuses {
+	ms.mutex.Lock()
+	flushed := ms.statuses
+	ms.statuses = []entities.MonitoringStatus{}
+	ms.mutex.Unlock()
+
+	for _, tx := range flushed {
 		if err := ms.UpsertSingle(blockCtx, tx); err != nil {
 			return nil, NewUpsertErr(StoreMonitoringStatus, ErrUpsertSingle, err)
 		}
@@ -70,8 +74,9 @@ func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.Monitor
 		return nil, NewUpsertErr(StoreMonitoringStatus, ErrUpsertCommit, err)
 	}
 
-	flushed := ms.statuses
-	ms.statuses = []entities.MonitoringStatus{}
-
 	return flushed, nil
+}
+
+func (ms *MetamonitoringStatus) GetLatest() ([]entities.MonitoringStatus, error) {
+	return nil, nil // TBD
 }
