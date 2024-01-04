@@ -35,7 +35,6 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 	result.UpdateTime = time.Now()
 
 	for _, check := range checks {
-
 		switch check.CheckName {
 		case "data_node":
 			result.DataNodeData = &check.IsHealthy

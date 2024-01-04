@@ -60,10 +60,11 @@ func (s *StoreService) NewMetamonitoringStatus() *sqlstore.MetamonitoringStatus 
 	return sqlstore.NewMetamonitoringStatus(s.connSource)
 }
 
-//
-// Data Node tables
-//
+func (s *StoreService) NewMonitoringStatus() *sqlstore.MonitoringStatus {
+	return sqlstore.NewMonitoringStatus(s.connSource)
+}
 
+// Data Node tables
 func (s *StoreService) NewAssets() *vega_sqlstore.Assets {
 	return vega_sqlstore.NewAssets(s.connSource)
 }

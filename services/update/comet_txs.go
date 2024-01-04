@@ -86,7 +86,6 @@ func UpdateCometTxsRange(
 	serviceStore *sqlstore.CometTxs,
 	logger *logging.Logger,
 ) (int, error) {
-
 	txs, err := readService.GetCometTxs(fromBlock, toBlock)
 	if err != nil {
 		return -1, err
