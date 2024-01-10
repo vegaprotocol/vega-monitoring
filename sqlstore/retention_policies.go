@@ -8,111 +8,126 @@ import (
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/vega-monitoring/entities"
+	"github.com/vegaprotocol/vega-monitoring/config"
 	"go.uber.org/zap"
 )
 
-var StandardRetentionPolicy = entities.RetentionPolicies{
-	entities.RetentionPolicy{
+const InfiniteInterval = "inf"
+
+const (
+	RetentionPolicyArchival = "archival"
+	RetentionPolicyStandard = "standard"
+	RetentionPolicyLite     = "lite"
+)
+
+type RetentionPolicy struct {
+	TableName string
+	Interval  string
+}
+
+func (rp RetentionPolicy) AsString() string {
+	return fmt.Sprintf("[Table: %s, Interval: %s]", rp.TableName, rp.Interval)
+}
+
+type RetentionPolicies []RetentionPolicy
+
+var StandardRetentionPolicy = RetentionPolicies{
+	RetentionPolicy{
 		TableName: "metrics.block_signers",
 		Interval:  "4 months",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.network_history_segments",
 		Interval:  "4 months",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.comet_txs",
 		Interval:  "4 months",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.network_balances",
 		Interval:  "4 months",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.asset_prices",
 		Interval:  "4 months",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.monitoring_status",
 		Interval:  "7 days",
 	},
 }
 
-var LiteRetentionPolicy = entities.RetentionPolicies{
-	entities.RetentionPolicy{
+var LiteRetentionPolicy = RetentionPolicies{
+	RetentionPolicy{
 		TableName: "metrics.block_signers",
 		Interval:  "7 days",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.network_history_segments",
 		Interval:  "7 days",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.comet_txs",
 		Interval:  "7 days",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.network_balances",
 		Interval:  "7 days",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.asset_prices",
 		Interval:  "7 days",
 	},
-	entities.RetentionPolicy{
+	RetentionPolicy{
 		TableName: "metrics.monitoring_status",
 		Interval:  "7 days",
 	},
 }
 
-var ArchivalRetentionPolicy = entities.RetentionPolicies{
+var ArchivalRetentionPolicy = RetentionPolicies{
 	{
 		TableName: "metrics.block_signers",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 	{
 		TableName: "metrics.network_history_segments",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 	{
 		TableName: "metrics.comet_txs",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 	{
 		TableName: "metrics.network_balances",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 	{
 		TableName: "metrics.asset_prices",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 	{
 		TableName: "metrics.monitoring_status",
-		Interval:  entities.InfiniteInterval,
+		Interval:  InfiniteInterval,
 	},
 }
 
-func RetentionPoliciesFromConfig(basePolicy string, overrides entities.RetentionPolicies) (entities.RetentionPolicies, error) {
-	var basePolicyEntries entities.RetentionPolicies
-
-	if err := validatePolicies(overrides); err != nil {
-		return nil, fmt.Errorf("failed to validate overrides for retention policies: %w", err)
-	}
+func RetentionPoliciesFromConfig(basePolicy string, overrides []config.RetentionPolicy) (RetentionPolicies, error) {
+	var basePolicyEntries RetentionPolicies
 
 	switch basePolicy {
-	case entities.RetentionPolicyArchival:
+	case RetentionPolicyArchival:
 		basePolicyEntries = ArchivalRetentionPolicy
-	case entities.RetentionPolicyStandard:
+	case RetentionPolicyStandard:
 		basePolicyEntries = StandardRetentionPolicy
-	case entities.RetentionPolicyLite:
+	case RetentionPolicyLite:
 		basePolicyEntries = LiteRetentionPolicy
 	default:
 		return nil, fmt.Errorf(
 			"unknown base retention policy: expected one of %s, %s, %s, got %s",
-			entities.RetentionPolicyArchival,
-			entities.RetentionPolicyStandard,
-			entities.RetentionPolicyLite,
+			RetentionPolicyArchival,
+			RetentionPolicyStandard,
+			RetentionPolicyLite,
 			basePolicy,
 		)
 	}
@@ -129,13 +144,13 @@ func RetentionPoliciesFromConfig(basePolicy string, overrides entities.Retention
 	return basePolicyEntries, nil
 }
 
-func validatePolicies(policies entities.RetentionPolicies) error {
+func validatePolicies(policies RetentionPolicies) error {
 	validIntervalPlural := regexp.MustCompile(`^\d+ (hours|days|months|years)$`)
 	validIntervalSingular := regexp.MustCompile(`1 (hour|day|month|year)`)
 
 	invalidPolicies := []string{}
 	for _, policy := range policies {
-		if policy.Interval != entities.InfiniteInterval &&
+		if policy.Interval != InfiniteInterval &&
 			!validIntervalPlural.MatchString(policy.Interval) &&
 			!validIntervalSingular.MatchString(policy.Interval) {
 			invalidPolicies = append(invalidPolicies, policy.AsString())
@@ -157,7 +172,7 @@ func setRetentionPolicy(db *sql.DB, entity string, policy string) error {
 		return fmt.Errorf("failed removing retention policy from %s: %w", entity, err)
 	}
 
-	if policy == entities.InfiniteInterval {
+	if policy == InfiniteInterval {
 		return nil
 	}
 
@@ -168,9 +183,14 @@ func setRetentionPolicy(db *sql.DB, entity string, policy string) error {
 	return nil
 }
 
-func SetRetentionPolicies(connConfig vega_sqlstore.ConnectionConfig, policies entities.RetentionPolicies, logger *logging.Logger) error {
+func SetRetentionPolicies(connConfig vega_sqlstore.ConnectionConfig, basePolicy string, policyOverrides []config.RetentionPolicy, logger *logging.Logger) error {
+	policies, err := RetentionPoliciesFromConfig(basePolicy, policyOverrides)
+	if err != nil {
+		return fmt.Errorf("failed to prepare final retention policy: %w", err)
+	}
+
 	if err := validatePolicies(policies); err != nil {
-		return fmt.Errorf("failed to validate retention policies: %w", err)
+		return fmt.Errorf("failed to validate overrides for retention policies: %w", err)
 	}
 
 	db, err := DBFromConnectionConfig(logger, connConfig)

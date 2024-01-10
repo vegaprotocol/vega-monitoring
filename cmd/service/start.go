@@ -129,14 +129,6 @@ func startService(args StartArgs) {
 		svc.Log.Info("Not starting Prometheus Endpoint", zap.Bool("Prometheus.Enabled", false))
 		svc.Log.Info("Not starting Node Scanner service", zap.Bool("Prometheus.Enabled", false))
 	}
-	//
-	// start: example service
-	//
-	// shutdown_wg.Add(1)
-	// go func() {
-	// 	defer shutdown_wg.Done()
-	// 	fmt.Printf("Starting something #2\n")
-	// }()
 
 	svc.Log.Info("Service has started")
 

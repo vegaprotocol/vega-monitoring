@@ -14,9 +14,13 @@ import (
 
 func startDataNodeDBExtension(
 	svc *cmd.AllServices,
-	shutdown_wg *sync.WaitGroup,
+	shutdownWg *sync.WaitGroup,
 	ctx context.Context,
 ) {
+	if err := setupDB(svc.Log, svc.Config); err != nil {
+		log.Fatalf("failed to setup database: %+v\n", err)
+	}
+
 	if err := sqlstore.MigrateToLatestSchema(svc.Log, svc.Config.SQLStore.GetConnectionConfig()); err != nil {
 		log.Fatalf("Failed to migrate database to latest version %+v\n", err)
 	}
@@ -25,66 +29,79 @@ func startDataNodeDBExtension(
 	// start: Block Singers Service
 	//
 	if svc.Config.DataNodeDBExtension.BlockSigners.Enabled {
-		shutdown_wg.Add(1)
+		shutdownWg.Add(1)
 		go func() {
-			defer shutdown_wg.Done()
-			runBlockSignersScraper(ctx, svc)
+			defer shutdownWg.Done()
+			runBlockSignersScraper(ctx, svc, nil)
 		}()
 	} else {
 		svc.Log.Info("Not starting Block Signers Service", zap.String("config", "Enabled=false"))
 	}
+
 	//
 	// start: Network History Segments Service
 	//
 	if svc.Config.DataNodeDBExtension.NetworkHistorySegments.Enabled {
-		shutdown_wg.Add(1)
+		shutdownWg.Add(1)
 		go func() {
-			defer shutdown_wg.Done()
+			defer shutdownWg.Done()
 			runNetworkHistorySegmentsScraper(ctx, svc)
 		}()
 	} else {
 		svc.Log.Info("Not starting Network History Segments Service", zap.String("config", "Enabled=false"))
 	}
+
 	//
 	// start: Comet Txs Service
 	//
 	if svc.Config.DataNodeDBExtension.CometTxs.Enabled {
-		shutdown_wg.Add(1)
+		shutdownWg.Add(1)
 		go func() {
-			defer shutdown_wg.Done()
+			defer shutdownWg.Done()
 			runCometTxsScraper(ctx, svc)
 		}()
 	} else {
 		svc.Log.Info("Not starting Comet Txs Service", zap.String("config", "Enabled=false"))
 	}
+
 	//
 	// start: Network Balances
 	//
 	if svc.Config.DataNodeDBExtension.NetworkBalances.Enabled {
-		shutdown_wg.Add(1)
+		shutdownWg.Add(1)
 		go func() {
-			defer shutdown_wg.Done()
+			defer shutdownWg.Done()
 			runNetworkBalancesScraper(ctx, svc)
 		}()
 	} else {
 		svc.Log.Info("Not starting Network Balances Service", zap.String("config", "Enabled=false"))
 	}
+
 	//
 	// start: Asset Prices
 	//
 	if svc.Config.DataNodeDBExtension.AssetPrices.Enabled {
-		shutdown_wg.Add(1)
+		shutdownWg.Add(1)
 		go func() {
-			defer shutdown_wg.Done()
+			defer shutdownWg.Done()
 			runAssetPricesScraper(ctx, svc)
 		}()
 	} else {
 		svc.Log.Info("Not starting Asset Prices Service", zap.String("config", "Enabled=false"))
 	}
+
+	//
+	// start: Reporting the meta-monitoring statuses
+	//
+	shutdownWg.Add(1)
+	// go func() {
+	// 	defer shutdownWg.Done()
+
+	// }
 }
 
 // Block Signers
-func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices) {
+func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusReporter sqlstore.MonitoringStatusAdder) {
 	svc.Log.Info("Starting update Block Singers Scraper in 5sec")
 
 	time.Sleep(5 * time.Second) // delay everything by 5sec

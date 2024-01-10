@@ -13,6 +13,7 @@ import (
 )
 
 const MonitoringDbSchema = "metrics"
+const DefaultRetentionPolicy = "standard"
 
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
@@ -108,8 +109,15 @@ type EthereumNodeConfig struct {
 	VegaCollateralBridgeAddress string `long:"VegaCollateralBridgeAddress"  comment:"HEX address of CollateralBridge for Vega network"`
 }
 
+type RetentionPolicy struct {
+	TableName string `long:"TableName"`
+	Interval  string `long:"Interval"`
+}
+
 type DataNodeDBExtensionConfig struct {
-	Enabled bool `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension\n When disabled, then all other config from this section is ignored"`
+	Enabled             bool              `group:"Enabled" namespace:"enabled" comment:"Enable or Disable extension\n When disabled, then all other config from this section is ignored"`
+	BaseRetentionPolicy string            `long:"BaseRetentionPolicy" comment:"Define base retention policy you can override with the RetentionPolicy key.\nAvailable options:\n\t- lite - keep everything for 7 days,\n\t- archival - keep everything forever,\n\t- standard - keep everything except monitoring status for 4 months, monitoring status retention is 7 days."`
+	RetentionPolicy     []RetentionPolicy `long:"RetentionPolicy" comment:"Override policy defined in the BaseRetention Policy"`
 
 	BlockSigners struct {
 		Enabled bool `long:"enabled"`
@@ -206,6 +214,7 @@ func NewDefaultConfig() Config {
 	config.DataNodeDBExtension.CometTxs.Enabled = true
 	config.DataNodeDBExtension.NetworkBalances.Enabled = true
 	config.DataNodeDBExtension.AssetPrices.Enabled = true
+	config.DataNodeDBExtension.BaseRetentionPolicy = DefaultRetentionPolicy
 
 	return config
 }

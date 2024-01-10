@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vegaprotocol/vega-monitoring/entities"
+	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
@@ -12,8 +12,8 @@ func TestRetentionPoliciesFromConfig(t *testing.T) {
 	testScenarios := []struct {
 		name           string
 		basePolicyName string
-		overrides      entities.RetentionPolicies
-		result         entities.RetentionPolicies
+		overrides      []config.RetentionPolicy
+		result         sqlstore.RetentionPolicies
 		errorMsg       string
 	}{
 		{
@@ -23,43 +23,32 @@ func TestRetentionPoliciesFromConfig(t *testing.T) {
 			errorMsg:       "expected one of archival, standard, lite, got unknown",
 		},
 		{
-			name:           "invalid retention policy",
-			basePolicyName: entities.RetentionPolicyArchival,
-			overrides: entities.RetentionPolicies{
-				{
-					TableName: "metrics.network_balances",
-					Interval:  "7 units",
-				},
-			},
-			errorMsg: "invalid policies: [Table: metrics.network_balances, Interval: 7 units]",
-		},
-		{
 			name:           "standard policy, no overrides",
-			basePolicyName: entities.RetentionPolicyStandard,
+			basePolicyName: sqlstore.RetentionPolicyStandard,
 			overrides:      nil,
 			result:         sqlstore.StandardRetentionPolicy,
 		},
 		{
 			name:           "archival policy, override one",
-			basePolicyName: entities.RetentionPolicyArchival,
-			overrides: entities.RetentionPolicies{
+			basePolicyName: sqlstore.RetentionPolicyArchival,
+			overrides: []config.RetentionPolicy{
 				{
 					TableName: "metrics.network_balances",
 					Interval:  "7 days",
 				},
 			},
-			result: entities.RetentionPolicies{
+			result: sqlstore.RetentionPolicies{
 				{
 					TableName: "metrics.block_signers",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.network_history_segments",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.comet_txs",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.network_balances",
@@ -67,18 +56,18 @@ func TestRetentionPoliciesFromConfig(t *testing.T) {
 				},
 				{
 					TableName: "metrics.asset_prices",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.monitoring_status",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 			},
 		},
 		{
 			name:           "archival policy, add one table, override one",
-			basePolicyName: entities.RetentionPolicyArchival,
-			overrides: entities.RetentionPolicies{
+			basePolicyName: sqlstore.RetentionPolicyArchival,
+			overrides: []config.RetentionPolicy{
 				{
 					TableName: "metrics.network_balances",
 					Interval:  "7 days",
@@ -88,18 +77,18 @@ func TestRetentionPoliciesFromConfig(t *testing.T) {
 					Interval:  "14 days",
 				},
 			},
-			result: entities.RetentionPolicies{
+			result: sqlstore.RetentionPolicies{
 				{
 					TableName: "metrics.block_signers",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.network_history_segments",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.comet_txs",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.network_balances",
@@ -107,11 +96,11 @@ func TestRetentionPoliciesFromConfig(t *testing.T) {
 				},
 				{
 					TableName: "metrics.asset_prices",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 				{
 					TableName: "metrics.monitoring_status",
-					Interval:  entities.InfiniteInterval,
+					Interval:  sqlstore.InfiniteInterval,
 				},
 			},
 		},
