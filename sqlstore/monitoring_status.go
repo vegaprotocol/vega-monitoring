@@ -11,11 +11,7 @@ import (
 type MonitoringStatus struct {
 	*vega_sqlstore.ConnectionSource
 	statuses []entities.MonitoringStatus
-	mutex    *sync.Mutex
-}
-
-type MonitoringStatusAdder interface {
-	Add(item entities.MonitoringStatus)
+	mutex    sync.Mutex
 }
 
 func NewMonitoringStatus(connectionSource *vega_sqlstore.ConnectionSource) *MonitoringStatus {
@@ -29,6 +25,19 @@ func (ms *MonitoringStatus) Add(status entities.MonitoringStatus) {
 	ms.mutex.Lock()
 	ms.statuses = append(ms.statuses, status)
 	ms.mutex.Unlock()
+}
+
+func (ms *MonitoringStatus) IsPendingFor(service entities.MonitoringServiceType) bool {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+
+	for _, status := range ms.statuses {
+		if status.Service == service {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (ms *MonitoringStatus) UpsertSingle(ctx context.Context, entity entities.MonitoringStatus) error {

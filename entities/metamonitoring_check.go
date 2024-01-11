@@ -4,6 +4,24 @@ import (
 	"time"
 )
 
+type MonitoringServiceType string
+
+const (
+	BlockSignersSvc    MonitoringServiceType = "BLOCK_SIGNERS"
+	SegmentsSvc        MonitoringServiceType = "SEGMENTS"
+	CometTxsSvc        MonitoringServiceType = "COMET_TXS"
+	NetworkBalancesSvc MonitoringServiceType = "NETWORK_BALANCES"
+	AssetPricesSvc     MonitoringServiceType = "ASSET_PRICES"
+)
+
+var AllMonitoringServices = []MonitoringServiceType{
+	BlockSignersSvc,
+	SegmentsSvc,
+	CometTxsSvc,
+	NetworkBalancesSvc,
+	AssetPricesSvc,
+}
+
 type MetaMonitoringStatusCheck struct {
 	CheckName  string
 	IsHealthy  int32
@@ -12,10 +30,15 @@ type MetaMonitoringStatusCheck struct {
 
 type UnhealthyReason int
 
+const (
+	ReasonUnknown                  UnhealthyReason = 0
+	ReasonMissingStatusFromService UnhealthyReason = 1
+)
+
 type MonitoringStatus struct {
 	StatusTime      time.Time
 	IsHealthy       bool
-	Service         ServiceType
+	Service         MonitoringServiceType
 	UnhealthyReason UnhealthyReason
 }
 

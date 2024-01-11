@@ -6,9 +6,10 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
+	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/ethnodescanner"
-	"github.com/vegaprotocol/vega-monitoring/prometheus/metamonitoring"
+	metamonitoringprom "github.com/vegaprotocol/vega-monitoring/prometheus/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
 	"github.com/vegaprotocol/vega-monitoring/services"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
@@ -23,8 +24,9 @@ type AllServices struct {
 	UpdateService               *update.UpdateService
 	PrometheusService           *prometheus.PrometheusService
 	NodeScannerService          *nodescanner.NodeScannerService
-	MetaMonitoringStatusService *metamonitoring.MetaMonitoringStatusService
+	MetaMonitoringStatusService *metamonitoringprom.MetaMonitoringStatusService
 	EthereumNodeScannerService  *ethnodescanner.EthNodeScannerService
+	MonitoringService           *metamonitoring.MonitoringStatusUpdateService
 }
 
 func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err error) {
@@ -56,6 +58,11 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		if err != nil {
 			return
 		}
+
+		svc.MonitoringService, err = metamonitoring.NewMonitoringStatusUpdateService(svc.StoreService.NewMonitoringStatus(), svc.Log)
+		if err != nil {
+			return
+		}
 	}
 
 	if svc.Config.Prometheus.Enabled {
@@ -70,7 +77,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		)
 
 		if svc.Config.DataNodeDBExtension.Enabled {
-			svc.MetaMonitoringStatusService = metamonitoring.NewMetaMonitoringStatusService(
+			svc.MetaMonitoringStatusService = metamonitoringprom.NewMetaMonitoringStatusService(
 				svc.ReadService, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 			)
 		}

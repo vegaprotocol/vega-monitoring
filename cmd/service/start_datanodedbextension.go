@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/vegaprotocol/vega-monitoring/cmd"
+	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
@@ -22,7 +23,7 @@ func startDataNodeDBExtension(
 	}
 
 	if err := sqlstore.MigrateToLatestSchema(svc.Log, svc.Config.SQLStore.GetConnectionConfig()); err != nil {
-		log.Fatalf("Failed to migrate database to latest version %+v\n", err)
+		log.Fatalf("failed to migrate database to latest version %+v\n", err)
 	}
 
 	//
@@ -32,7 +33,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runBlockSignersScraper(ctx, svc, nil)
+			runBlockSignersScraper(ctx, svc, svc.MonitoringService.BlockSignersStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Block Signers Service", zap.String("config", "Enabled=false"))
@@ -45,7 +46,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runNetworkHistorySegmentsScraper(ctx, svc)
+			runNetworkHistorySegmentsScraper(ctx, svc, svc.MonitoringService.SegmentsStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Network History Segments Service", zap.String("config", "Enabled=false"))
@@ -58,7 +59,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runCometTxsScraper(ctx, svc)
+			runCometTxsScraper(ctx, svc, svc.MonitoringService.CometTxsStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Comet Txs Service", zap.String("config", "Enabled=false"))
@@ -71,7 +72,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runNetworkBalancesScraper(ctx, svc)
+			runNetworkBalancesScraper(ctx, svc, svc.MonitoringService.NetworkBalancesStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Network Balances Service", zap.String("config", "Enabled=false"))
@@ -84,7 +85,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runAssetPricesScraper(ctx, svc)
+			runAssetPricesScraper(ctx, svc, svc.MonitoringService.AssetPricesStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Asset Prices Service", zap.String("config", "Enabled=false"))
@@ -94,14 +95,14 @@ func startDataNodeDBExtension(
 	// start: Reporting the meta-monitoring statuses
 	//
 	shutdownWg.Add(1)
-	// go func() {
-	// 	defer shutdownWg.Done()
-
-	// }
+	go func() {
+		defer shutdownWg.Done()
+		svc.MonitoringService.Run(ctx)
+	}()
 }
 
 // Block Signers
-func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusReporter sqlstore.MonitoringStatusAdder) {
+func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Block Singers Scraper in 5sec")
 
 	time.Sleep(5 * time.Second) // delay everything by 5sec
@@ -113,7 +114,10 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusRep
 		svc.Log.Debugf("runBlockSignerScrapper tick")
 
 		if err := svc.UpdateService.UpdateBlockSignersAllNew(ctx); err != nil {
+			statusReporter.Publish(false)
 			svc.Log.Error("Failed to update Block Signers", zap.Error(err))
+		} else {
+			statusReporter.Publish(true)
 		}
 
 		select {
@@ -127,7 +131,7 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusRep
 }
 
 // Network History Segments
-func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices) {
+func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Network History Segments Scraper in 10sec")
 
 	time.Sleep(10 * time.Second) // delay everything by 10sec
@@ -144,6 +148,9 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 		}
 		if err := svc.UpdateService.UpdateNetworkHistorySegments(ctx, apiURLs); err != nil {
 			svc.Log.Error("Failed to update Network History Segments", zap.Error(err))
+			statusReporter.Publish(false)
+		} else {
+			statusReporter.Publish(true)
 		}
 
 		select {
@@ -157,7 +164,7 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices)
 }
 
 // Comet Txs
-func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
+func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Comet Txs Scraper in 20sec")
 
 	time.Sleep(20 * time.Second) // delay everything by 20sec - 15sec after Block Signers scraper
@@ -170,6 +177,9 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
 
 		if err := svc.UpdateService.UpdateCometTxsAllNew(ctx); err != nil {
 			svc.Log.Error("Failed to update Comet Txs", zap.Error(err))
+			statusReporter.Publish(false)
+		} else {
+			statusReporter.Publish(true)
 		}
 
 		select {
@@ -183,7 +193,7 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices) {
 }
 
 // Network Balances
-func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
+func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Network Balances Scraper in 15sec")
 
 	time.Sleep(15 * time.Second)
@@ -194,21 +204,29 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 	for {
 		svc.Log.Debugf("runNetworkBalancesScraper tick")
 
+		success := true
 		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Asset Pool", zap.Error(err))
+			success = false
 		}
 		if err := svc.UpdateService.UpdatePartiesTotalBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Partiest Total", zap.Error(err))
+			success = false
 		}
 		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(ctx); err != nil {
 			svc.Log.Error(
 				"Failed to update Network Balances: Unrealised Withdrawals",
 				zap.Error(err),
 			)
+
+			success = false
 		}
 		if err := svc.UpdateService.UpdateUnfinalizedDepositsBalances(ctx); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Unfinalized Deposits", zap.Error(err))
+			success = false
 		}
+
+		statusReporter.Publish(success)
 
 		select {
 		case <-ctx.Done():
@@ -221,7 +239,7 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices) {
 }
 
 // Asset Prices
-func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices) {
+func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Asset Prices Scraper in 25sec")
 
 	time.Sleep(25 * time.Second)
@@ -234,6 +252,9 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices) {
 
 		if err := svc.UpdateService.UpdateAssetPrices(ctx); err != nil {
 			svc.Log.Error("Failed to update Asset Prices", zap.Error(err))
+			statusReporter.Publish(false)
+		} else {
+			statusReporter.Publish(true)
 		}
 
 		select {
