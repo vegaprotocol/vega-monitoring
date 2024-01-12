@@ -103,3 +103,13 @@ func (c *CometClient) EarliestBlockHeight(ctx context.Context) (int64, error) {
 
 	return res.SyncInfo.EarliestBlockHeight, nil
 }
+
+func (c *CometClient) LatestLocalBlockHeight(ctx context.Context) (int64, error) {
+	res, err := c.Status(ctx)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to get the /status response from the comet api: %w", err)
+	}
+
+	return res.SyncInfo.LatestBlockHeight, nil
+}

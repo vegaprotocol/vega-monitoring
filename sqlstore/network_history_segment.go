@@ -2,8 +2,10 @@ package sqlstore
 
 import (
 	"context"
+	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 )
 
@@ -46,6 +48,25 @@ func (nhs *NetworkHistorySegment) UpsertWithoutTime(ctx context.Context, newSegm
 	)
 
 	return err
+}
+
+func (nhs *NetworkHistorySegment) GetLatestSegmentsPerDataNode(ctx context.Context) ([]datanode.NetworkHistorySegment, error) {
+	result := []datanode.NetworkHistorySegment{}
+
+	err := pgxscan.Select(ctx, nhs.Connection, &result,
+		`SELECT DISTINCT ON (data_node) data_node,
+			height
+		FROM
+			metrics.network_history_segments
+		ORDER BY
+			data_node, vega_time DESC`,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest segments per data node: %w", err)
+	}
+
+	return result, nil
 }
 
 func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([]*datanode.NetworkHistorySegment, error) {

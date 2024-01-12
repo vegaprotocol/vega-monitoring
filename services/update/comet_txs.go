@@ -38,7 +38,16 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		if lastProcessedBlock > 0 {
 			fromBlock = lastProcessedBlock + 1
 		} else {
+			// No blocks in database - Get the first block from the Tendermint API
+			earliestBlock, err := us.readService.GetEarliestBlockHeight(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get the earliest comet block: %w", err)
+			}
+
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
+			if fromBlock < earliestBlock {
+				fromBlock = earliestBlock
+			}
 			if fromBlock <= 0 {
 				fromBlock = 1
 			}

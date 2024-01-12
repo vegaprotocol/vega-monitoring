@@ -41,13 +41,25 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
 		}
+
+		// We have some processed blocks in the data-base
 		if lastProcessedBlock > 0 {
 			fromBlock = lastProcessedBlock + 1
 		} else {
+			// No blocks in database - Get the first block from the Tendermint API
+			earliestBlock, err := us.readService.GetEarliestBlockHeight(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get the earliest comet block: %w", err)
+			}
+
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
+			if fromBlock < earliestBlock {
+				fromBlock = earliestBlock
+			}
 			if fromBlock <= 0 {
 				fromBlock = 1
 			}
+
 		}
 	}
 	if fromBlock > toBlock {

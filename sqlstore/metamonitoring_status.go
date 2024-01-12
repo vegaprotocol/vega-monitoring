@@ -19,7 +19,6 @@ func NewMetamonitoringStatus(connectionSource *vega_sqlstore.ConnectionSource) *
 }
 
 func (c *MetamonitoringStatus) GetAll(ctx context.Context) ([]entities.MetaMonitoringStatusCheck, error) {
-
 	statuses := []entities.MetaMonitoringStatusCheck{}
 
 	err := pgxscan.Select(ctx, c.Connection, &statuses,

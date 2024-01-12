@@ -94,33 +94,34 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context) {
 	ticker := time.NewTicker(60 * time.Second)
 
 	for {
+		// Check if all of the monitoring services provided any status update
+		// if not add failed state
+		for _, service := range msus.activeServices {
+			if !msus.store.IsPendingFor(service) {
+				msus.store.Add(entities.MonitoringStatus{
+					StatusTime:      time.Now(),
+					IsHealthy:       false,
+					Service:         service,
+					UnhealthyReason: entities.ReasonMissingStatusFromService,
+				})
+
+				msus.logger.Debugf(
+					"Service %s did not published status update for last 5 min. Marking it as unhealthy with the %s reason",
+					service,
+					entities.ReasonMissingStatusFromService,
+				)
+			}
+		}
+
+		innerCtx, cancel := context.WithCancel(ctx)
+		// Upsert all the pending states
+		if _, err := msus.store.FlushUpsert(innerCtx); err != nil {
+			msus.logger.Errorf("failed to flush upsert monitoring status updates: %w", err)
+		}
+		cancel()
 		select {
 		case <-ticker.C:
-			// Check if all of the monitoring services provided any status update
-			// if not add failed state
-			for _, service := range msus.activeServices {
-				if !msus.store.IsPendingFor(service) {
-					msus.store.Add(entities.MonitoringStatus{
-						StatusTime:      time.Now(),
-						IsHealthy:       false,
-						Service:         service,
-						UnhealthyReason: entities.ReasonMissingStatusFromService,
-					})
-
-					msus.logger.Debugf(
-						"Service %s did not published status update for last 5 min. Marking it as unhealthy with the %s reason",
-						service,
-						entities.ReasonMissingStatusFromService,
-					)
-				}
-			}
-
-			ctx, cancel := context.WithCancel(ctx)
-			// Upsert all the pending states
-			if _, err := msus.store.FlushUpsert(ctx); err != nil {
-				msus.logger.Errorf("failed to flush upsert monitoring status updates: %w", err)
-			}
-			cancel()
+			continue
 		case <-ctx.Done():
 			return
 		}
