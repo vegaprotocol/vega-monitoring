@@ -10,7 +10,7 @@ func (s *ReadService) GetLatestFlushedSegmentsHeights(ctx context.Context) (map[
 
 	latestSegments, err := networkHistoryStore.GetLatestSegmentsPerDataNode(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get latest segments from the database: %w")
+		return nil, fmt.Errorf("failed to get latest segments from the database: %w", err)
 	}
 
 	result := map[string]int64{}

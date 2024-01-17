@@ -10,6 +10,7 @@ import (
 	vegaclient "github.com/vegaprotocol/vega-monitoring/clients/vega"
 	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
+	"go.uber.org/zap"
 )
 
 const (
@@ -165,7 +166,11 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval
 		// correct error
 		if !isUpToDate {
 			msus.logger.Warningf("The local vega node is not up to date. Failing all the checks.")
-			monitoringStatusStore.FlushClear(ctx)
+			_, err := monitoringStatusStore.FlushClear(ctx)
+			if err != nil {
+				msus.logger.Error("failed to flush clear all actual health checks when node is not up to date", zap.Error(err))
+			}
+
 			for _, service := range msus.activeServices {
 				if !monitoringStatusStore.IsPendingFor(service) {
 					monitoringStatusStore.Add(entities.MonitoringStatus{

@@ -122,10 +122,14 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusRep
 		svc.Log.Debugf("runBlockSignerScrapper tick")
 
 		if err := svc.UpdateService.UpdateBlockSignersAllNew(ctx); err != nil {
-			statusReporter.Publish(false)
+			if err := statusReporter.Publish(false); err != nil {
+				svc.Log.Error("failed to publish false health check for the block signers svc", zap.Error(err))
+			}
 			svc.Log.Error("Failed to update Block Signers", zap.Error(err))
 		} else {
-			statusReporter.Publish(true)
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish true health check for the block signers svc", zap.Error(err))
+			}
 		}
 
 		select {
@@ -156,9 +160,13 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices,
 		}
 		if err := svc.UpdateService.UpdateNetworkHistorySegments(ctx, apiURLs); err != nil {
 			svc.Log.Error("Failed to update Network History Segments", zap.Error(err))
-			statusReporter.Publish(false)
+			if err := statusReporter.Publish(false); err != nil {
+				svc.Log.Error("failed to publish false health check for the network history segments svc", zap.Error(err))
+			}
 		} else {
-			statusReporter.Publish(true)
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish true health check for the network history segments svc", zap.Error(err))
+			}
 		}
 
 		select {
@@ -185,9 +193,13 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices, statusReporte
 
 		if err := svc.UpdateService.UpdateCometTxsAllNew(ctx); err != nil {
 			svc.Log.Error("Failed to update Comet Txs", zap.Error(err))
-			statusReporter.Publish(false)
+			if err := statusReporter.Publish(false); err != nil {
+				svc.Log.Error("failed to publish false health check for the comet txs svc", zap.Error(err))
+			}
 		} else {
-			statusReporter.Publish(true)
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish true health check for the comet txs svc", zap.Error(err))
+			}
 		}
 
 		select {
@@ -234,7 +246,9 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices, status
 			success = false
 		}
 
-		statusReporter.Publish(success)
+		if err := statusReporter.Publish(success); err != nil {
+			svc.Log.Error("failed to publish %v health check for the network balance svc", zap.Error(err))
+		}
 
 		select {
 		case <-ctx.Done():
@@ -260,9 +274,14 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices, statusRepo
 
 		if err := svc.UpdateService.UpdateAssetPrices(ctx); err != nil {
 			svc.Log.Error("Failed to update Asset Prices", zap.Error(err))
-			statusReporter.Publish(false)
+
+			if err := statusReporter.Publish(false); err != nil {
+				svc.Log.Error("failed to publish false health check for the asset price svc", zap.Error(err))
+			}
 		} else {
-			statusReporter.Publish(true)
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish false health check for the asset price svc", zap.Error(err))
+			}
 		}
 
 		select {
