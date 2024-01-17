@@ -49,7 +49,7 @@ func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance
 }
 
 func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBalance, error) {
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := c.WithTransaction(blockCtx)

@@ -70,7 +70,7 @@ func (nhs *NetworkHistorySegment) GetLatestSegmentsPerDataNode(ctx context.Conte
 }
 
 func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([]*datanode.NetworkHistorySegment, error) {
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := nhs.WithTransaction(blockCtx)

@@ -2,9 +2,11 @@ package sqlstore
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
@@ -63,12 +65,23 @@ func (ms *MonitoringStatus) UpsertSingle(ctx context.Context, entity entities.Mo
 	return err
 }
 
+// FlushClear does not flush the events, it just clear the buffer up and return all the events to
+// the caller
+func (ms *MonitoringStatus) FlushClear(ctx context.Context) ([]entities.MonitoringStatus, error) {
+	ms.mutex.Lock()
+	flushed := ms.statuses
+	ms.statuses = []entities.MonitoringStatus{}
+	ms.mutex.Unlock()
+
+	return flushed, nil
+}
+
 func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.MonitoringStatus, error) {
 	if len(ms.statuses) < 1 {
 		return []entities.MonitoringStatus{}, nil
 	}
 
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := ms.WithTransaction(blockCtx)
@@ -94,6 +107,18 @@ func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.Monitor
 	return flushed, nil
 }
 
-func (ms *MetamonitoringStatus) GetLatest() ([]entities.MonitoringStatus, error) {
-	return nil, nil // TBD
+func (ms *MonitoringStatus) GetLatest(ctx context.Context) ([]entities.MonitoringStatus, error) {
+	result := []entities.MonitoringStatus{}
+
+	err := pgxscan.Select(ctx, ms.Connection, &result,
+		`SELECT DISTINCT ON (monitoring_service) monitoring_service, status_time, is_healthy, unhealthy_reason
+		FROM metrics.monitoring_status
+		ORDER BY monitoring_service, status_time DESC`,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest monitoring_statuses: %w", err)
+	}
+
+	return result, nil
 }

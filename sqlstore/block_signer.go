@@ -73,7 +73,7 @@ func (bs *BlockSigner) Upsert(ctx context.Context, newBlockSigner *entities.Bloc
 }
 
 func (bs *BlockSigner) FlushUpsert(ctx context.Context) ([]*entities.BlockSigner, error) {
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := bs.WithTransaction(blockCtx)

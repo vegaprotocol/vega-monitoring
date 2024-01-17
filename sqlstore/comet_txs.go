@@ -69,7 +69,7 @@ func (nhs *CometTxs) UpsertWithoutTime(ctx context.Context, newTx comet.CometTx)
 }
 
 func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx, error) {
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := c.WithTransaction(blockCtx)

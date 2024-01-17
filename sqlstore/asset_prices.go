@@ -47,7 +47,7 @@ func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.Pri
 }
 
 func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData, error) {
-	blockCtx, cancel := context.WithTimeout(ctx, DefaultUpsertTxTimeout)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := ap.WithTransaction(blockCtx)
