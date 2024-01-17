@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -73,7 +73,7 @@ func (c *GrafanaClient) RequestAny(method, requestPath string, query url.Values,
 	// Parse response
 	defer res.Body.Close()
 
-	bodyContents, err := ioutil.ReadAll(res.Body)
+	bodyContents, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body %s, %w", url.String(), err)
 	}

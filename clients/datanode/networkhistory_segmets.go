@@ -11,22 +11,29 @@ type NetworkHistorySegment struct {
 	DataNode  string `db:"data_node"`
 }
 
-func (c *DataNodeClient) GetNetworkHistorySegments() ([]*NetworkHistorySegment, error) {
+func (c *DataNodeClient) GetNetworkHistorySegments(fromBlock, toBlock int64) ([]*NetworkHistorySegment, error) {
 	response, err := c.requestNetworkHistorySegmets()
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*NetworkHistorySegment, len(response.Segments))
-	for i, segment := range response.Segments {
+	result := []*NetworkHistorySegment{}
+	for _, segment := range response.Segments {
 		height, err := strconv.ParseInt(segment.ToHeight, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse ToHeight %s, %w", segment.ToHeight, err)
 		}
-		result[i] = &NetworkHistorySegment{
+
+		// filter blocks We do not want
+		if height < fromBlock || height > toBlock {
+			continue
+		}
+
+		result = append(result, &NetworkHistorySegment{
 			Height:    height,
 			SegmentId: segment.SegmentId,
 			DataNode:  c.apiURL,
-		}
+		})
 	}
+
 	return result, nil
 }

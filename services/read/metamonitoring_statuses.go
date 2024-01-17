@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/vegaprotocol/vega-monitoring/entities"
 	"go.uber.org/zap"
 )
 
@@ -19,15 +20,18 @@ type MetaMonitoringStatuses struct {
 }
 
 func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonitoringStatuses, error) {
-	result := MetaMonitoringStatuses{}
+	var permanentOne int32 = 1
+	result := MetaMonitoringStatuses{
+		DataNodeData: &permanentOne,
+	}
 
 	logger := s.log.With(zap.String("reader", "MetaMonitoringStatuses"))
 
 	logger.Info("Read Meta-Monitoring Statuses from Monitoring Database")
 
-	metamonitoringStatusesStore := s.storeReadService.NewMetamonitoringStatus()
+	metamonitoringStatusesStore := s.storeReadService.NewMonitoringStatus()
 
-	checks, err := metamonitoringStatusesStore.GetAll(ctx)
+	checks, err := metamonitoringStatusesStore.GetLatest(ctx)
 	if err != nil {
 		return result, err
 	}
@@ -35,24 +39,28 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 	result.UpdateTime = time.Now()
 
 	for _, check := range checks {
-
-		switch check.CheckName {
-		case "data_node":
-			result.DataNodeData = &check.IsHealthy
-		case "asset_prices":
-			result.AssetPricesData = &check.IsHealthy
-		case "block_signers":
-			result.BlockSignersData = &check.IsHealthy
-		case "comet_txs":
-			result.CometTxsData = &check.IsHealthy
-		case "network_balances":
-			result.NetworkBalancesData = &check.IsHealthy
-		case "network_history_segments":
-			result.NetworkHistorySegmentsData = &check.IsHealthy
+		var isHealthyMetricsValue int32 = 0
+		if check.IsHealthy {
+			isHealthyMetricsValue = 1
+		}
+		switch check.Service {
+		// case "data_node":
+		// 	result.DataNodeData = &isHealthyMetricsValue
+		case entities.AssetPricesSvc:
+			result.AssetPricesData = &isHealthyMetricsValue
+		case entities.BlockSignersSvc:
+			result.BlockSignersData = &isHealthyMetricsValue
+		case entities.CometTxsSvc:
+			result.CometTxsData = &isHealthyMetricsValue
+		case entities.NetworkBalancesSvc:
+			result.NetworkBalancesData = &isHealthyMetricsValue
+		case entities.SegmentsSvc:
+			result.NetworkHistorySegmentsData = &isHealthyMetricsValue
 		default:
-			logger.Error("Unknown check name", zap.String("check_name", check.CheckName))
+			logger.Error("Unknown check name", zap.String("check_name", string(check.Service)))
 		}
 	}
+
 	if len(checks) != 6 {
 		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -11,11 +12,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/vega-monitoring/cmd"
+	"github.com/vegaprotocol/vega-monitoring/pprof"
 	"go.uber.org/zap"
 )
 
 type StartArgs struct {
 	*ServiceArgs
+	EnablePprof bool
 }
 
 var startArgs StartArgs
@@ -33,6 +36,7 @@ var startCmd = &cobra.Command{
 func init() {
 	ServiceCmd.AddCommand(startCmd)
 	startArgs.ServiceArgs = &serviceArgs
+	startCmd.PersistentFlags().BoolVar(&startArgs.EnablePprof, "enable-pprof", true, "Enables pprof server on port :6161")
 }
 
 func startService(args StartArgs) {
@@ -54,8 +58,16 @@ func startService(args StartArgs) {
 		svc.Log.Info("Not starting DataNode DB Extension services", zap.Bool("DataNodeDBExtension.Enabled", false))
 	}
 
-	if svc.Config.Prometheus.Enabled {
+	if args.EnablePprof {
+		go func() {
+			svc.Log.Debug("Starting pprof server on port 6161")
+			if err := pprof.StartPprofServer(":6161"); err != nil {
+				panic(fmt.Errorf("failed to start pprof server: %w", err))
+			}
+		}()
+	}
 
+	if svc.Config.Prometheus.Enabled {
 		//
 		// start: Prometheus Endpoint
 		//
@@ -117,14 +129,6 @@ func startService(args StartArgs) {
 		svc.Log.Info("Not starting Prometheus Endpoint", zap.Bool("Prometheus.Enabled", false))
 		svc.Log.Info("Not starting Node Scanner service", zap.Bool("Prometheus.Enabled", false))
 	}
-	//
-	// start: example service
-	//
-	// shutdown_wg.Add(1)
-	// go func() {
-	// 	defer shutdown_wg.Done()
-	// 	fmt.Printf("Starting something #2\n")
-	// }()
 
 	svc.Log.Info("Service has started")
 

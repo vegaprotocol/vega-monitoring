@@ -20,7 +20,6 @@ func (us *UpdateService) UpdateBlockSignersAllNew(ctx context.Context) error {
 }
 
 func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64, toBlock int64) error {
-	var err error
 	blockSigner := us.storeService.NewBlockSigner()
 
 	logger := us.log.With(zap.String(UpdaterType, "UpdateBlockSigners"))
@@ -28,9 +27,20 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 	// get Last Block
 	if toBlock <= 0 {
 		logger.Debug("getting network toBlock network height")
-		toBlock, err = us.readService.GetNetworkLatestBlockHeight()
+		latestCometBlock, err := us.readService.GetNetworkLatestBlockHeight()
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
+		}
+
+		blocksStore := us.storeService.NewBlocks()
+		latestDataNodeBlock, err := blocksStore.GetLastBlock(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to fetch last block from data base: %w", err)
+		}
+
+		toBlock = latestCometBlock
+		if toBlock > latestDataNodeBlock.Height {
+			toBlock = latestDataNodeBlock.Height
 		}
 	}
 
@@ -41,13 +51,25 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
 		}
+
+		// We have some processed blocks in the data-base
 		if lastProcessedBlock > 0 {
 			fromBlock = lastProcessedBlock + 1
 		} else {
+			// No blocks in database - Get the first block from the Tendermint API
+			earliestBlock, err := us.readService.GetEarliestBlockHeight(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get the earliest comet block: %w", err)
+			}
+
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
+			if fromBlock < earliestBlock {
+				fromBlock = earliestBlock
+			}
 			if fromBlock <= 0 {
 				fromBlock = 1
 			}
+
 		}
 	}
 	if fromBlock > toBlock {
@@ -70,7 +92,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		}
 		count, err := UpdateBlockRange(batchFirstBlock, batchLastBlock, us.readService, blockSigner, logger)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update block range: %w", err)
 		}
 		totalCount += count
 	}
@@ -94,9 +116,9 @@ func UpdateBlockRange(
 
 	blocks, err := readService.GetBlockSigners(fromBlock, toBlock)
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("failed to get block signers: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"fetched data from CometBFT",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
@@ -106,7 +128,7 @@ func UpdateBlockRange(
 	for _, block := range blocks {
 		valData, err := readService.GetValidatorForAddressAtBlock(block.ProposerAddress, block.Height)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("failed to get validator for address at block(1): %w", err)
 		}
 		blockSignerStore.Add(&entities.BlockSigner{
 			VegaTime: block.Time,
@@ -116,7 +138,7 @@ func UpdateBlockRange(
 		for _, signerAddress := range block.SignerAddresses {
 			valData, err := readService.GetValidatorForAddressAtBlock(signerAddress, block.Height)
 			if err != nil {
-				return 0, err
+				return 0, fmt.Errorf("failed to get validator for address at block(2): %w", err)
 			}
 			blockSignerStore.Add(&entities.BlockSigner{
 				VegaTime: block.Time,
@@ -129,9 +151,9 @@ func UpdateBlockRange(
 	storedData, err := blockSignerStore.FlushUpsert(context.Background())
 	storedCount := len(storedData)
 	if err != nil {
-		return storedCount, err
+		return storedCount, fmt.Errorf("failed to flush block signers: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"stored data in SQLStore",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),

@@ -38,7 +38,16 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		if lastProcessedBlock > 0 {
 			fromBlock = lastProcessedBlock + 1
 		} else {
+			// No blocks in database - Get the first block from the Tendermint API
+			earliestBlock, err := us.readService.GetEarliestBlockHeight(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get the earliest comet block: %w", err)
+			}
+
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
+			if fromBlock < earliestBlock {
+				fromBlock = earliestBlock
+			}
 			if fromBlock <= 0 {
 				fromBlock = 1
 			}
@@ -65,7 +74,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		}
 		count, err := UpdateCometTxsRange(batchFirstBlock, batchLastBlock, us.readService, serviceStore, logger)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update comet txs range: %w", err)
 		}
 		totalCount += count
 	}
@@ -86,12 +95,11 @@ func UpdateCometTxsRange(
 	serviceStore *sqlstore.CometTxs,
 	logger *logging.Logger,
 ) (int, error) {
-
 	txs, err := readService.GetCometTxs(fromBlock, toBlock)
 	if err != nil {
 		return -1, err
 	}
-	logger.Info(
+	logger.Debug(
 		"fetched data from CometBFT",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
@@ -105,9 +113,9 @@ func UpdateCometTxsRange(
 	storedData, err := serviceStore.FlushUpsertWithoutTime(context.Background())
 	storedCount := len(storedData)
 	if err != nil {
-		return storedCount, err
+		return storedCount, fmt.Errorf("failed to flush comet txs range: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"stored data in SQLStore",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),

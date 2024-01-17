@@ -15,14 +15,14 @@
         //
         // Finally you can run this debugging
         {
-            "name": "Attach to Process",
+            "name": "Attach to remote process",
             "type": "go",
             "request": "attach",
             "debugAdapter": "dlv-dap",
 
             "mode": "remote",
             "port": 55555,
-            "host": "m0.vega.community",
+            "host": "m2.vega.community",
             "asRoot": true,
             "substitutePath": [
                 {
@@ -36,8 +36,23 @@
                     //
                     "to": "/home/runner/work/vega-monitoring/vega-monitoring/vega-monitoring",
                     "from": "${workspaceFolder}"
+                },
+                {
+                    "to": "/home/runner/go/pkg/mod/code.vegaprotocol.io",
+                    "from": "${workspaceFolder}/vendor/code.vegaprotocol.io"
                 }
+            ],
+        },
+        {
+            "name": "vega-monitoring service start",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": [
+                "service", "start", 
+                "--config", "${workspaceFolder}/config.toml",
             ]
-        }
+        },
     ]
 }

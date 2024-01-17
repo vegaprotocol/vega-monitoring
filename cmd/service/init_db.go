@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"code.vegaprotocol.io/vega/logging"
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
@@ -33,14 +34,26 @@ func init() {
 	initDBArgs.ServiceArgs = &serviceArgs
 }
 
+func setupDB(logger *logging.Logger, cfg *config.Config) error {
+	if err := sqlstore.MigrateToLatestSchema(logger, cfg.SQLStore.GetConnectionConfig()); err != nil {
+		return fmt.Errorf("failed to migrate to the latest schema: %w", err)
+	}
+
+	if err := sqlstore.SetRetentionPolicies(cfg.SQLStore.GetConnectionConfig(), cfg.DataNodeDBExtension.BaseRetentionPolicy, cfg.DataNodeDBExtension.RetentionPolicy, logger); err != nil {
+		return fmt.Errorf("failed to set retention policies: %w", err)
+	}
+
+	return nil
+}
+
 func RunInitDB(args InitDBArgs) error {
 	cfg, logger, err := config.GetConfigAndLogger(args.ConfigFilePath, args.Debug)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get config and logger: %w", err)
 	}
 
-	if err := sqlstore.MigrateToLatestSchema(logger, cfg.SQLStore.GetConnectionConfig()); err != nil {
-		return err
+	if err := setupDB(logger, cfg); err != nil {
+		return fmt.Errorf("failed to setup database: %w", err)
 	}
 
 	return nil

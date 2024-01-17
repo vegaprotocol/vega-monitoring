@@ -7,10 +7,6 @@ import (
 	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
 )
 
-//
-//
-//
-
 func (c *CometClient) GetValidatorForAddressAtBlock(address string, block int64) (*ValidatorData, error) {
 	if val, ok := c.validatorByAddress[address]; ok {
 		return &val, nil

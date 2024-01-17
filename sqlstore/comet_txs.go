@@ -3,7 +3,6 @@ package sqlstore
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/georgysavva/scany/pgxscan"
@@ -70,24 +69,22 @@ func (nhs *CometTxs) UpsertWithoutTime(ctx context.Context, newTx comet.CometTx)
 }
 
 func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx, error) {
-	var blockCtx context.Context
-	var cancel context.CancelFunc
-	blockCtx, cancel = context.WithCancel(ctx)
+	blockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	blockCtx, err := c.WithTransaction(blockCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add transaction to context:%w", err)
+		return nil, NewUpsertErr(StoreCometTxs, ErrAcquireTx, err)
 	}
 
 	for _, tx := range c.cometTxs {
 		if err := c.UpsertWithoutTime(blockCtx, tx); err != nil {
-			return nil, err
+			return nil, NewUpsertErr(StoreCometTxs, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := c.Commit(blockCtx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction to FlushUpsertWithoutTime Network History Segments: %w", err)
+		return nil, NewUpsertErr(StoreCometTxs, ErrUpsertCommit, err)
 	}
 
 	flushed := c.cometTxs
@@ -97,7 +94,6 @@ func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx,
 }
 
 func (c *CometTxs) GetLastestBlockInStore(ctx context.Context) (int64, error) {
-
 	result := &struct {
 		Height int64 `db:"height"`
 	}{}

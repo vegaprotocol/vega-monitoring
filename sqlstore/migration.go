@@ -6,7 +6,6 @@ import (
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pressly/goose/v3"
 
 	"github.com/vegaprotocol/vega-monitoring/config"
@@ -21,17 +20,11 @@ const (
 )
 
 func MigrateToLatestSchema(log *logging.Logger, connConfig vega_sqlstore.ConnectionConfig) error {
-	goose.SetBaseFS(EmbedMigrations)
-	goose.SetLogger(log.Named("db migration").GooseLogger())
-	goose.SetVerbose(true)
-	goose.SetTableName(GooseDBVersionTableName)
-
-	poolConfig, err := connConfig.GetPoolConfig()
+	db, err := DBFromConnectionConfig(log, connConfig)
 	if err != nil {
-		return fmt.Errorf("failed to get pool config:%w", err)
+		return fmt.Errorf("failed to create DB object in migrate schema: %w", err)
 	}
 
-	db := stdlib.OpenDB(*poolConfig.ConnConfig)
 	defer db.Close()
 
 	log.Info("Ensuring metrics schema exists for the metrics_goose_db_version table")
@@ -52,17 +45,10 @@ func RevertToSchemaVersionZero(
 	log *logging.Logger,
 	connConfig vega_sqlstore.ConnectionConfig,
 ) error {
-	goose.SetBaseFS(EmbedMigrations)
-	goose.SetLogger(log.Named("db migration").GooseLogger())
-	goose.SetVerbose(true)
-	goose.SetTableName(GooseDBVersionTableName)
-
-	poolConfig, err := connConfig.GetPoolConfig()
+	db, err := DBFromConnectionConfig(log, connConfig)
 	if err != nil {
-		return fmt.Errorf("failed to get pool config:%w", err)
+		return fmt.Errorf("failed to create DB object in revert schema to zero: %w", err)
 	}
-
-	db := stdlib.OpenDB(*poolConfig.ConnConfig)
 	defer db.Close()
 
 	log.Info("Checking database version and Reverting SQL schema to version 0, please wait...")
@@ -75,17 +61,10 @@ func RevertToSchemaVersionZero(
 }
 
 func RevertOneVersion(log *logging.Logger, connConfig vega_sqlstore.ConnectionConfig) error {
-	goose.SetBaseFS(EmbedMigrations)
-	goose.SetLogger(log.Named("db migration").GooseLogger())
-	goose.SetVerbose(true)
-	goose.SetTableName(GooseDBVersionTableName)
-
-	poolConfig, err := connConfig.GetPoolConfig()
+	db, err := DBFromConnectionConfig(log, connConfig)
 	if err != nil {
-		return fmt.Errorf("failed to get pool config:%w", err)
+		return fmt.Errorf("failed to create DB object in revert schema: %w", err)
 	}
-
-	db := stdlib.OpenDB(*poolConfig.ConnConfig)
 	defer db.Close()
 
 	log.Info("Checking database version and Reverting SQL schema to version 0, please wait...")
