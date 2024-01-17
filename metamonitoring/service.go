@@ -2,11 +2,19 @@ package metamonitoring
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
+	vegaclient "github.com/vegaprotocol/vega-monitoring/clients/vega"
 	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
+)
+
+const (
+	BlockDiffHealthyThreshold = 900
+	TimeDiffHealthyThreshold  = 10 * time.Minute
 )
 
 type MonitoringStatusPublisher interface {
@@ -32,16 +40,29 @@ func (ps *monitoringStatusPublisherService) Publish(isHealthy bool) error {
 	return nil
 }
 
-type MonitoringStatusUpdateService struct {
-	store          *sqlstore.MonitoringStatus
-	logger         *logging.Logger
-	activeServices []entities.MonitoringServiceType
+type MonitoringStore interface {
+	NewMonitoringStatus() *sqlstore.MonitoringStatus
+	NewBlocks() *vega_sqlstore.Blocks
 }
 
-func NewMonitoringStatusUpdateService(store *sqlstore.MonitoringStatus, logger *logging.Logger) (*MonitoringStatusUpdateService, error) {
+type VegaClient interface {
+	GetStatistics() (*vegaclient.Statistics, error)
+}
+
+type MonitoringStatusUpdateService struct {
+	monitoringStatusStore *sqlstore.MonitoringStatus
+	blocksStore           *vega_sqlstore.Blocks
+	vegaClient            VegaClient
+	logger                *logging.Logger
+	activeServices        []entities.MonitoringServiceType
+}
+
+func NewMonitoringStatusUpdateService(store MonitoringStore, vegaClient VegaClient, logger *logging.Logger) (*MonitoringStatusUpdateService, error) {
 	return &MonitoringStatusUpdateService{
-		store:  store,
-		logger: logger,
+		monitoringStatusStore: store.NewMonitoringStatus(),
+		blocksStore:           store.NewBlocks(),
+		vegaClient:            vegaClient,
+		logger:                logger,
 	}, nil
 }
 
@@ -49,7 +70,7 @@ func (msus *MonitoringStatusUpdateService) BlockSignersStatusPublisher() Monitor
 	msus.activeServices = append(msus.activeServices, entities.BlockSignersSvc)
 
 	return &monitoringStatusPublisherService{
-		store:   msus.store,
+		store:   msus.monitoringStatusStore,
 		service: entities.BlockSignersSvc,
 	}
 }
@@ -58,7 +79,7 @@ func (msus *MonitoringStatusUpdateService) SegmentsStatusPublisher() MonitoringS
 	msus.activeServices = append(msus.activeServices, entities.SegmentsSvc)
 
 	return &monitoringStatusPublisherService{
-		store:   msus.store,
+		store:   msus.monitoringStatusStore,
 		service: entities.SegmentsSvc,
 	}
 }
@@ -67,7 +88,7 @@ func (msus *MonitoringStatusUpdateService) CometTxsStatusPublisher() MonitoringS
 	msus.activeServices = append(msus.activeServices, entities.CometTxsSvc)
 
 	return &monitoringStatusPublisherService{
-		store:   msus.store,
+		store:   msus.monitoringStatusStore,
 		service: entities.CometTxsSvc,
 	}
 }
@@ -76,7 +97,7 @@ func (msus *MonitoringStatusUpdateService) NetworkBalancesStatusPublisher() Moni
 	msus.activeServices = append(msus.activeServices, entities.NetworkBalancesSvc)
 
 	return &monitoringStatusPublisherService{
-		store:   msus.store,
+		store:   msus.monitoringStatusStore,
 		service: entities.NetworkBalancesSvc,
 	}
 }
@@ -85,20 +106,83 @@ func (msus *MonitoringStatusUpdateService) AssetPricesStatusPublisher() Monitori
 	msus.activeServices = append(msus.activeServices, entities.AssetPricesSvc)
 
 	return &monitoringStatusPublisherService{
-		store:   msus.store,
+		store:   msus.monitoringStatusStore,
 		service: entities.AssetPricesSvc,
 	}
 }
 
-func (msus *MonitoringStatusUpdateService) Run(ctx context.Context) {
-	ticker := time.NewTicker(60 * time.Second)
+func (msus *MonitoringStatusUpdateService) isNodeUpToDate(ctx context.Context) (bool, error) {
+	coreStatistics, err := msus.vegaClient.GetStatistics()
+	if err != nil {
+		return false, fmt.Errorf("failed to get core statistics: %w", err)
+	}
 
+	timeDiff := coreStatistics.CurrentTime.Sub(coreStatistics.VegaTime)
+	if timeDiff > TimeDiffHealthyThreshold {
+		msus.logger.Warningf(
+			"Local node is not up to date: (currentTime(%s) - vegaTime(%s)) > %s. Diff %s",
+			coreStatistics.CurrentTime.String(),
+			coreStatistics.VegaTime.String(),
+			TimeDiffHealthyThreshold.String(),
+			timeDiff.String(),
+		)
+		return false, nil
+	}
+
+	latestDataNodeBlock, err := msus.blocksStore.GetLastBlock(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get last block: %w", err)
+	}
+
+	blocksDiff := coreStatistics.BlockHeight - latestDataNodeBlock.Height
+	if blocksDiff > BlockDiffHealthyThreshold {
+		msus.logger.Warningf(
+			"Local node is not up to date: (vega block(%d) - datanode block(%d)) > %d. Diff %d",
+			coreStatistics.BlockHeight,
+			latestDataNodeBlock.Height,
+			BlockDiffHealthyThreshold,
+			blocksDiff,
+		)
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval time.Duration) {
+	time.Sleep(tickInterval + 3)
+	ticker := time.NewTicker(tickInterval)
+
+	monitoringStatusStore := msus.monitoringStatusStore
 	for {
+		isUpToDate, err := msus.isNodeUpToDate(ctx)
+		if err != nil {
+			msus.logger.Errorf("failed to check if node is up to date: %s", err.Error())
+		}
+
+		// Node is lagging too much or it is still replaying
+		// in this case we publish failed state with the
+		// correct error
+		if !isUpToDate {
+			msus.logger.Warningf("The local vega node is not up to date. Failing all the checks.")
+			monitoringStatusStore.FlushClear(ctx)
+			for _, service := range msus.activeServices {
+				if !monitoringStatusStore.IsPendingFor(service) {
+					monitoringStatusStore.Add(entities.MonitoringStatus{
+						StatusTime:      time.Now(),
+						IsHealthy:       false,
+						Service:         service,
+						UnhealthyReason: entities.ReasonNetworkIsNotUpToDate,
+					})
+				}
+			}
+		}
+
 		// Check if all of the monitoring services provided any status update
 		// if not add failed state
 		for _, service := range msus.activeServices {
-			if !msus.store.IsPendingFor(service) {
-				msus.store.Add(entities.MonitoringStatus{
+			if !monitoringStatusStore.IsPendingFor(service) {
+				monitoringStatusStore.Add(entities.MonitoringStatus{
 					StatusTime:      time.Now(),
 					IsHealthy:       false,
 					Service:         service,
@@ -115,9 +199,10 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context) {
 
 		innerCtx, cancel := context.WithCancel(ctx)
 		// Upsert all the pending states
-		if _, err := msus.store.FlushUpsert(innerCtx); err != nil {
+		if _, err := monitoringStatusStore.FlushUpsert(innerCtx); err != nil {
 			msus.logger.Errorf("failed to flush upsert monitoring status updates: %w", err)
 		}
+
 		cancel()
 		select {
 		case <-ticker.C:
