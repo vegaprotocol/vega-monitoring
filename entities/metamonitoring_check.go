@@ -33,13 +33,14 @@ type UnhealthyReason int
 const (
 	ReasonUnknown                  UnhealthyReason = 0
 	ReasonMissingStatusFromService UnhealthyReason = 1
+	ReasonNetworkIsNotUpToDate     UnhealthyReason = 2
 )
 
 type MonitoringStatus struct {
-	StatusTime      time.Time
-	IsHealthy       bool
-	Service         MonitoringServiceType
-	UnhealthyReason UnhealthyReason
+	StatusTime      time.Time             `db:"status_time"`
+	IsHealthy       bool                  `db:"is_healthy"`
+	Service         MonitoringServiceType `db:"monitoring_service"`
+	UnhealthyReason UnhealthyReason       `db:"unhealthy_reason"`
 }
 
 func (s MonitoringStatus) UnhealthyReasonString() string {
