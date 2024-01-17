@@ -1,6 +1,6 @@
 module github.com/vegaprotocol/vega-monitoring
 
-go 1.19
+go 1.20
 
 require (
 	code.vegaprotocol.io/vega v0.72.2-0.20230727033100-e9f8609a885d
