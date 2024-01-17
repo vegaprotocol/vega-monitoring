@@ -5,6 +5,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
+	vegaclient "github.com/vegaprotocol/vega-monitoring/clients/vega"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
@@ -36,6 +37,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 	}
 	coingeckoClient := coingecko.NewCoingeckoClient(&svc.Config.Coingecko, svc.Log)
 	cometClient := comet.NewCometClient(&svc.Config.CometBFT)
+	coreClient := vegaclient.NewVegaClient(svc.Config.VegaCore.ApiURL)
 
 	if svc.Config.DataNodeDBExtension.Enabled {
 		var ethClient *ethutils.EthClient
@@ -59,7 +61,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 			return
 		}
 
-		svc.MonitoringService, err = metamonitoring.NewMonitoringStatusUpdateService(svc.StoreService.NewMonitoringStatus(), svc.Log)
+		svc.MonitoringService, err = metamonitoring.NewMonitoringStatusUpdateService(svc.StoreService, coreClient, svc.Log)
 		if err != nil {
 			return
 		}

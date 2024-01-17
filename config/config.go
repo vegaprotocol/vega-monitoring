@@ -18,6 +18,8 @@ const DefaultRetentionPolicy = "standard"
 type Config struct {
 	Coingecko CoingeckoConfig `group:"Coingecko" namespace:"coingecko" comment:"prices are stored in DataNode database in metrics.asset_prices(_current) table"`
 
+	VegaCore VegaCoreConfig `group:"VegaCore" namespace:"vegacore" comment:"used to collect information from the core API"`
+
 	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs\n stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables\n endpoint needs to have discard_abci_responses set to false"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
@@ -41,6 +43,10 @@ type CoingeckoConfig struct {
 }
 
 type CometBFTConfig struct {
+	ApiURL string `long:"ApiURL"`
+}
+
+type VegaCoreConfig struct {
 	ApiURL string `long:"ApiURL"`
 }
 
