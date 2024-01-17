@@ -13,6 +13,14 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
+const (
+	BlockSignersLoopInterval    = 30 * time.Second
+	NetworkHistoryLoopInterval  = 120 * time.Second
+	CometTxsLoopInterval        = 20 * time.Second
+	NetworkBalancesLoopInterval = 15 * time.Second
+	AssetPricesLoopInterval     = 25 * time.Second
+)
+
 func startDataNodeDBExtension(
 	svc *cmd.AllServices,
 	shutdownWg *sync.WaitGroup,
@@ -97,7 +105,7 @@ func startDataNodeDBExtension(
 	shutdownWg.Add(1)
 	go func() {
 		defer shutdownWg.Done()
-		svc.MonitoringService.Run(ctx)
+		svc.MonitoringService.Run(ctx, NetworkHistoryLoopInterval*2)
 	}()
 }
 
@@ -107,7 +115,7 @@ func runBlockSignersScraper(ctx context.Context, svc *cmd.AllServices, statusRep
 
 	time.Sleep(5 * time.Second) // delay everything by 5sec
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(BlockSignersLoopInterval)
 	defer ticker.Stop()
 
 	for {
@@ -136,7 +144,7 @@ func runNetworkHistorySegmentsScraper(ctx context.Context, svc *cmd.AllServices,
 
 	time.Sleep(10 * time.Second) // delay everything by 10sec
 
-	ticker := time.NewTicker(250 * time.Second) // every ~300 block
+	ticker := time.NewTicker(NetworkHistoryLoopInterval) // every ~300 block
 	defer ticker.Stop()
 
 	for {
@@ -169,7 +177,7 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices, statusReporte
 
 	time.Sleep(20 * time.Second) // delay everything by 20sec - 15sec after Block Signers scraper
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(CometTxsLoopInterval)
 	defer ticker.Stop()
 
 	for {
@@ -196,7 +204,7 @@ func runCometTxsScraper(ctx context.Context, svc *cmd.AllServices, statusReporte
 func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
 	svc.Log.Info("Starting update Network Balances Scraper in 15sec")
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(NetworkBalancesLoopInterval)
 
 	ticker := time.NewTicker(50 * time.Second)
 	defer ticker.Stop()
