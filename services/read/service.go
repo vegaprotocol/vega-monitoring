@@ -17,8 +17,8 @@ type ReadService struct {
 }
 
 type StoreReadService interface {
-	NewMetamonitoringStatus() *sqlstore.MetamonitoringStatus
 	NewNetworkHistorySegment() *sqlstore.NetworkHistorySegment
+	NewMonitoringStatus() *sqlstore.MonitoringStatus
 }
 
 func NewReadService(

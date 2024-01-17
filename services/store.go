@@ -56,10 +56,6 @@ func (s *StoreService) NewAssetPrices() *sqlstore.AssetPrices {
 	return sqlstore.NewAssetPrices(s.connSource)
 }
 
-func (s *StoreService) NewMetamonitoringStatus() *sqlstore.MetamonitoringStatus {
-	return sqlstore.NewMetamonitoringStatus(s.connSource)
-}
-
 func (s *StoreService) NewMonitoringStatus() *sqlstore.MonitoringStatus {
 	return sqlstore.NewMonitoringStatus(s.connSource)
 }
@@ -67,4 +63,8 @@ func (s *StoreService) NewMonitoringStatus() *sqlstore.MonitoringStatus {
 // Data Node tables
 func (s *StoreService) NewAssets() *vega_sqlstore.Assets {
 	return vega_sqlstore.NewAssets(s.connSource)
+}
+
+func (s *StoreService) NewBlocks() *vega_sqlstore.Blocks {
+	return vega_sqlstore.NewBlocks(s.connSource)
 }

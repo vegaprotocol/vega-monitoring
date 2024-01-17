@@ -20,7 +20,6 @@ func (us *UpdateService) UpdateBlockSignersAllNew(ctx context.Context) error {
 }
 
 func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64, toBlock int64) error {
-	var err error
 	blockSigner := us.storeService.NewBlockSigner()
 
 	logger := us.log.With(zap.String(UpdaterType, "UpdateBlockSigners"))
@@ -28,9 +27,20 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 	// get Last Block
 	if toBlock <= 0 {
 		logger.Debug("getting network toBlock network height")
-		toBlock, err = us.readService.GetNetworkLatestBlockHeight()
+		latestCometBlock, err := us.readService.GetNetworkLatestBlockHeight()
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
+		}
+
+		blocksStore := us.storeService.NewBlocks()
+		latestDataNodeBlock, err := blocksStore.GetLastBlock(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to fetch last block from data base: %w", err)
+		}
+
+		toBlock = latestCometBlock
+		if toBlock > latestDataNodeBlock.Height {
+			toBlock = latestDataNodeBlock.Height
 		}
 	}
 
@@ -108,7 +118,7 @@ func UpdateBlockRange(
 	if err != nil {
 		return -1, fmt.Errorf("failed to get block signers: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"fetched data from CometBFT",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
@@ -143,7 +153,7 @@ func UpdateBlockRange(
 	if err != nil {
 		return storedCount, fmt.Errorf("failed to flush block signers: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"stored data in SQLStore",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
