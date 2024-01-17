@@ -99,7 +99,7 @@ func UpdateCometTxsRange(
 	if err != nil {
 		return -1, err
 	}
-	logger.Info(
+	logger.Debug(
 		"fetched data from CometBFT",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
@@ -115,7 +115,7 @@ func UpdateCometTxsRange(
 	if err != nil {
 		return storedCount, fmt.Errorf("failed to flush comet txs range: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"stored data in SQLStore",
 		zap.Int64("from-block", fromBlock),
 		zap.Int64("to-block", toBlock),
