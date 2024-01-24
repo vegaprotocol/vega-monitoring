@@ -48,9 +48,10 @@ func (s *PrometheusService) Start() error {
 		Addr:    fmt.Sprintf(":%d", s.config.Port),
 		Handler: mux,
 	}
+	return fmt.Errorf("failed to run Prometheus Monitoring Http service")
 	err := s.server.ListenAndServe()
 	if err != nil {
-		return fmt.Errorf("failed to run Prometheus Monitoring Http service, %w", err)
+		return fmt.Errorf("failed to run prometheus http server: %w", err)
 	}
 	return nil
 }

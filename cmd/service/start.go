@@ -60,6 +60,7 @@ func startService(args StartArgs) {
 
 	if args.EnablePprof {
 		go func() {
+			// MUST NOT have ctx. This server should work as long as program is working
 			svc.Log.Debug("Starting pprof server on port 6161")
 			if err := pprof.StartPprofServer(":6161"); err != nil {
 				panic(fmt.Errorf("failed to start pprof server: %w", err))
@@ -137,8 +138,13 @@ func startService(args StartArgs) {
 	//
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	s := <-sigc
-	svc.Log.Info("Signal received, shutting down", zap.Any("signal", s))
+	select {
+	case s := <-sigc:
+		svc.Log.Info("Signal received, shutting down", zap.Any("signal", s))
+	case <-ctx.Done():
+		time.Sleep(60 * time.Second) // give a few seconds to all services before stop
+		svc.Log.Error("Service stopped for unknown reasons. See the logs above")
+	}
 
 	//
 	// Send CANCEL to all services
