@@ -48,12 +48,11 @@ func (s *MetaMonitoringStatusService) startUpdatingMetamonitoringStatuses(ctx co
 
 		if err != nil {
 			s.log.Error("Failed to get Meta-Monitoring statuses from monitoring database", zap.Error(err))
-			continue
+		} else {
+			s.collector.UpdateMonitoringDBStatuses(statuses)
+
+			s.log.Debug("successfully updated Meta-Monitoring statuses in prometheus")
 		}
-
-		s.collector.UpdateMonitoringDBStatuses(statuses)
-
-		s.log.Debug("successfully updated Meta-Monitoring statuses in prometheus")
 
 		select {
 		case <-ctx.Done():
