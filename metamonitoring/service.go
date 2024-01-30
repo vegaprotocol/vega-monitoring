@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
 	vegaclient "github.com/vegaprotocol/vega-monitoring/clients/vega"
 	"github.com/vegaprotocol/vega-monitoring/entities"
@@ -43,7 +42,7 @@ func (ps *monitoringStatusPublisherService) Publish(isHealthy bool) error {
 
 type MonitoringStore interface {
 	NewMonitoringStatus() *sqlstore.MonitoringStatus
-	NewBlocks() *vega_sqlstore.Blocks
+	NewBlocks() *sqlstore.Blocks
 }
 
 type VegaClient interface {
@@ -52,7 +51,7 @@ type VegaClient interface {
 
 type MonitoringStatusUpdateService struct {
 	monitoringStatusStore *sqlstore.MonitoringStatus
-	blocksStore           *vega_sqlstore.Blocks
+	blocksStore           *sqlstore.Blocks
 	vegaClient            VegaClient
 	logger                *logging.Logger
 	activeServices        []entities.MonitoringServiceType
@@ -130,7 +129,7 @@ func (msus *MonitoringStatusUpdateService) isNodeUpToDate(ctx context.Context) (
 		return false, nil
 	}
 
-	latestDataNodeBlock, err := msus.blocksStore.GetLastBlock(ctx)
+	latestDataNodeBlock, err := msus.blocksStore.GetLatestBlockWithCache(ctx, 30*time.Second)
 	if err != nil {
 		return false, fmt.Errorf("failed to get last block: %w", err)
 	}

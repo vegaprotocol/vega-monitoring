@@ -65,6 +65,6 @@ func (s *StoreService) NewAssets() *vega_sqlstore.Assets {
 	return vega_sqlstore.NewAssets(s.connSource)
 }
 
-func (s *StoreService) NewBlocks() *vega_sqlstore.Blocks {
-	return vega_sqlstore.NewBlocks(s.connSource)
+func (s *StoreService) NewBlocks() *sqlstore.Blocks {
+	return sqlstore.NewBlocks(s.connSource)
 }
