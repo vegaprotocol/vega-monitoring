@@ -38,7 +38,7 @@ type blockResultsResponseTxEvent struct {
 
 func (c *CometClient) requestBlockResults(block int64) (blockResultsResponse, error) {
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
-		return blockResultsResponse{}, fmt.Errorf("Failed rate limiter for Get Block Results for block: %d. %w", block, err)
+		return blockResultsResponse{}, fmt.Errorf("failed rate limiter for get block results for block: %d. %w", block, err)
 	}
 	url := fmt.Sprintf("%s/block_results", c.config.ApiURL)
 	if block > 0 {
@@ -46,12 +46,12 @@ func (c *CometClient) requestBlockResults(block int64) (blockResultsResponse, er
 	}
 	resp, err := http.Get(url)
 	if err != nil {
-		return blockResultsResponse{}, fmt.Errorf("Failed to Get Block Results for block: %d. %w", block, err)
+		return blockResultsResponse{}, fmt.Errorf("failed to get block results for block: %d. %w", block, err)
 	}
 	defer resp.Body.Close()
 	var payload blockResultsResponse
 	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return blockResultsResponse{}, fmt.Errorf("Failed to parse response for Get Block Results for block: %d. %w", block, err)
+		return blockResultsResponse{}, fmt.Errorf("failed to parse response for get block results for block: %d. %w", block, err)
 	}
 
 	return payload, nil

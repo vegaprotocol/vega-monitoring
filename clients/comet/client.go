@@ -19,7 +19,7 @@ type CometClient struct {
 func NewCometClient(config *config.CometBFTConfig) *CometClient {
 	return &CometClient{
 		config:      config,
-		rateLimiter: rate.NewLimiter(rate.Every(10*time.Millisecond), 1),
+		rateLimiter: rate.NewLimiter(rate.Every(50*time.Millisecond), 1),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,
 		},
