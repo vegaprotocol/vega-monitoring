@@ -48,6 +48,12 @@ func (s MonitoringStatus) UnhealthyReasonString() string {
 }
 
 func UnHealthyReasonString(reason UnhealthyReason) string {
+	switch reason {
+	case ReasonMissingStatusFromService:
+		return "Missing status from the service"
+	case ReasonNetworkIsNotUpToDate:
+		return "Network is not up to date"
+	}
 
 	return "Unknown reason"
 }
