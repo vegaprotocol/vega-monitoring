@@ -37,7 +37,7 @@ type HealthCheckService struct {
 func NewHealthCheckService(readService readService, logger *logging.Logger) (*HealthCheckService, error) {
 	return &HealthCheckService{
 		readService: readService,
-		logger:      logger,
+		logger:      logger.Named("health-check"),
 		cachedAt:    time.Unix(0, 0),
 	}, nil
 }
@@ -66,7 +66,9 @@ func (hc *HealthCheckService) handler() http.HandlerFunc {
 			hc.lastResponse, err = hc.fetchStatus(context.Background())
 			if err != nil {
 				hc.logger.Error("Failed to fetch monitoring status", zap.Error(err), zap.String("requestId", requestId))
-				w.Write([]byte(fmt.Sprintf("Internal server error (request %s)", requestId)))
+				if _, err := w.Write([]byte(fmt.Sprintf("Internal server error (request %s)", requestId))); err != nil {
+					hc.logger.Error("failed to write 5XX for fetch Status", zap.Error(err))
+				}
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -75,12 +77,16 @@ func (hc *HealthCheckService) handler() http.HandlerFunc {
 		response, err := json.MarshalIndent(hc.lastResponse, "", "    ")
 		if err != nil {
 			hc.logger.Error("Failed to marshal response", zap.Error(err), zap.String("requestId", requestId))
-			w.Write([]byte(fmt.Sprintf("Internal server error (request %s)", requestId)))
+			if _, err := w.Write([]byte(fmt.Sprintf("Internal server error (request %s)", requestId))); err != nil {
+				hc.logger.Error("failed to write 5XX response for unmarshal: %w", zap.Error(err))
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(response)
+		if _, err := w.Write(response); err != nil {
+			hc.logger.Error("failed to write healthy/unhealthy response: %w", zap.Error(err))
+		}
 		if hc.lastResponse.Details.HealthyOverAll {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -113,7 +119,9 @@ func (hc *HealthCheckService) Run(ctx context.Context, port int) error {
 	<-ctx.Done()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	srv.Shutdown(shutdownCtx)
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("failed to shutdown server: %w", err)
+	}
 
 	return nil
 }
