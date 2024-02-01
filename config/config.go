@@ -232,6 +232,10 @@ func NewDefaultConfig() Config {
 	config.DataNodeDBExtension.NetworkBalances.Enabled = true
 	config.DataNodeDBExtension.AssetPrices.Enabled = true
 	config.DataNodeDBExtension.BaseRetentionPolicy = DefaultRetentionPolicy
+	// HealthCheck
+	config.HealthCheck.Enabled = true
+	config.HealthCheck.Port = 8901
+	config.HealthCheck.GrafanaServer.Enabled = false
 
 	return config
 }
