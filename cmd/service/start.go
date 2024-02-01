@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vegaprotocol/vega-monitoring/cmd"
+	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/pprof"
 	"go.uber.org/zap"
 )
@@ -64,6 +65,21 @@ func startService(args StartArgs) {
 			svc.Log.Debug("Starting pprof server on port 6161")
 			if err := pprof.StartPprofServer(":6161"); err != nil {
 				panic(fmt.Errorf("failed to start pprof server: %w", err))
+			}
+		}()
+	}
+
+	if svc.Config.HealthCheck.Enabled {
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			svc.Log.Info("Starting the health-check service")
+			healthCheckSvc, err := metamonitoring.NewHealthCheckService(svc.ReadService, svc.Log)
+			if err != nil {
+				svc.Log.Fatal("Failed to create the health-check service", zap.Error(err))
+			}
+			if err := healthCheckSvc.Run(ctx, svc.Config.HealthCheck.Port); err != nil {
+				svc.Log.Fatal("Failed to run the health check service", zap.Error(err))
 			}
 		}()
 	}

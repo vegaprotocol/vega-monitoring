@@ -18,7 +18,7 @@ import (
 const responseCacheTime = 30 * time.Second
 
 type readService interface {
-	GetMetaMonitoringStatusesExtended(context.Context) (read.MetaMonitoringStatusesExtended, error)
+	GetMetaMonitoringStatusesExtended(context.Context) (*read.MetaMonitoringStatusesExtended, error)
 }
 
 type healthCheckResponse struct {
@@ -50,7 +50,7 @@ func (hc *HealthCheckService) fetchStatus(ctx context.Context) (*healthCheckResp
 
 	return &healthCheckResponse{
 		Healthy: statuses.HealthyOverAll,
-		Details: statuses,
+		Details: *statuses,
 	}, nil
 }
 
