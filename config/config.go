@@ -24,6 +24,8 @@ type Config struct {
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
 
+	HealthCheck HealthCheckConfig `group:"HealthCheck" namespace:"healthcheck"`
+
 	Logging struct {
 		Level string `long:"Level"`
 	} `group:"Logging" namespace:"logging"`
@@ -35,6 +37,15 @@ type Config struct {
 	Monitoring MonitoringConfig `group:"Monitoring" namespace:"monitoring" comment:"collected metrics are exposed on prometheus"`
 
 	DataNodeDBExtension DataNodeDBExtensionConfig `group:"DataNodeDBExtension" namespace:"datanodedbextension" comment:"Create extra tables in DataNode database, and continuously fill them in"`
+}
+
+type HealthCheckConfig struct {
+	Enabled       bool
+	Port          int `long:"port" comment:"the port health-check HTTP server is running on"`
+	GrafanaServer struct {
+		Enabled bool `long:"enabled" comment:"if enabled, the health-check expects grafana-server to be running"`
+		Port    int  `long:"port" comment:"port the grafana-server is running on"`
+	} `group:"GrafanaServer" namespace:"grafanaserver"`
 }
 
 type CoingeckoConfig struct {
@@ -221,6 +232,10 @@ func NewDefaultConfig() Config {
 	config.DataNodeDBExtension.NetworkBalances.Enabled = true
 	config.DataNodeDBExtension.AssetPrices.Enabled = true
 	config.DataNodeDBExtension.BaseRetentionPolicy = DefaultRetentionPolicy
+	// HealthCheck
+	config.HealthCheck.Enabled = true
+	config.HealthCheck.Port = 8901
+	config.HealthCheck.GrafanaServer.Enabled = false
 
 	return config
 }
