@@ -34,6 +34,7 @@ const (
 	ReasonUnknown                  UnhealthyReason = 0
 	ReasonMissingStatusFromService UnhealthyReason = 1
 	ReasonNetworkIsNotUpToDate     UnhealthyReason = 2
+	ReasonTargetConnectionFailure  UnhealthyReason = 3
 )
 
 type MonitoringStatus struct {
@@ -53,6 +54,8 @@ func UnHealthyReasonString(reason UnhealthyReason) string {
 		return "Missing status from the service"
 	case ReasonNetworkIsNotUpToDate:
 		return "Network is not up to date"
+	case ReasonTargetConnectionFailure:
+		return "Target connection failure"
 	}
 
 	return "Unknown reason"

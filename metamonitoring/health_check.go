@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/google/uuid"
+	"github.com/vegaprotocol/vega-monitoring/config"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 	"go.uber.org/zap"
 )
@@ -21,25 +24,79 @@ type readService interface {
 	GetMetaMonitoringStatusesExtended(context.Context) (*read.MetaMonitoringStatusesExtended, error)
 }
 
+type healthCheckStatusDetails struct {
+	Healthy         bool
+	UpdatedAt       time.Time
+	UnhealthyReason string
+}
+
+func newHealthCheckStatusDetailsFromReadStatusDetails(details read.StatusDetails) healthCheckStatusDetails {
+	return healthCheckStatusDetails{
+		Healthy:         details.Healthy,
+		UpdatedAt:       details.UpdatedAt,
+		UnhealthyReason: entities.UnHealthyReasonString(details.UnhealthyReason),
+	}
+}
+
+type healthCheckResponseDetails struct {
+	DataNodeData               healthCheckStatusDetails
+	AssetPricesData            healthCheckStatusDetails
+	BlockSignersData           healthCheckStatusDetails
+	CometTxsData               healthCheckStatusDetails
+	NetworkBalancesData        healthCheckStatusDetails
+	NetworkHistorySegmentsData healthCheckStatusDetails
+	GrafanaServer              *healthCheckStatusDetails
+}
+
 type healthCheckResponse struct {
 	Healthy bool
-	Details read.MetaMonitoringStatusesExtended
+	Details healthCheckResponseDetails
 }
 
 type HealthCheckService struct {
 	readService  readService
 	mut          sync.Mutex
 	cachedAt     time.Time
+	config       config.HealthCheckConfig
 	lastResponse *healthCheckResponse
 	logger       *logging.Logger
 }
 
-func NewHealthCheckService(readService readService, logger *logging.Logger) (*HealthCheckService, error) {
+func NewHealthCheckService(cfg config.HealthCheckConfig, readService readService, logger *logging.Logger) (*HealthCheckService, error) {
 	return &HealthCheckService{
 		readService: readService,
+		config:      cfg,
 		logger:      logger.Named("health-check"),
 		cachedAt:    time.Unix(0, 0),
 	}, nil
+}
+
+func (hc *HealthCheckService) fetchGrafanaStatus() *healthCheckStatusDetails {
+	resp, err := http.Get(fmt.Sprintf("%s/api/health", strings.TrimRight(hc.config.GrafanaServer.URI, "/")))
+	if err != nil {
+		hc.logger.Warn("Grafana Server is unhealthy: error during get call", zap.Error(err))
+		return &healthCheckStatusDetails{
+			Healthy:         false,
+			UpdatedAt:       time.Now(),
+			UnhealthyReason: entities.UnHealthyReasonString(entities.ReasonTargetConnectionFailure),
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		hc.logger.Warningf("Grafana Server is unhealthy. Expected %d status code, got %d", http.StatusOK, resp.StatusCode)
+
+		return &healthCheckStatusDetails{
+			Healthy:         false,
+			UpdatedAt:       time.Now(),
+			UnhealthyReason: entities.UnHealthyReasonString(entities.ReasonTargetConnectionFailure),
+		}
+	}
+
+	return &healthCheckStatusDetails{
+		Healthy:         true,
+		UpdatedAt:       time.Now(),
+		UnhealthyReason: entities.UnHealthyReasonString(entities.ReasonUnknown),
+	}
 }
 
 func (hc *HealthCheckService) fetchStatus(ctx context.Context) (*healthCheckResponse, error) {
@@ -48,9 +105,22 @@ func (hc *HealthCheckService) fetchStatus(ctx context.Context) (*healthCheckResp
 		return nil, fmt.Errorf("failed to fetch latest monitoring statuses: %w", err)
 	}
 
+	var grafanaServerStatus *healthCheckStatusDetails
+	if hc.config.GrafanaServer.Enabled {
+		grafanaServerStatus = hc.fetchGrafanaStatus()
+	}
+
 	return &healthCheckResponse{
-		Healthy: statuses.HealthyOverAll,
-		Details: *statuses,
+		Healthy: statuses.HealthyOverAll && (grafanaServerStatus == nil || grafanaServerStatus.Healthy),
+		Details: healthCheckResponseDetails{
+			DataNodeData:               newHealthCheckStatusDetailsFromReadStatusDetails(statuses.DataNodeData),
+			AssetPricesData:            newHealthCheckStatusDetailsFromReadStatusDetails(statuses.AssetPricesData),
+			BlockSignersData:           newHealthCheckStatusDetailsFromReadStatusDetails(statuses.BlockSignersData),
+			CometTxsData:               newHealthCheckStatusDetailsFromReadStatusDetails(statuses.CometTxsData),
+			NetworkBalancesData:        newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkBalancesData),
+			NetworkHistorySegmentsData: newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkHistorySegmentsData),
+			GrafanaServer:              grafanaServerStatus,
+		},
 	}, nil
 }
 
@@ -64,6 +134,7 @@ func (hc *HealthCheckService) handler() http.HandlerFunc {
 		var err error
 		if hc.lastResponse == nil || now.Sub(hc.cachedAt) >= responseCacheTime {
 			hc.lastResponse, err = hc.fetchStatus(context.Background())
+			hc.cachedAt = time.Now()
 			if err != nil {
 				hc.logger.Error("Failed to fetch monitoring status", zap.Error(err), zap.String("requestId", requestId))
 				if _, err := w.Write([]byte(fmt.Sprintf("Internal server error (request %s)", requestId))); err != nil {
@@ -87,8 +158,9 @@ func (hc *HealthCheckService) handler() http.HandlerFunc {
 		if _, err := w.Write(response); err != nil {
 			hc.logger.Error("failed to write healthy/unhealthy response: %w", zap.Error(err))
 		}
-		if hc.lastResponse.Details.HealthyOverAll {
-			w.WriteHeader(http.StatusOK)
+
+		if hc.lastResponse.Healthy {
+			// Implicitly set status OK
 			return
 		}
 

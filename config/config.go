@@ -43,8 +43,8 @@ type HealthCheckConfig struct {
 	Enabled       bool
 	Port          int `long:"port" comment:"the port health-check HTTP server is running on"`
 	GrafanaServer struct {
-		Enabled bool `long:"enabled" comment:"if enabled, the health-check expects grafana-server to be running"`
-		Port    int  `long:"port" comment:"port the grafana-server is running on"`
+		Enabled bool   `long:"enabled" comment:"if enabled, the health-check expects grafana-server to be running"`
+		URI     string `long:"uri" comment:"URI for the grafana e.g: http://127.0.0.1:3000/"`
 	} `group:"GrafanaServer" namespace:"grafanaserver"`
 }
 
@@ -196,6 +196,7 @@ func NewDefaultConfig() Config {
 	}
 	// Local Node
 	config.CometBFT.ApiURL = "http://localhost:26657"
+	config.VegaCore.ApiURL = "http://localhost:3003"
 	// Ethereum
 	config.Ethereum.RPCEndpoint = ""
 	config.Ethereum.EtherscanURL = "https://api.etherscan.io/api"
@@ -236,7 +237,7 @@ func NewDefaultConfig() Config {
 	config.HealthCheck.Enabled = true
 	config.HealthCheck.Port = 8901
 	config.HealthCheck.GrafanaServer.Enabled = false
-
+	config.HealthCheck.GrafanaServer.URI = "http://localhost:3000"
 	return config
 }
 
