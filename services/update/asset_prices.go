@@ -10,7 +10,7 @@ import (
 func (us *UpdateService) UpdateAssetPrices(ctx context.Context) error {
 	logger := us.log.With(zap.String(UpdaterType, "UpdateAssetPrices"))
 
-	logger.Info("Update Asset Prices: start")
+	logger.Debug("Update Asset Prices: start")
 
 	logger.Debug("reading asset price")
 	prices, err := us.readService.GetAssetPrices()
@@ -29,7 +29,7 @@ func (us *UpdateService) UpdateAssetPrices(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to flush asset prices %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"Stored Asset Prices in SQLStore",
 		zap.Int("row count", len(storedPrices)),
 	)
