@@ -145,7 +145,9 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 			s.log.Debug("Scanning Data Node", zap.String("name", node.Name), zap.String("rest", node.REST))
 			dataNodeStatus, err := requestDataNodeStats(node.REST)
 			if err != nil {
-				s.log.Error("Failed to scan Data Node", zap.String("node", node.Name), zap.Error(err))
+				// It was error initially, but it is not our error. The data-node scan failure is a valid state of the program - telling us
+				// the external data-node is not healthy
+				s.log.Debug("Failed to scan Data Node", zap.String("node", node.Name), zap.Error(err))
 				dataNodeStatus = getUnhealthyDataNodeStats()
 				dataNodeStatus.RESTReqDuration = time.Hour
 				dataNodeStatus.GQLReqDuration = time.Hour
@@ -169,7 +171,7 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 				continue
 			}
 		}
-		s.log.Info("Finished scanning data nodes", zap.Int("count", len(s.config.DataNode)), zap.Duration("time", time.Since(start)))
+		s.log.Debug("Finished scanning data nodes", zap.Int("count", len(s.config.DataNode)), zap.Duration("time", time.Since(start)))
 
 		select {
 		case <-ctx.Done():

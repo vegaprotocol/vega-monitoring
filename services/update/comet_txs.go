@@ -58,7 +58,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 	}
 
 	// Update in batches
-	logger.Info(
+	logger.Debug(
 		"Update Comet Txs in batches",
 		zap.Int64("first block", fromBlock),
 		zap.Int64("last block", toBlock),
@@ -79,7 +79,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		totalCount += count
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Finished",
 		zap.Int64("processed blocks", toBlock-fromBlock+1),
 		zap.Int("total row count sotred in SQLStore", totalCount),

@@ -79,7 +79,7 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 
 	logger := s.log.With(zap.String("reader", "MetaMonitoringStatuses"))
 
-	logger.Info("Read Meta-Monitoring Statuses from Monitoring Database")
+	logger.Debug("Read Meta-Monitoring Statuses from Monitoring Database")
 
 	metamonitoringStatusesStore := s.storeReadService.NewMonitoringStatus()
 
@@ -125,7 +125,7 @@ func (s *ReadService) GetMetaMonitoringStatusesExtended(ctx context.Context) (*M
 
 	logger := s.log.With(zap.String("reader", "GetMetaMonitoringStatusesExtended"))
 
-	logger.Info("Read Meta-Monitoring-Extended Statuses from Monitoring Database")
+	logger.Debug("Read Meta-Monitoring-Extended Statuses from Monitoring Database")
 
 	metamonitoringStatusesStore := s.storeReadService.NewMonitoringStatus()
 

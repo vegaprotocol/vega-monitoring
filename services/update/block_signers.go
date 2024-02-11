@@ -76,7 +76,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		return fmt.Errorf("cannot update Block Signers, from block '%d' is greater than to block '%d'", fromBlock, toBlock)
 	}
 	// Update in batches
-	logger.Info(
+	logger.Debug(
 		"Update Block Signers in batches",
 		zap.Int64("first block", fromBlock),
 		zap.Int64("last block", toBlock),
@@ -97,7 +97,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		totalCount += count
 	}
 
-	logger.Info(
+	logger.Debug(
 		"Finished",
 		zap.Int64("processed blocks", toBlock-fromBlock+1),
 		zap.Int("total row count sotred in SQLStore", totalCount),

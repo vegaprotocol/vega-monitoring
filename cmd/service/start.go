@@ -74,7 +74,7 @@ func startService(args StartArgs) {
 		go func() {
 			defer shutdown_wg.Done()
 			svc.Log.Info("Starting the health-check service")
-			healthCheckSvc, err := metamonitoring.NewHealthCheckService(svc.ReadService, svc.Log)
+			healthCheckSvc, err := metamonitoring.NewHealthCheckService(svc.Config.HealthCheck, svc.ReadService, svc.Log)
 			if err != nil {
 				svc.Log.Fatal("Failed to create the health-check service", zap.Error(err))
 			}

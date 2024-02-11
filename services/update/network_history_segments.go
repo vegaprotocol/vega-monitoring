@@ -69,7 +69,9 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 		// We are not interested in the segments outside of the range we are replaying
 		segments, err := dataNodeClient.GetNetworkHistorySegments(latestFlushedSegmentHeight, latestLocalBlock)
 		if err != nil {
-			us.log.Error("Failed to get Network History segments", zap.String("data-node", apiURL), zap.Error(err))
+			// Below line is not error of our program. It is one of the expected states in the external data-nodes.
+			// Failure of external data-node is valid state and we log in in the data base. We MUST NOT report it as an error
+			us.log.Debug("Failed to get Network History segments", zap.String("data-node", apiURL), zap.Error(err))
 			failCount += 1
 			continue
 		}
@@ -88,7 +90,7 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 	if err != nil {
 		return fmt.Errorf("failed to flush network history segments: %w", err)
 	}
-	logger.Info(
+	logger.Debug(
 		"Stored Segment data in SQLStore",
 		zap.Int64("data-node success", successCount),
 		zap.Int64("data-node fail", failCount),
