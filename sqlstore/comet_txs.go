@@ -74,16 +74,21 @@ func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx,
 
 	blockCtx, err := c.WithTransaction(blockCtx)
 	if err != nil {
+		// We cannot keep those rows in memory because they will be added again
+		// and at some point program hangs
+		c.cometTxs = nil
 		return nil, NewUpsertErr(StoreCometTxs, ErrAcquireTx, err)
 	}
 
 	for _, tx := range c.cometTxs {
 		if err := c.UpsertWithoutTime(blockCtx, tx); err != nil {
+			c.cometTxs = nil
 			return nil, NewUpsertErr(StoreCometTxs, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := c.Commit(blockCtx); err != nil {
+		c.cometTxs = nil
 		return nil, NewUpsertErr(StoreCometTxs, ErrUpsertCommit, err)
 	}
 
@@ -93,21 +98,23 @@ func (c *CometTxs) FlushUpsertWithoutTime(ctx context.Context) ([]comet.CometTx,
 	return flushed, nil
 }
 
-func (c *CometTxs) GetLastestBlockInStore(ctx context.Context) (int64, error) {
+func (c *CometTxs) GetLatestBlockInStore(ctx context.Context) (int64, error) {
 	result := &struct {
-		Height int64 `db:"height"`
+		Height *int64 `db:"height"`
 	}{}
 
 	if err := pgxscan.Get(ctx, c.Connection, result,
-		`SELECT height
-		FROM metrics.comet_txs
-		ORDER BY metrics.comet_txs.vega_time DESC
-		LIMIT 1`,
+		`SELECT MAX(height) as height
+		FROM metrics.comet_txs`,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, nil
 		}
 		return 0, err
 	}
-	return result.Height, nil
+	if result.Height == nil {
+		return 0, nil
+	}
+
+	return *result.Height, nil
 }

@@ -96,17 +96,16 @@ func (c *CometClient) GetTxsForBlockNotFiltered(block int64) ([]CometTx, error) 
 }
 
 func (c *CometClient) GetTxsForBlockRangeNotFiltered(fromBlock int64, toBlock int64) ([]CometTx, error) {
-
 	responses, err := c.requestBlockResultsRange(fromBlock, toBlock)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Block Result data for blocks from %d to %d, %w", fromBlock, toBlock, err)
+		return nil, fmt.Errorf("failed to get block result data for blocks from %d to %d, %w", fromBlock, toBlock, err)
 	}
 	result := []CometTx{}
 
 	for _, response := range responses {
 		txsList, err := parseBlockResultsResponse(response)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Block Result data for blocks from %d to %d, %w", fromBlock, toBlock, err)
+			return nil, fmt.Errorf("failed to parse block result response for block %d: %w", response.Result.Height, err)
 		}
 		result = append(result, txsList...)
 	}
