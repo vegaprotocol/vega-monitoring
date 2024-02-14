@@ -105,7 +105,7 @@ func (c *CometClient) GetTxsForBlockRangeNotFiltered(fromBlock int64, toBlock in
 	for _, response := range responses {
 		txsList, err := parseBlockResultsResponse(response)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse block result response for block %d: %w", response.Result.Height, err)
+			return nil, fmt.Errorf("failed to parse block result response for block %s: %w", response.Result.Height, err)
 		}
 		result = append(result, txsList...)
 	}
