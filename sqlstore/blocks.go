@@ -40,6 +40,24 @@ func (b *Blocks) GetLastBlock(ctx context.Context) (*vega_entities.Block, error)
 	return block, nil
 }
 
+func (b *Blocks) GetLastBlockHeight(ctx context.Context) (*int64, error) {
+	blockHeight := int64(0)
+	if err := pgxscan.Get(ctx, b.Connection, &blockHeight, `SELECT MAX(height) FROM blocks`); err != nil {
+		return nil, fmt.Errorf("failed to get latest block height: %w", err)
+	}
+
+	return &blockHeight, nil
+}
+
+func (b *Blocks) GetEarliestBlockHeight(ctx context.Context) (*int64, error) {
+	blockHeight := int64(0)
+	if err := pgxscan.Get(ctx, b.Connection, &blockHeight, `SELECT MIN(height) FROM blocks`); err != nil {
+		return nil, fmt.Errorf("failed to get earliest block height: %w", err)
+	}
+
+	return &blockHeight, nil
+}
+
 func (b *Blocks) GetLatestBlockWithCache(ctx context.Context, cacheTime time.Duration) (*vega_entities.Block, error) {
 	b.lastBlockMutex.Lock()
 	defer b.lastBlockMutex.Unlock()

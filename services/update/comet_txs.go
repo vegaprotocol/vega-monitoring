@@ -3,11 +3,17 @@ package update
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"code.vegaprotocol.io/vega/logging"
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 	"go.uber.org/zap"
+)
+
+// TODO(fixme): We should not use global variables
+var (
+	earliestBlock atomic.Int64
 )
 
 func (us *UpdateService) UpdateCometTxsAllNew(ctx context.Context) error {
@@ -19,19 +25,31 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 	serviceStore := us.storeService.NewCometTxs()
 	logger := us.log.With(zap.String(UpdaterType, "UpdateCometTxs"))
 
-	// get Last Block
-	if toBlock <= 0 {
-		logger.Debug("getting network toBlock network height")
-		toBlock, err = us.readService.GetNetworkLatestBlockHeight()
-		if err != nil {
-			return fmt.Errorf("failed to Update Comet Txs, %w", err)
-		}
+	logger.Debug("getting network toBlock network height")
+	blockStore := us.storeService.NewBlocks()
+
+	latestBlockHeightForDataNode, err := blockStore.GetLastBlockHeight(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get latest block height for data node: %w", err)
+	}
+
+	latestBlockHeightForTendermint, err := us.readService.GetNetworkLatestBlockHeight()
+	if err != nil {
+		return fmt.Errorf("failed to get latest block for tendermint: %w", err)
+	}
+
+	// Make sure data node has latest block
+	if toBlock <= 0 || toBlock > *latestBlockHeightForDataNode {
+		toBlock = *latestBlockHeightForDataNode
+	}
+	if toBlock > latestBlockHeightForTendermint {
+		toBlock = latestBlockHeightForTendermint
 	}
 
 	// get First Block
 	if fromBlock <= 0 {
 		logger.Debug("getting network fromBlock network height")
-		lastProcessedBlock, err := serviceStore.GetLastestBlockInStore(context.Background())
+		lastProcessedBlock, err := serviceStore.GetLatestBlockInStore(context.Background())
 		if err != nil {
 			return fmt.Errorf("failed to Update Comet Txs, %w", err)
 		}
@@ -39,20 +57,33 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 			fromBlock = lastProcessedBlock + 1
 		} else {
 			// No blocks in database - Get the first block from the Tendermint API
-			earliestBlock, err := us.readService.GetEarliestBlockHeight(ctx)
+			earliestBlockForTendermint, err := us.readService.GetEarliestBlockHeight(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get the earliest comet block: %w", err)
 			}
 
 			fromBlock = toBlock - (BLOCK_NUM_IN_24h * 3)
-			if fromBlock < earliestBlock {
-				fromBlock = earliestBlock
+			if fromBlock < earliestBlockForTendermint {
+				fromBlock = earliestBlockForTendermint
 			}
 			if fromBlock <= 0 {
 				fromBlock = 1
 			}
 		}
 	}
+
+	if earliestBlock.Load() == 0 {
+		earliestBlockHeight, err := blockStore.GetEarliestBlockHeight(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get earliest blocks: %w", err)
+		}
+		earliestBlock.Store(*earliestBlockHeight)
+	}
+
+	if fromBlock < earliestBlock.Load() {
+		fromBlock = earliestBlock.Load()
+	}
+
 	if fromBlock > toBlock {
 		return fmt.Errorf("cannot update Comet Txs, from block '%d' is greater than to block '%d'", fromBlock, toBlock)
 	}
