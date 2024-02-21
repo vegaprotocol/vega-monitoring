@@ -9,6 +9,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/ethereummonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/ethnodescanner"
 	metamonitoringprom "github.com/vegaprotocol/vega-monitoring/prometheus/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
@@ -25,6 +26,7 @@ type AllServices struct {
 	UpdateService               *update.UpdateService
 	PrometheusService           *prometheus.PrometheusService
 	NodeScannerService          *nodescanner.NodeScannerService
+	EthereumMonitoringService   *ethereummonitoring.EthereumMonitoringService
 	MetaMonitoringStatusService *metamonitoringprom.MetaMonitoringStatusService
 	EthereumNodeScannerService  *ethnodescanner.EthNodeScannerService
 	MonitoringService           *metamonitoring.MonitoringStatusUpdateService
@@ -76,6 +78,10 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 
 		svc.EthereumNodeScannerService = ethnodescanner.NewEthNodeScannerService(
 			svc.Config.Monitoring.EthereumNode, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
+		)
+
+		svc.EthereumMonitoringService = ethereummonitoring.NewEthereumMonitoringService(
+			svc.Config.Monitoring.EthereumChain, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 		)
 
 		if svc.Config.DataNodeDBExtension.Enabled {

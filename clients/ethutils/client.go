@@ -3,8 +3,10 @@ package ethutils
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"code.vegaprotocol.io/vega/logging"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -22,4 +24,8 @@ func NewEthClient(rpcAddress string, log *logging.Logger) (*EthClient, error) {
 		log:    log,
 		client: client,
 	}, nil
+}
+
+func (c *EthClient) BalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
+	return c.client.BalanceAt(ctx, account, nil)
 }

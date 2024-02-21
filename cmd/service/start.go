@@ -113,6 +113,15 @@ func startService(args StartArgs) {
 		}()
 
 		//
+		// start Ethereum Account monitoring
+		//
+		shutdown_wg.Add(1)
+		go func() {
+			defer shutdown_wg.Done()
+			svc.Log.Info("Starting Ethereum monitoring")
+		}()
+
+		//
 		// start: Ethereum Node Scanner
 		//
 		shutdown_wg.Add(1)
