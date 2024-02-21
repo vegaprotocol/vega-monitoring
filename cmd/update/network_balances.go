@@ -51,7 +51,7 @@ func RunNetworkBalances(args NetworkBalancesArgs) error {
 	}
 
 	if args.All || args.AssetPool {
-		if err := svc.UpdateService.UpdateAssetPoolBalances(context.Background()); err != nil {
+		if err := svc.UpdateService.UpdateAssetPoolBalances(context.Background(), svc.Config.Ethereum.AssetPoolAddress); err != nil {
 			return err
 		}
 	}

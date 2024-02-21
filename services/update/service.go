@@ -13,7 +13,7 @@ type UpdateService struct {
 	storeService *services.StoreService
 	log          *logging.Logger
 
-	latestSegmentsCache map[string]int64 // map[data-node-url]block-height
+	latestSegmentsCache map[string]int64 // map[data-node-url]block-height // TODO: Make this struct or something...
 }
 
 func NewUpdateService(

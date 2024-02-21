@@ -41,7 +41,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 
 	if svc.Config.DataNodeDBExtension.Enabled {
 		var ethClient *ethutils.EthClient
-		ethClient, err = ethutils.NewEthClient(&svc.Config.Ethereum, svc.Log)
+		ethClient, err = ethutils.NewEthClient(svc.Config.Ethereum.RPCEndpoint, svc.Log)
 		if err != nil {
 			return
 		}
