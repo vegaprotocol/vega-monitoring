@@ -154,7 +154,6 @@ type DataNodeDBExtensionConfig struct {
 }
 
 type EthereumChain struct {
-	Enabled     bool   `long:"Enabled"     comment:"Enable or disable the specific ethereum chain monitoring"`
 	NetworkId   string `long:"NetworkId"   comment:"Network ID for the specific chain"`
 	ChainId     string `long:"ChainId"     comment:"Chain ID for the specific chain"`
 	RPCEndpoint string `long:"RPCEndpoint" comment:"RPC endpoint for the archival node on the specific chain"`
@@ -164,10 +163,11 @@ type EthereumChain struct {
 }
 
 type EthCall struct {
+	Name    string   `long:"Name"    comment:"Unique name to identify the metric in the prometheus metric endpoint"`
 	Address string   `long:"Address" comment:"Address of the ethereum contract"`
-	Method  string   `long:"Method" comment:"Method name to call"`
-	ABI     string   `long:"ABI" comment:"ABI for the call method"`
-	Args    []string `long:"Args" comment:"List of the arguments passed to the function for the ethereum call"`
+	Method  string   `long:"Method"  comment:"Method name to call"`
+	ABI     string   `long:"ABI"     comment:"ABI for the call method"`
+	Args    []string `long:"Args"    comment:"List of the arguments passed to the function for the ethereum call"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {

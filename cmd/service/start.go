@@ -119,6 +119,10 @@ func startService(args StartArgs) {
 		go func() {
 			defer shutdown_wg.Done()
 			svc.Log.Info("Starting Ethereum monitoring")
+			if err := svc.EthereumMonitoringService.Start(ctx); err != nil {
+				svc.Log.Error("Failed to start Ethereum Node Scanner service", zap.Error(err))
+				cancel()
+			}
 		}()
 
 		//

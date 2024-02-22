@@ -10,10 +10,17 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/services/read"
 )
 
+type AccountBalanceMetric struct {
+	Value     float64
+	ChainId   string
+	NetworkId string
+}
+
 type VegaMonitoringCollector struct {
-	coreStatuses          map[string]*types.CoreStatus
-	dataNodeStatuses      map[string]*types.DataNodeStatus
-	blockExplorerStatuses map[string]*types.BlockExplorerStatus
+	coreStatuses            map[string]*types.CoreStatus
+	dataNodeStatuses        map[string]*types.DataNodeStatus
+	blockExplorerStatuses   map[string]*types.BlockExplorerStatus
+	ethereumAccountBalances map[string]AccountBalanceMetric
 
 	// Meta-Monitoring
 	monitoringDatabaseStatuses read.MetaMonitoringStatuses
@@ -26,9 +33,10 @@ type VegaMonitoringCollector struct {
 
 func NewVegaMonitoringCollector() *VegaMonitoringCollector {
 	return &VegaMonitoringCollector{
-		coreStatuses:          map[string]*types.CoreStatus{},
-		dataNodeStatuses:      map[string]*types.DataNodeStatus{},
-		blockExplorerStatuses: map[string]*types.BlockExplorerStatus{},
+		coreStatuses:            map[string]*types.CoreStatus{},
+		dataNodeStatuses:        map[string]*types.DataNodeStatus{},
+		blockExplorerStatuses:   map[string]*types.BlockExplorerStatus{},
+		ethereumAccountBalances: map[string]AccountBalanceMetric{},
 	}
 }
 
@@ -37,6 +45,18 @@ func (c *VegaMonitoringCollector) UpdateCoreStatus(node string, newStatus *types
 	defer c.accessMu.Unlock()
 	c.clearStatusFor(node)
 	c.coreStatuses[node] = newStatus
+}
+
+func (c *VegaMonitoringCollector) UpdateEthereumAccountBalance(accountAddress string, chainId, networkId string, val float64) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+
+	c.ethereumAccountBalances[accountAddress] = AccountBalanceMetric{
+		NetworkId: networkId,
+		ChainId:   chainId,
+		Value:     val,
+	}
+
 }
 
 func (c *VegaMonitoringCollector) UpdateDataNodeStatus(node string, newStatus *types.DataNodeStatus) {
@@ -97,6 +117,9 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// Ethereum Node Statuses
 	ch <- desc.EthereumNodeStatus
+
+	// Ethereum on chain data
+	ch <- desc.EthereumAccountBalances
 }
 
 // Collect returns the current state of all metrics of the collector.
@@ -108,6 +131,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectBlockExplorerStatuses(ch)
 	c.collectMonitoringDatabaseStatuses(ch)
 	c.collectEthereumNodeStatuses(ch)
+	c.collectEthereumAccountBalances(ch)
 }
 
 func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
@@ -270,5 +294,18 @@ func (c *VegaMonitoringCollector) collectEthereumNodeStatuses(ch chan<- promethe
 				// Labels
 				ethNodeName,
 			))
+	}
+}
+
+func (c *VegaMonitoringCollector) collectEthereumAccountBalances(ch chan<- prometheus.Metric) {
+	for accAddress, metric := range c.ethereumAccountBalances {
+		ch <- prometheus.NewMetricWithTimestamp(
+			time.Now(),
+			prometheus.MustNewConstMetric(
+				desc.EthereumAccountBalances, prometheus.GaugeValue, metric.Value,
+				// Labels
+				metric.NetworkId, metric.ChainId, accAddress,
+			),
+		)
 	}
 }
