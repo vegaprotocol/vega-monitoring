@@ -111,7 +111,6 @@ func getTransformFunction(transformFormula string) (func(interface{}) interface{
 }
 
 func (ec *EthCall) Call(ctx context.Context, client *ethclient.Client) (interface{}, error) {
-
 	msg := ethereum.CallMsg{
 		To:   &ec.address,
 		Data: ec.call,
