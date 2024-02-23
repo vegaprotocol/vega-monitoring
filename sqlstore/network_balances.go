@@ -12,6 +12,13 @@ type NetworkBalances struct {
 	NetworkBalances []entities.NetworkBalance
 }
 
+var IgnoredWithdrawalIDs = []string{
+	// Exploit for LDO market
+	"cf3d77a9e5767132a4da41d534c28ae0f9749372cfb1b902cc3439d1649d1d33",
+	"664cece6d582e534f818002cd5d9fc84df9f66f040bcfec92929fd176ed8a6ec",
+	"3e1c058594bdd27a7b7b4670305c5b11480cb223e7a791b015e0411a5530564d",
+}
+
 func NewNetworkBalances(connectionSource *vega_sqlstore.ConnectionSource) *NetworkBalances {
 	return &NetworkBalances{
 		ConnectionSource: connectionSource,
@@ -99,20 +106,23 @@ func (nhs *NetworkBalances) UpsertPartiesTotalBalance(ctx context.Context) error
 }
 
 func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Context) error {
-	_, err := nhs.Connection.Exec(ctx, `
-		INSERT INTO metrics.network_balances (
-			balance_time,
-			asset_id,
-			balance_source,
-			balance)
-		SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
-			FROM assets_current a
-			LEFT JOIN withdrawals_current w ON (w.asset = a.id AND w.withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz AND w.status = 'STATUS_FINALIZED')
-			GROUP BY a.id
-		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
-		SET
-			balance=EXCLUDED.balance`,
-	)
+	ignoredIDs := PrepareListForInCondition(IgnoredWithdrawalIDs)
+	sqlQuery := `
+	INSERT INTO metrics.network_balances (
+		balance_time,
+		asset_id,
+		balance_source,
+		balance)
+	SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
+		FROM assets_current a
+		LEFT JOIN withdrawals_current w ON (w.asset = a.id AND w.withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz AND w.status = 'STATUS_FINALIZED')
+		WHERE encode(w.id::bytea, 'hex') NOT IN (` + ignoredIDs + `)
+		GROUP BY a.id
+	ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
+	SET
+		balance=EXCLUDED.balance`
+
+	_, err := nhs.Connection.Exec(ctx, sqlQuery)
 
 	return err
 }

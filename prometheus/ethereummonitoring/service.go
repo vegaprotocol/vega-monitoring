@@ -11,15 +11,24 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
+	"github.com/vegaprotocol/vega-monitoring/entities"
+	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 )
 
 const defaultCallTimeout = 10 * time.Second
 
 type EthereumMonitoringService struct {
-	cfg       []config.EthereumChain
-	collector *collectors.VegaMonitoringCollector
-	logger    *logging.Logger
+	cfg                []config.EthereumChain
+	collector          *collectors.VegaMonitoringCollector
+	logger             *logging.Logger
+	monitoringStatuses []healthStatus
+	msLock             sync.Mutex
+}
+
+type healthStatus struct {
+	healthy bool
+	reason  entities.UnhealthyReason
 }
 
 func NewEthereumMonitoringService(
@@ -31,10 +40,12 @@ func NewEthereumMonitoringService(
 		cfg:       cfg,
 		collector: collector,
 		logger:    logger,
+
+		monitoringStatuses: []healthStatus{},
 	}
 }
 
-func (s *EthereumMonitoringService) Start(ctx context.Context) error {
+func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher metamonitoring.MonitoringStatusPublisher) error {
 	var monitoringWg sync.WaitGroup
 
 	svcContext, cancel := context.WithCancel(ctx)
@@ -56,42 +67,52 @@ func (s *EthereumMonitoringService) Start(ctx context.Context) error {
 		}
 		if len(chainConfig.Accounts) > 0 {
 			monitoringWg.Add(1)
-			go func(failure *atomic.Bool) {
+			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
 				defer monitoringWg.Done()
 				if err := s.monitorAccountBalances(
 					svcContext,
 					ethClient,
-					chainConfig.ChainId,
-					chainConfig.NetworkId,
-					s.cfg[idx].Accounts,
-					s.cfg[idx].Period,
+					callCfg.ChainId,
+					callCfg.NetworkId,
+					callCfg.Accounts,
+					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
 					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %d: %w", chainConfig.NetworkId, err)
 					cancel()
 				}
-			}(&failure)
+			}(&failure, s.cfg[idx])
 		}
 
 		if len(chainConfig.Calls) > 0 {
 			monitoringWg.Add(1)
-			go func(failure *atomic.Bool) {
+			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
 				defer monitoringWg.Done()
 				if err := s.monitorCalls(
 					svcContext,
 					ethClient,
-					chainConfig.ChainId,
-					chainConfig.NetworkId,
-					s.cfg[idx].Calls,
-					s.cfg[idx].Period,
+					callCfg.ChainId,
+					callCfg.NetworkId,
+					callCfg.Calls,
+					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %d: %w", chainConfig.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %d: %w", callCfg.NetworkId, err)
 					cancel()
 				}
-			}(&failure)
+			}(&failure, s.cfg[idx])
 		}
 	}
+
+	monitoringWg.Add(1)
+	go func(failure *atomic.Bool) {
+		defer monitoringWg.Done()
+		if err := s.reportState(svcContext, time.Minute, statusPublisher); err != nil {
+			s.logger.Errorf("failed to report statuses: %w", err)
+			failure.Store(true)
+			cancel()
+		}
+	}(&failure)
 
 	monitoringWg.Wait()
 
@@ -100,6 +121,43 @@ func (s *EthereumMonitoringService) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *EthereumMonitoringService) reportState(ctx context.Context, period time.Duration, statusPublisher metamonitoring.MonitoringStatusPublisher) error {
+
+	time.Sleep(30 * 2)
+
+	ticker := time.NewTicker(period * 2)
+	defer ticker.Stop()
+
+	for {
+		s.msLock.Lock()
+		reportedStatuses := s.monitoringStatuses
+		s.monitoringStatuses = []healthStatus{}
+		s.msLock.Unlock()
+
+		reported := false
+		// Report all unhealthy statuses
+		for _, status := range reportedStatuses {
+			if !status.healthy {
+				statusPublisher.PublishWithReason(false, status.reason)
+				reported = true
+			}
+		}
+
+		// Not reported status yet, report successful
+		if !reported {
+			statusPublisher.Publish(true)
+		}
+
+		select {
+		case <-ctx.Done():
+			s.logger.Infof("Stopping eth calls status publisher")
+			return nil
+		case <-ticker.C:
+			continue
+		}
+	}
 }
 
 func (s *EthereumMonitoringService) monitorCalls(
@@ -131,6 +189,7 @@ func (s *EthereumMonitoringService) monitorCalls(
 			res, err := ethClient.Call(callCtx, call)
 			if err != nil {
 				s.logger.Errorf("failed to call ethereum smart contract for network %s: %w", err)
+				s.reportHealth(false, entities.ReasonEthereumContractCallFailure)
 				cancel()
 				continue
 			}
@@ -143,11 +202,14 @@ func (s *EthereumMonitoringService) monitorCalls(
 					call.ID(),
 					res,
 				)
+				s.reportHealth(false, entities.ReasonEthereumContractInvalidResponseType)
 				continue
 			}
 
 			s.collector.UpdateEthereumCallResponse(call.ID(), call.ContractAddress().String(), call.MethodName(), float64Res)
 		}
+
+		s.reportHealth(true, entities.ReasonUnknown)
 
 		select {
 		case <-ctx.Done():
@@ -157,6 +219,16 @@ func (s *EthereumMonitoringService) monitorCalls(
 			continue
 		}
 	}
+}
+
+func (s *EthereumMonitoringService) reportHealth(healthy bool, reason entities.UnhealthyReason) {
+	s.msLock.Lock()
+	defer s.msLock.Unlock()
+
+	s.monitoringStatuses = append(s.monitoringStatuses, healthStatus{
+		healthy: healthy,
+		reason:  reason,
+	})
 }
 
 func (s *EthereumMonitoringService) monitorAccountBalances(
@@ -181,6 +253,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 			if err != nil {
 				cancel()
 				s.logger.Errorf("failed to get balance for account %s: %w", accAddress, err)
+				s.reportHealth(false, entities.ReasonEthereumGetBalancesFailure)
 				continue
 			}
 			cancel()
@@ -189,6 +262,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 			balances[accAddress] = balance
 		}
 
+		s.reportHealth(true, entities.ReasonUnknown)
 		select {
 		case <-ctx.Done():
 			s.logger.Infof("Stopping account scan for network id: %s", networkId)

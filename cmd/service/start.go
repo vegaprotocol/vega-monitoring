@@ -113,13 +113,13 @@ func startService(args StartArgs) {
 		}()
 
 		//
-		// start Ethereum Account monitoring
+		// start EthereumCALLS  monitoring
 		//
 		shutdown_wg.Add(1)
 		go func() {
 			defer shutdown_wg.Done()
 			svc.Log.Info("Starting Ethereum monitoring")
-			if err := svc.EthereumMonitoringService.Start(ctx); err != nil {
+			if err := svc.EthereumMonitoringService.Start(ctx, svc.MonitoringService.PrometheusEthereumCalls()); err != nil {
 				svc.Log.Error("Failed to start Ethereum Node Scanner service", zap.Error(err))
 				cancel()
 			}

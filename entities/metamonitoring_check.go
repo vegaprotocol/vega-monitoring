@@ -7,11 +7,15 @@ import (
 type MonitoringServiceType string
 
 const (
-	BlockSignersSvc    MonitoringServiceType = "BLOCK_SIGNERS"
-	SegmentsSvc        MonitoringServiceType = "SEGMENTS"
-	CometTxsSvc        MonitoringServiceType = "COMET_TXS"
-	NetworkBalancesSvc MonitoringServiceType = "NETWORK_BALANCES"
-	AssetPricesSvc     MonitoringServiceType = "ASSET_PRICES"
+	BlockSignersSvc       MonitoringServiceType = "BLOCK_SIGNERS"
+	SegmentsSvc           MonitoringServiceType = "SEGMENTS"
+	CometTxsSvc           MonitoringServiceType = "COMET_TXS"
+	NetworkBalancesSvc    MonitoringServiceType = "NETWORK_BALANCES"
+	AssetPricesSvc        MonitoringServiceType = "ASSET_PRICES"
+	PromEthereumCallsSvc  MonitoringServiceType = "PROMETHEUS_ETHEREUM_CALLS_SERVICE"
+	PromEthNodeScannerSvc MonitoringServiceType = "PROMETHEUS_ETH_NODE_SCANNER"
+	PromNodeScannerSvc    MonitoringServiceType = "PROMETHEUS_NODE_SCANNER"
+	PromMetamonitoringSvc MonitoringServiceType = "PROMETHEUS_METAMONITORING"
 )
 
 var AllMonitoringServices = []MonitoringServiceType{
@@ -35,6 +39,10 @@ const (
 	ReasonMissingStatusFromService UnhealthyReason = 1
 	ReasonNetworkIsNotUpToDate     UnhealthyReason = 2
 	ReasonTargetConnectionFailure  UnhealthyReason = 3
+
+	ReasonEthereumGetBalancesFailure          UnhealthyReason = 4
+	ReasonEthereumContractCallFailure         UnhealthyReason = 5
+	ReasonEthereumContractInvalidResponseType UnhealthyReason = 6
 )
 
 type MonitoringStatus struct {
@@ -56,6 +64,10 @@ func UnHealthyReasonString(reason UnhealthyReason) string {
 		return "Network is not up to date"
 	case ReasonTargetConnectionFailure:
 		return "Target connection failure"
+	case ReasonEthereumGetBalancesFailure:
+		return "Failed to get account balances from ethereum"
+	case ReasonEthereumContractCallFailure:
+		return "Failed to call ethereum smart contract"
 	}
 
 	return "Unknown reason"

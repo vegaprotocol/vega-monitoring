@@ -39,13 +39,20 @@ func newHealthCheckStatusDetailsFromReadStatusDetails(details read.StatusDetails
 }
 
 type healthCheckResponseDetails struct {
-	DataNodeData               healthCheckStatusDetails
-	AssetPricesData            healthCheckStatusDetails
-	BlockSignersData           healthCheckStatusDetails
-	CometTxsData               healthCheckStatusDetails
-	NetworkBalancesData        healthCheckStatusDetails
-	NetworkHistorySegmentsData healthCheckStatusDetails
-	GrafanaServer              *healthCheckStatusDetails
+	AssetPricesData             healthCheckStatusDetails
+	BlockSignersData            healthCheckStatusDetails
+	CometTxsData                healthCheckStatusDetails
+	NetworkBalancesData         healthCheckStatusDetails
+	NetworkHistorySegmentsData  healthCheckStatusDetails
+	EthereumCCallsData          healthCheckStatusDetails
+	PrometheusEthereumCallsData healthCheckStatusDetails
+	GrafanaServer               *healthCheckStatusDetails
+
+	// Unused
+	DataNodeData                 healthCheckStatusDetails
+	PrometheusEthNodeScannerData healthCheckStatusDetails
+	PrometheusNodeScannerData    healthCheckStatusDetails
+	PrometheusMetamonitoringData healthCheckStatusDetails
 }
 
 type healthCheckResponse struct {
@@ -113,13 +120,14 @@ func (hc *HealthCheckService) fetchStatus(ctx context.Context) (*healthCheckResp
 	return &healthCheckResponse{
 		Healthy: statuses.HealthyOverAll && (grafanaServerStatus == nil || grafanaServerStatus.Healthy),
 		Details: healthCheckResponseDetails{
-			DataNodeData:               newHealthCheckStatusDetailsFromReadStatusDetails(statuses.DataNodeData),
-			AssetPricesData:            newHealthCheckStatusDetailsFromReadStatusDetails(statuses.AssetPricesData),
-			BlockSignersData:           newHealthCheckStatusDetailsFromReadStatusDetails(statuses.BlockSignersData),
-			CometTxsData:               newHealthCheckStatusDetailsFromReadStatusDetails(statuses.CometTxsData),
-			NetworkBalancesData:        newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkBalancesData),
-			NetworkHistorySegmentsData: newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkHistorySegmentsData),
-			GrafanaServer:              grafanaServerStatus,
+			DataNodeData:                newHealthCheckStatusDetailsFromReadStatusDetails(statuses.DataNodeData),
+			AssetPricesData:             newHealthCheckStatusDetailsFromReadStatusDetails(statuses.AssetPricesData),
+			BlockSignersData:            newHealthCheckStatusDetailsFromReadStatusDetails(statuses.BlockSignersData),
+			CometTxsData:                newHealthCheckStatusDetailsFromReadStatusDetails(statuses.CometTxsData),
+			NetworkBalancesData:         newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkBalancesData),
+			NetworkHistorySegmentsData:  newHealthCheckStatusDetailsFromReadStatusDetails(statuses.NetworkHistorySegmentsData),
+			PrometheusEthereumCallsData: newHealthCheckStatusDetailsFromReadStatusDetails(statuses.PrometheusEthereumCallsData),
+			GrafanaServer:               grafanaServerStatus,
 		},
 	}, nil
 }

@@ -75,16 +75,22 @@ func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([
 
 	blockCtx, err := nhs.WithTransaction(blockCtx)
 	if err != nil {
+		// Clear old segments, as new set of the same will be added. It helps us avoid duplications and memory leaks
+		nhs.segments = []*datanode.NetworkHistorySegment{}
 		return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrAcquireTx, err)
 	}
 
 	for _, segment := range nhs.segments {
 		if err := nhs.UpsertWithoutTime(blockCtx, segment); err != nil {
+			// Clear old segments, as new set of the same will be added. It helps us avoid duplications and memory leaks
+			nhs.segments = []*datanode.NetworkHistorySegment{}
 			return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrUpsertSingle, err)
 		}
 	}
 
 	if err := nhs.Commit(blockCtx); err != nil {
+		// Clear old segments, as new set of the same will be added. It helps us avoid duplications and memory leaks
+		nhs.segments = []*datanode.NetworkHistorySegment{}
 		return nil, NewUpsertErr(StoreNetworkHistorySegment, ErrUpsertCommit, err)
 	}
 
