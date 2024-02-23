@@ -12,9 +12,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/vegaprotocol/vega-monitoring/config"
 )
 
 type EthCall struct {
+	id                  string
 	abi                 string
 	abiObject           abi.ABI
 	address             common.Address
@@ -25,7 +27,20 @@ type EthCall struct {
 	outputTransformFunc func(interface{}) interface{}
 }
 
+func NewEthCallFromConfig(cfg config.EthCall) (*EthCall, error) {
+	return NewEthCall(
+		cfg.Name,
+		cfg.ABI,
+		cfg.Address,
+		cfg.Method,
+		cfg.Args,
+		cfg.OutputIndex,
+		cfg.OutputTransform,
+	)
+}
+
 func NewEthCall(
+	id string,
 	abiDefinition string,
 	address string,
 	methodName string,
@@ -54,6 +69,7 @@ func NewEthCall(
 	}
 
 	return &EthCall{
+		id:                  id,
 		abi:                 abiDefinition,
 		abiObject:           abiObject,
 		address:             common.HexToAddress(address),
@@ -80,8 +96,8 @@ func getTransformFunction(transformFormula string) (func(interface{}) interface{
 				return 0.0
 			}
 
+			// Scale to float64
 			powInt := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimalPlaces)), nil)
-
 			result, _ := new(big.Float).Quo(new(big.Float).SetInt(bigIntInput), new(big.Float).SetInt(powInt)).Float64()
 
 			return result
@@ -94,14 +110,14 @@ func getTransformFunction(transformFormula string) (func(interface{}) interface{
 	}, nil
 }
 
-func (ec *EthCall) Call(client *ethclient.Client) (interface{}, error) {
+func (ec *EthCall) Call(ctx context.Context, client *ethclient.Client) (interface{}, error) {
 
 	msg := ethereum.CallMsg{
 		To:   &ec.address,
 		Data: ec.call,
 	}
 
-	outputBytes, err := client.CallContract(context.Background(), msg, nil)
+	outputBytes, err := client.CallContract(ctx, msg, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
@@ -264,4 +280,16 @@ func packableValue(arg interface{}, abiArg abi.Argument) (interface{}, error) {
 	}
 
 	return nil, fmt.Errorf("unsupported type")
+}
+
+func (ec EthCall) ContractAddress() common.Address {
+	return ec.address
+}
+
+func (ec EthCall) MethodName() string {
+	return ec.methodName
+}
+
+func (ec EthCall) ID() string {
+	return ec.id
 }

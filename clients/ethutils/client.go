@@ -41,3 +41,7 @@ func (c *EthClient) BalanceWithoutZerosAt(ctx context.Context, account common.Ad
 
 	return float64(result.Int64()) / 1000000, nil
 }
+
+func (c *EthClient) Call(ctx context.Context, call *EthCall) (interface{}, error) {
+	return call.Call(ctx, c.client)
+}
