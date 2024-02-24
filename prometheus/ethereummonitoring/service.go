@@ -14,6 +14,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
+	"go.uber.org/zap"
 )
 
 const defaultCallTimeout = 10 * time.Second
@@ -140,14 +141,18 @@ func (s *EthereumMonitoringService) reportState(ctx context.Context, period time
 		// Report all unhealthy statuses
 		for _, status := range reportedStatuses {
 			if !status.healthy {
-				statusPublisher.PublishWithReason(false, status.reason)
+				if err := statusPublisher.PublishWithReason(false, status.reason); err != nil {
+					s.logger.Error("failed to publish failure reason in the EthereumMonitoringService.reportState", zap.Error(err))
+				}
 				reported = true
 			}
 		}
 
 		// Not reported status yet, report successful
 		if !reported {
-			statusPublisher.Publish(true)
+			if err := statusPublisher.Publish(true); err != nil {
+				s.logger.Error("failed to publish healthy reason in the EthereumMonitoringService.reportState", zap.Error(err))
+			}
 		}
 
 		select {
