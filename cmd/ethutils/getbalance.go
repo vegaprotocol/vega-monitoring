@@ -55,7 +55,7 @@ func RunGetBalance(args GetBalanceArgs) error {
 		}
 	}
 
-	client, err := ethutils.NewEthClient(&cfg.Ethereum, log)
+	client, err := ethutils.NewEthClient(cfg.Ethereum.RPCEndpoint, log)
 	if err != nil {
 		return err
 	}

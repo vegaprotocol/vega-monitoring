@@ -19,6 +19,7 @@ const (
 
 type MonitoringStatusPublisher interface {
 	Publish(isHealthy bool) error
+	PublishWithReason(isHealthy bool, reason entities.UnhealthyReason) error
 }
 
 type monitoringStatusPublisherService struct {
@@ -33,6 +34,19 @@ func (ps *monitoringStatusPublisherService) Publish(isHealthy bool) error {
 		IsHealthy:       isHealthy,
 		Service:         ps.service,
 		UnhealthyReason: entities.ReasonUnknown,
+	}
+
+	ps.store.Add(event)
+
+	return nil
+}
+
+func (ps *monitoringStatusPublisherService) PublishWithReason(isHealthy bool, reason entities.UnhealthyReason) error {
+	event := entities.MonitoringStatus{
+		StatusTime:      time.Now(),
+		IsHealthy:       isHealthy,
+		Service:         ps.service,
+		UnhealthyReason: reason,
 	}
 
 	ps.store.Add(event)
@@ -108,6 +122,15 @@ func (msus *MonitoringStatusUpdateService) AssetPricesStatusPublisher() Monitori
 	return &monitoringStatusPublisherService{
 		store:   msus.monitoringStatusStore,
 		service: entities.AssetPricesSvc,
+	}
+}
+
+func (msus *MonitoringStatusUpdateService) PrometheusEthereumCalls() MonitoringStatusPublisher {
+	msus.activeServices = append(msus.activeServices, entities.AssetPricesSvc)
+
+	return &monitoringStatusPublisherService{
+		store:   msus.monitoringStatusStore,
+		service: entities.PromEthereumCallsSvc,
 	}
 }
 

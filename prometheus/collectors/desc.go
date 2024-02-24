@@ -28,6 +28,9 @@ var desc = struct {
 	}
 
 	EthereumNodeStatus *prometheus.Desc
+
+	EthereumAccountBalances      *prometheus.Desc
+	EthereumContractCallResponse *prometheus.Desc
 }{}
 
 func init() {
@@ -89,5 +92,15 @@ func init() {
 	//
 	desc.EthereumNodeStatus = prometheus.NewDesc(
 		"ethereum_node_status", "Status of an Ethereum Node. 1 good, 0 bad", []string{"rpc_endpoint"}, nil,
+	)
+
+	//
+	// Ethereum chains
+	//
+	desc.EthereumAccountBalances = prometheus.NewDesc(
+		"ethereum_balance", "Balance of the ethereum account", []string{"network_id", "chain_id", "address"}, nil,
+	)
+	desc.EthereumContractCallResponse = prometheus.NewDesc(
+		"contract_call_response", "Response from the defined in the config contract calls", []string{"id", "address", "method"}, nil,
 	)
 }

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context) error {
+func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context, assetPoolAddress string) error {
 	logger := us.log.With(zap.String(UpdaterType, "UpdateAssetPoolBalances"))
 
 	logger.Debug("Update Asset Pool Balances: start")
@@ -29,7 +29,7 @@ func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context) error {
 
 	for _, asset := range assets {
 		logger.Debug("Getting balance on the asset-pool", zap.String("asset", asset.Name))
-		balance, err := us.readService.GetAssetPoolBalanceForToken(asset.ERC20Contract)
+		balance, err := us.readService.GetAssetPoolBalanceForToken(asset.ERC20Contract, assetPoolAddress)
 		if err != nil {
 			return fmt.Errorf("failed to update Asset Pool Balances, failed to get balance for asset '%s' (%s): %w", asset.Name, asset.ERC20Contract, err)
 		}

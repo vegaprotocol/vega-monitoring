@@ -1,7 +1,6 @@
 package comet
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strconv"
 
@@ -149,25 +148,12 @@ func parseBlockResultsResponseTxEvent(
 
 	for _, event := range events {
 		for _, attr := range event.Attributes {
-			var bKey, bValue []byte
-			bKey, err = base64.StdEncoding.DecodeString(attr.Key)
-			if err != nil {
-				err = fmt.Errorf("failed to decode base64 attribute key %s, %w", attr.Key, err)
-				return
-			}
-			key := string(bKey[:])
-			bValue, err = base64.StdEncoding.DecodeString(attr.Value)
-			if err != nil {
-				err = fmt.Errorf("failed to decode base64 attribute value %s, %w", attr.Value, err)
-				return
-			}
-			value := string(bValue[:])
-			if event.Type == "tx" && key == "submitter" {
-				submitter = value
-			} else if event.Type == "command" && key == "type" {
-				command = value
+			if event.Type == "tx" && attr.Key == "submitter" {
+				submitter = attr.Value
+			} else if event.Type == "command" && attr.Key == "type" {
+				command = attr.Value
 			} else {
-				attributes[key] = value
+				attributes[attr.Key] = attr.Value
 			}
 		}
 	}

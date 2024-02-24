@@ -14,12 +14,13 @@ type ERC20Token struct {
 	HexAddress string
 }
 
-func (c *EthClient) GetAssetPoolBalanceForToken(hexTokenAddress string) (*big.Int, error) {
+func (c *EthClient) GetAssetPoolBalanceForToken(hexTokenAddress, assetPoolAddress string) (*big.Int, error) {
 	tokenClient, err := c.GetERC20(hexTokenAddress)
 	if err != nil {
 		return nil, err
 	}
-	return tokenClient.BalanceOf(c.ethConfig.AssetPoolAddress)
+
+	return tokenClient.BalanceOf(assetPoolAddress)
 }
 
 func (c *EthClient) GetERC20(hexTokenAddress string) (*ERC20Token, error) {

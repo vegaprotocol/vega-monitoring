@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"code.vegaprotocol.io/vega/datanode/sqlstore"
 	"code.vegaprotocol.io/vega/logging"
@@ -88,8 +89,8 @@ type MonitoringConfig struct {
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
 	EthereumNode  []EthereumNodeConfig  `group:"EthereumNode"  namespace:"ethereumnode"`
-
-	Level string `long:"Level"`
+	EthereumChain []EthereumChain       `group:"EthereumChain" namespace:"ethereumchain" comment:"Monitor various things on the ethereum chain"`
+	Level         string                `long:"Level"`
 }
 
 type CoreConfig struct {
@@ -151,6 +152,29 @@ type DataNodeDBExtensionConfig struct {
 	AssetPrices struct {
 		Enabled bool `long:"enabled"`
 	} `group:"AssetPrices"            namespace:"assetprices"`
+}
+
+type EthereumChain struct {
+	NetworkId   string        `long:"NetworkId"   comment:"Network ID for the specific chain"`
+	ChainId     string        `long:"ChainId"     comment:"Chain ID for the specific chain"`
+	RPCEndpoint string        `long:"RPCEndpoint" comment:"RPC endpoint for the archival node on the specific chain"`
+	Period      time.Duration `long:"Period"     comment:"Period how often We call RPC endpoint"`
+
+	Accounts []string  `group:"Accounts" namespace:"accounts" comment:"List of the accounts to check balance for"`
+	Calls    []EthCall `group:"Calls"    namespace:"calls"    comment:"List of the EthCalls we send to the chain and save results"`
+}
+
+// outputIndex int,
+// transformOutput string,
+
+type EthCall struct {
+	Name            string `long:"Name"    comment:"Unique name to identify the metric in the prometheus metric endpoint"`
+	Address         string `long:"Address" comment:"Address of the ethereum contract"`
+	Method          string `long:"Method"  comment:"Method name to call"`
+	ABI             string `long:"ABI"     comment:"ABI for the call method"`
+	Args            []any  `long:"Args"    comment:"List of the arguments passed to the function for the ethereum call"`
+	OutputIndex     int    `long:"OutputIndex" comment:"When the contract return multiple output define which one you want to use"`
+	OutputTransform string `long:"OutputTransform" comment:"Define function for transforming output from the contract.\nPossible values:\n\t- default - no transform\n\t- float_price:<decimal_places> - e.g. float_price:18 - convert price from big int to float with given decimal places"`
 }
 
 func ReadConfigAndWatch(configFilePath string, logger *logging.Logger) (*Config, error) {

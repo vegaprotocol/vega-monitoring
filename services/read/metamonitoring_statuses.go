@@ -9,12 +9,18 @@ import (
 )
 
 type MetaMonitoringStatuses struct {
-	DataNodeData               *int32
-	AssetPricesData            *int32
-	BlockSignersData           *int32
-	CometTxsData               *int32
-	NetworkBalancesData        *int32
-	NetworkHistorySegmentsData *int32
+	AssetPricesData             *int32
+	BlockSignersData            *int32
+	CometTxsData                *int32
+	NetworkBalancesData         *int32
+	NetworkHistorySegmentsData  *int32
+	PrometheusEthereumCallsData *int32
+
+	// Unused
+	DataNodeData             *int32
+	PrometheusEthNodeScanner *int32
+	PrometheusNodeScanner    *int32
+	PrometheusMetamonitoring *int32
 
 	UpdateTime time.Time
 }
@@ -26,13 +32,19 @@ type StatusDetails struct {
 }
 
 type MetaMonitoringStatusesExtended struct {
-	HealthyOverAll             bool
-	DataNodeData               StatusDetails
-	AssetPricesData            StatusDetails
-	BlockSignersData           StatusDetails
-	CometTxsData               StatusDetails
-	NetworkBalancesData        StatusDetails
-	NetworkHistorySegmentsData StatusDetails
+	HealthyOverAll              bool
+	AssetPricesData             StatusDetails
+	BlockSignersData            StatusDetails
+	CometTxsData                StatusDetails
+	NetworkBalancesData         StatusDetails
+	NetworkHistorySegmentsData  StatusDetails
+	PrometheusEthereumCallsData StatusDetails
+
+	// Unused
+	DataNodeData                 StatusDetails
+	PrometheusEthNodeScannerData StatusDetails
+	PrometheusNodeScannerData    StatusDetails
+	PrometheusMetamonitoringData StatusDetails
 }
 
 func EmptyMetaMonitoringStatusesExtended() *MetaMonitoringStatusesExtended {
@@ -68,6 +80,26 @@ func EmptyMetaMonitoringStatusesExtended() *MetaMonitoringStatusesExtended {
 			UpdatedAt:       time.Unix(0, 0),
 			UnhealthyReason: entities.ReasonUnknown,
 		},
+		PrometheusEthereumCallsData: StatusDetails{
+			Healthy:         false, // We do not use this check anymore
+			UpdatedAt:       time.Unix(0, 0),
+			UnhealthyReason: entities.ReasonUnknown,
+		},
+		PrometheusEthNodeScannerData: StatusDetails{
+			Healthy:         false, // We do not use this check anymore
+			UpdatedAt:       time.Unix(0, 0),
+			UnhealthyReason: entities.ReasonUnknown,
+		},
+		PrometheusNodeScannerData: StatusDetails{
+			Healthy:         false, // We do not use this check anymore
+			UpdatedAt:       time.Unix(0, 0),
+			UnhealthyReason: entities.ReasonUnknown,
+		},
+		PrometheusMetamonitoringData: StatusDetails{
+			Healthy:         false, // We do not use this check anymore
+			UpdatedAt:       time.Unix(0, 0),
+			UnhealthyReason: entities.ReasonUnknown,
+		},
 	}
 }
 
@@ -75,6 +107,10 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 	var permanentOne int32 = 1
 	result := MetaMonitoringStatuses{
 		DataNodeData: &permanentOne,
+
+		PrometheusEthNodeScanner: &permanentOne,
+		PrometheusNodeScanner:    &permanentOne,
+		PrometheusMetamonitoring: &permanentOne,
 	}
 
 	logger := s.log.With(zap.String("reader", "MetaMonitoringStatuses"))
@@ -108,12 +144,14 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 			result.NetworkBalancesData = &isHealthyMetricsValue
 		case entities.SegmentsSvc:
 			result.NetworkHistorySegmentsData = &isHealthyMetricsValue
+		case entities.PromEthereumCallsSvc:
+			result.PrometheusEthereumCallsData = &isHealthyMetricsValue
 		default:
 			logger.Error("Unknown check name", zap.String("check_name", string(check.Service)))
 		}
 	}
 
-	if len(checks) != 5 {
+	if len(checks) != 6 {
 		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
 	}
 
@@ -168,6 +206,15 @@ func (s *ReadService) GetMetaMonitoringStatusesExtended(ctx context.Context) (*M
 				UpdatedAt:       check.StatusTime,
 				UnhealthyReason: check.UnhealthyReason,
 			}
+
+		case entities.PromEthereumCallsSvc:
+			result.PrometheusEthereumCallsData = StatusDetails{
+				Healthy:         check.IsHealthy,
+				UpdatedAt:       check.StatusTime,
+				UnhealthyReason: check.UnhealthyReason,
+			}
+
+		// Unused
 		default:
 			logger.Error("Unknown check name", zap.String("check_name", string(check.Service)))
 		}
@@ -177,7 +224,8 @@ func (s *ReadService) GetMetaMonitoringStatusesExtended(ctx context.Context) (*M
 		result.BlockSignersData.Healthy &&
 		result.CometTxsData.Healthy &&
 		result.NetworkBalancesData.Healthy &&
-		result.NetworkHistorySegmentsData.Healthy
+		result.NetworkHistorySegmentsData.Healthy &&
+		result.PrometheusEthereumCallsData.Healthy
 
 	if len(checks) != 5 {
 		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
