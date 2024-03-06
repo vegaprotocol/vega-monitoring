@@ -193,7 +193,7 @@ func (s *EthereumMonitoringService) monitorCalls(
 			callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
 			res, err := ethClient.Call(callCtx, call)
 			if err != nil {
-				s.logger.Errorf("failed to call ethereum smart contract for network %s: %w", err)
+				s.logger.Errorf("failed to call ethereum smart contract for ID %s: %s", call.ID(), err.Error())
 				s.reportHealth(false, entities.ReasonEthereumContractCallFailure)
 				cancel()
 				continue

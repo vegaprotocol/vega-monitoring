@@ -29,7 +29,7 @@ type AllServices struct {
 	EthereumMonitoringService   *ethereummonitoring.EthereumMonitoringService
 	MetaMonitoringStatusService *metamonitoringprom.MetaMonitoringStatusService
 	EthereumNodeScannerService  *ethnodescanner.EthNodeScannerService
-	MonitoringService           *metamonitoring.MonitoringStatusUpdateService
+	MonitoringService           metamonitoring.MetamonitoringService
 }
 
 func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err error) {
@@ -67,6 +67,8 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 		if err != nil {
 			return
 		}
+	} else {
+		svc.MonitoringService = metamonitoring.NewNopService()
 	}
 
 	if svc.Config.Prometheus.Enabled {
