@@ -34,6 +34,7 @@ type VegaMonitoringCollector struct {
 
 	// Ethereum Node Statuses
 	ethNodeStatuses types.EthereumNodeStatuses
+	ethNodeHeights  map[string]types.EthereumNodeHeight
 
 	accessMu sync.RWMutex
 }
@@ -117,6 +118,15 @@ func (c *VegaMonitoringCollector) UpdateEthereumNodeStatuses(nodeHealthy map[str
 	}
 }
 
+func (c *VegaMonitoringCollector) UpdateEthereumNodeHeights(heights []types.EthereumNodeHeight) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+
+	for idx, item := range heights {
+		c.ethNodeHeights[item.RPCEndpoint] = heights[idx]
+	}
+}
+
 // Describe returns all descriptions of the collector.
 func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// Core
@@ -155,6 +165,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectBlockExplorerStatuses(ch)
 	c.collectMonitoringDatabaseStatuses(ch)
 	c.collectEthereumNodeStatuses(ch)
+	c.collectEthereumNodesHeights(ch)
 	c.collectEthereumAccountBalances(ch)
 	c.collectEthereumContractCallResponses(ch)
 }
@@ -319,6 +330,19 @@ func (c *VegaMonitoringCollector) collectEthereumNodeStatuses(ch chan<- promethe
 				// Labels
 				ethNodeName,
 			))
+	}
+}
+
+func (c *VegaMonitoringCollector) collectEthereumNodesHeights(ch chan<- prometheus.Metric) {
+	for _, metric := range c.ethNodeHeights {
+		ch <- prometheus.NewMetricWithTimestamp(
+			time.Now(),
+			prometheus.MustNewConstMetric(
+				desc.EthereumAccountBalances, prometheus.CounterValue, float64(metric.Height),
+				// Labels
+				metric.Name, metric.RPCEndpoint,
+			),
+		)
 	}
 }
 

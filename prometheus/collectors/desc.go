@@ -27,8 +27,8 @@ var desc = struct {
 		monitoringDatabaseHealthy *prometheus.Desc
 	}
 
-	EthereumNodeStatus *prometheus.Desc
-
+	EthereumNodeStatus           *prometheus.Desc
+	EthereumNodeHeight           *prometheus.Desc
 	EthereumAccountBalances      *prometheus.Desc
 	EthereumContractCallResponse *prometheus.Desc
 }{}
@@ -92,6 +92,9 @@ func init() {
 	//
 	desc.EthereumNodeStatus = prometheus.NewDesc(
 		"ethereum_node_status", "Status of an Ethereum Node. 1 good, 0 bad", []string{"rpc_endpoint"}, nil,
+	)
+	desc.EthereumNodeHeight = prometheus.NewDesc(
+		"ethereum_node_height", "Height of the ethereum node", []string{"name", "rpc_endpoint"}, nil,
 	)
 
 	//

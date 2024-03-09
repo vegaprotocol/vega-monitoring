@@ -45,3 +45,7 @@ func (c *EthClient) BalanceWithoutZerosAt(ctx context.Context, account common.Ad
 func (c *EthClient) Call(ctx context.Context, call *EthCall) (interface{}, error) {
 	return call.Call(ctx, c.client)
 }
+
+func (c *EthClient) Height(ctx context.Context) (uint64, error) {
+	return c.client.BlockNumber(ctx)
+}

@@ -123,6 +123,7 @@ type LocalNodeConfig struct {
 }
 
 type EthereumNodeConfig struct {
+	Name                        string `long:"Name"                         comment:"Unique name available in the prometheus"`
 	RPCEndpoint                 string `long:"RPCEndpoint"                  comment:"URL of the node"`
 	VegaCollateralBridgeAddress string `long:"VegaCollateralBridgeAddress"  comment:"HEX address of CollateralBridge for Vega network"`
 }

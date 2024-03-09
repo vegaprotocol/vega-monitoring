@@ -104,3 +104,10 @@ func (s *DataNodeStatus) GetScore() uint64 {
 	}
 	return score
 }
+
+type EthereumNodeHeight struct {
+	RPCEndpoint string
+	Name        string
+	Height      uint64
+	UpdateTime  time.Time
+}
