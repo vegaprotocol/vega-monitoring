@@ -46,6 +46,7 @@ func NewVegaMonitoringCollector() *VegaMonitoringCollector {
 		blockExplorerStatuses:   map[string]*types.BlockExplorerStatus{},
 		ethereumAccountBalances: map[string]AccountBalanceMetric{},
 		contractCallResponse:    map[string]ContractCallResponse{},
+		ethNodeHeights:          map[string]types.EthereumNodeHeight{},
 	}
 }
 
@@ -338,7 +339,7 @@ func (c *VegaMonitoringCollector) collectEthereumNodesHeights(ch chan<- promethe
 		ch <- prometheus.NewMetricWithTimestamp(
 			time.Now(),
 			prometheus.MustNewConstMetric(
-				desc.EthereumAccountBalances, prometheus.CounterValue, float64(metric.Height),
+				desc.EthereumNodeHeight, prometheus.CounterValue, float64(metric.Height),
 				// Labels
 				metric.Name, metric.RPCEndpoint,
 			),
