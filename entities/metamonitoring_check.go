@@ -43,6 +43,7 @@ const (
 	ReasonEthereumGetBalancesFailure          UnhealthyReason = 4
 	ReasonEthereumContractCallFailure         UnhealthyReason = 5
 	ReasonEthereumContractInvalidResponseType UnhealthyReason = 6
+	ReasonEthereumContractEventFilterFailure  UnhealthyReason = 7
 )
 
 type MonitoringStatus struct {
@@ -68,6 +69,8 @@ func UnHealthyReasonString(reason UnhealthyReason) string {
 		return "Failed to get account balances from ethereum"
 	case ReasonEthereumContractCallFailure:
 		return "Failed to call ethereum smart contract"
+	case ReasonEthereumContractEventFilterFailure:
+		return "Failed to filter ethereum smart contract event"
 	}
 
 	return "Unknown reason"
