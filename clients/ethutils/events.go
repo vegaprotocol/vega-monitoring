@@ -22,10 +22,14 @@ type EventsCount struct {
 
 	contractAddressString string
 	contractAddress       common.Address
-	abiJSON               string
+
+	abiJSON   string
+	abiObject abi.ABI
+
 	lastCalledBlock       *big.Int
-	abiObject             abi.ABI
 	initialCallPastBlocks uint64
+
+	result map[string]uint64
 }
 
 func NewEventsCount(name string, address string, abiJSON string, initialCallPastBlocks uint64) (*EventsCount, error) {
@@ -43,10 +47,16 @@ func NewEventsCount(name string, address string, abiJSON string, initialCallPast
 
 		contractAddressString: address,
 		contractAddress:       common.HexToAddress(address),
-		abiJSON:               abiJSON,
+
+		abiJSON:   abiJSON,
+		abiObject: contractAbi,
+
 		initialCallPastBlocks: initialCallPastBlocks,
-		abiObject:             contractAbi,
 		lastCalledBlock:       nil,
+
+		result: map[string]uint64{
+			AllEvents: 0,
+		},
 	}, nil
 }
 
@@ -59,14 +69,10 @@ func NewEventsCountFromConfig(cfg config.EthEvents) (*EventsCount, error) {
 	)
 }
 
-func (e *EventsCount) CountEvents(ctx context.Context, client *EthClient) (map[string]uint64, error) {
-	result := map[string]uint64{
-		AllEvents: 0,
-	}
-
+func (e *EventsCount) CallFilterLogs(ctx context.Context, client *EthClient) error {
 	height, err := client.Height(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ethereum height for initial call for the %s smart contract: %w", e.contractAddressString, err)
+		return fmt.Errorf("failed to get ethereum height for initial call for the %s smart contract: %w", e.contractAddressString, err)
 	}
 
 	heightBigInt := big.NewInt(0).SetUint64(height)
@@ -77,7 +83,7 @@ func (e *EventsCount) CountEvents(ctx context.Context, client *EthClient) (map[s
 
 	if big.NewInt(0).Sub(heightBigInt, e.lastCalledBlock).Cmp(big.NewInt(1)) < 0 {
 		// Ethereum did not make any block
-		return result, nil
+		return nil
 	}
 
 	query := ethereum.FilterQuery{
@@ -88,26 +94,35 @@ func (e *EventsCount) CountEvents(ctx context.Context, client *EthClient) (map[s
 
 	logs, err := client.client.FilterLogs(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to filter ethereum logs for contract %s: %w", e.contractAddressString, err)
+		return fmt.Errorf("failed to filter ethereum logs for contract %s: %w", e.contractAddressString, err)
 	}
 
 	for _, vLog := range logs {
-		result[AllEvents] = result[AllEvents] + 1
+		e.result[AllEvents] = e.result[AllEvents] + 1
+
+		// Event is not indexed
+		if len(vLog.Topics) < 1 {
+			continue
+		}
 
 		// https://docs.alchemy.com/docs/deep-dive-into-eth_getlogs
 		event, err := e.abiObject.EventByID(vLog.Topics[0])
 		if err == nil {
 			// event can be deducted from the ABI
 			eventName := event.Name
-			val, ok := result[eventName]
+			val, ok := e.result[eventName]
 			if !ok {
 				val = 0
 			}
-			result[eventName] = val + 1
+			e.result[eventName] = val + 1
 
 			continue
 		}
 	}
 
-	return result, nil
+	return nil
+}
+
+func (e EventsCount) Count() map[string]uint64 {
+	return e.result
 }
