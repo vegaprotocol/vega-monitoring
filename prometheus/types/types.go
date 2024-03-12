@@ -111,3 +111,10 @@ type EthereumNodeHeight struct {
 	Height      uint64
 	UpdateTime  time.Time
 }
+
+type EthereumContractsEvents struct {
+	ID              string
+	EventName       string
+	ContractAddress string
+	Count           uint64
+}

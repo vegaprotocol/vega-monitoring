@@ -57,13 +57,13 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 
 	for idx, chainConfig := range s.cfg {
 		if len(chainConfig.RPCEndpoint) < 1 {
-			s.logger.Errorf("failed to start the prometheus ethereum monitoring service for network id %d: empty rpc address", chainConfig.NetworkId)
+			s.logger.Errorf("failed to start the prometheus ethereum monitoring service for network id %s: empty rpc address", chainConfig.NetworkId)
 			continue
 		}
 
 		ethClient, err := ethutils.NewEthClient(chainConfig.RPCEndpoint, s.logger)
 		if err != nil {
-			s.logger.Errorf("failed to create ethereum client in the prometheus ethereum monitoring service for network id %d: %w", chainConfig.NetworkId, err)
+			s.logger.Errorf("failed to create ethereum client in the prometheus ethereum monitoring service for network id %s: %w", chainConfig.NetworkId, err)
 			continue
 		}
 		if len(chainConfig.Accounts) > 0 {
@@ -79,7 +79,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %d: %w", chainConfig.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %s: %w", chainConfig.NetworkId, err)
 					cancel()
 				}
 			}(&failure, s.cfg[idx])
@@ -98,8 +98,25 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %d: %w", callCfg.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %s: %w", callCfg.NetworkId, err)
 					cancel()
+				}
+			}(&failure, s.cfg[idx])
+		}
+
+		if len(chainConfig.Events) > 0 {
+			monitoringWg.Add(1)
+			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
+				defer monitoringWg.Done()
+				if err := s.monitorContractEvents(
+					svcContext,
+					ethClient,
+					callCfg.Period,
+					callCfg.NetworkId,
+					callCfg.Events,
+				); err != nil {
+					failure.Store(true)
+					s.logger.Errorf("failed to start monitoring ethereum events for network id %s: %w", callCfg.NetworkId, err)
 				}
 			}(&failure, s.cfg[idx])
 		}
@@ -215,7 +232,6 @@ func (s *EthereumMonitoringService) monitorCalls(
 		}
 
 		s.reportHealth(true, entities.ReasonUnknown)
-
 		select {
 		case <-ctx.Done():
 			s.logger.Infof("Stopping eth calls scan for network id: %s", networkId)
@@ -250,7 +266,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 	defer ticker.Stop()
 
 	for {
-		balances := map[string]float64{}
+		// balances := map[string]float64{}
 
 		for _, accAddress := range accounts {
 			callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
@@ -264,13 +280,60 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 			cancel()
 			s.collector.UpdateEthereumAccountBalance(accAddress, chainId, networkId, balance)
 			// fmt.Printf("Balance: %f\n", balance)
-			balances[accAddress] = balance
+			// balances[accAddress] = balance
 		}
 
 		s.reportHealth(true, entities.ReasonUnknown)
 		select {
 		case <-ctx.Done():
 			s.logger.Infof("Stopping account scan for network id: %s", networkId)
+			return nil
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *EthereumMonitoringService) monitorContractEvents(
+	ctx context.Context,
+	ethClient *ethutils.EthClient,
+	period time.Duration,
+	networkId string,
+	cfg []config.EthEvents,
+) error {
+	time.Sleep(13 * time.Second)
+
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	// TODO Create EventCounts
+	eventsCounters := make([]*ethutils.EventsCounter, len(cfg))
+	var err error
+
+	for idx, configItem := range cfg {
+		eventsCounters[idx], err = ethutils.NewEventsCounterFromConfig(configItem)
+		if err != nil {
+			return fmt.Errorf("failed to create events counter from config for %s: %w", configItem.Name, err)
+		}
+	}
+
+	for {
+
+		for _, event := range eventsCounters {
+			counterCallCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
+			if err := event.CallFilterLogs(counterCallCtx, ethClient); err != nil {
+				s.logger.Errorf("Failed to filter logs for the events counter(%s): %w", event.Name(), err)
+			}
+			cancel()
+		}
+
+		// Publish metrics to the prometheus
+		// s.collector
+
+		s.reportHealth(true, entities.ReasonUnknown)
+		select {
+		case <-ctx.Done():
+			s.logger.Infof("Stopping filtering events for network id: %s", networkId)
 			return nil
 		case <-ticker.C:
 			continue

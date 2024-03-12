@@ -35,6 +35,7 @@ type VegaMonitoringCollector struct {
 	// Ethereum Node Statuses
 	ethNodeStatuses types.EthereumNodeStatuses
 	ethNodeHeights  map[string]types.EthereumNodeHeight
+	contractEvents  []types.EthereumContractsEvents
 
 	accessMu sync.RWMutex
 }
@@ -128,6 +129,12 @@ func (c *VegaMonitoringCollector) UpdateEthereumNodeHeights(heights []types.Ethe
 	}
 }
 
+func (c *VegaMonitoringCollector) UpdateEthereumContractEvents(events []types.EthereumContractsEvents) {
+	c.accessMu.Lock()
+	defer c.accessMu.Unlock()
+	c.contractEvents = events
+}
+
 // Describe returns all descriptions of the collector.
 func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 	// Core
@@ -151,14 +158,17 @@ func (c *VegaMonitoringCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// Ethereum Node Statuses
 	ch <- desc.EthereumNodeStatus
+	ch <- desc.EthereumNodeHeight
 
 	// Ethereum on chain data
 	ch <- desc.EthereumAccountBalances
 	ch <- desc.EthereumContractCallResponse
+	ch <- desc.EthereumContractEvents
 }
 
 // Collect returns the current state of all metrics of the collector.
 func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
+	// TODO(fixme): Is it good idea to lock access mutex here, when We do not know whats going on in child functions?
 	c.accessMu.Lock()
 	defer c.accessMu.Unlock()
 	c.collectCoreStatuses(ch)
@@ -169,6 +179,7 @@ func (c *VegaMonitoringCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectEthereumNodesHeights(ch)
 	c.collectEthereumAccountBalances(ch)
 	c.collectEthereumContractCallResponses(ch)
+	c.collectEthereumContractEvents(ch)
 }
 
 func (c *VegaMonitoringCollector) collectCoreStatuses(ch chan<- prometheus.Metric) {
@@ -337,7 +348,7 @@ func (c *VegaMonitoringCollector) collectEthereumNodeStatuses(ch chan<- promethe
 func (c *VegaMonitoringCollector) collectEthereumNodesHeights(ch chan<- prometheus.Metric) {
 	for _, metric := range c.ethNodeHeights {
 		ch <- prometheus.NewMetricWithTimestamp(
-			time.Now(),
+			metric.UpdateTime,
 			prometheus.MustNewConstMetric(
 				desc.EthereumNodeHeight, prometheus.CounterValue, float64(metric.Height),
 				// Labels
@@ -368,6 +379,19 @@ func (c *VegaMonitoringCollector) collectEthereumContractCallResponses(ch chan<-
 				desc.EthereumContractCallResponse, prometheus.GaugeValue, metric.Value,
 				// Labels
 				id, metric.ContractAddress, metric.MethodName,
+			),
+		)
+	}
+}
+
+func (c *VegaMonitoringCollector) collectEthereumContractEvents(ch chan<- prometheus.Metric) {
+	for _, metric := range c.contractEvents {
+		ch <- prometheus.NewMetricWithTimestamp(
+			time.Now(),
+			prometheus.MustNewConstMetric(
+				desc.EthereumContractCallResponse, prometheus.CounterValue, float64(metric.Count),
+				// Labels
+				metric.ID, metric.ContractAddress, metric.EventName,
 			),
 		)
 	}

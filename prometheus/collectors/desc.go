@@ -31,6 +31,7 @@ var desc = struct {
 	EthereumNodeHeight           *prometheus.Desc
 	EthereumAccountBalances      *prometheus.Desc
 	EthereumContractCallResponse *prometheus.Desc
+	EthereumContractEvents       *prometheus.Desc
 }{}
 
 func init() {
@@ -105,5 +106,8 @@ func init() {
 	)
 	desc.EthereumContractCallResponse = prometheus.NewDesc(
 		"contract_call_response", "Response from the defined in the config contract calls", []string{"id", "address", "method"}, nil,
+	)
+	desc.EthereumContractEvents = prometheus.NewDesc(
+		"contract_events", "Number of events since last monitoring program restart", []string{"id", "address", "event_name"}, nil,
 	)
 }
