@@ -14,7 +14,7 @@ import (
 
 const (
 	AllEvents                    = "*"
-	DefaultInitialCallPastBlocks = 32 // call X past blocks
+	DefaultInitialCallPastBlocks = 128
 )
 
 type EventsCounter struct {
@@ -39,10 +39,6 @@ func NewEventsCounter(name string, address string, abiJSON string, initialCallPa
 		return nil, fmt.Errorf("failed to create ABI object from JSON: %w", err)
 	}
 
-	if initialCallPastBlocks < 0 {
-		return nil, fmt.Errorf("initialCallPastBlocks cannot be smaller than 0")
-	}
-
 	return &EventsCounter{
 		name: name,
 
@@ -62,11 +58,15 @@ func NewEventsCounter(name string, address string, abiJSON string, initialCallPa
 }
 
 func NewEventsCounterFromConfig(cfg config.EthEvents) (*EventsCounter, error) {
+	pastBlocks := cfg.InitialBlocksToScan
+	if pastBlocks < 1 {
+		pastBlocks = DefaultInitialCallPastBlocks
+	}
 	return NewEventsCounter(
 		cfg.Name,
 		cfg.ContractAddress,
 		cfg.ABI,
-		DefaultInitialCallPastBlocks,
+		pastBlocks,
 	)
 }
 
@@ -87,15 +87,31 @@ func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) e
 		return nil
 	}
 
+	toBlock := big.NewInt(0).Set(heightBigInt)
+	// Lets call max 9999 blocks as some RPC providers limit filter to 10k blocks
+	if big.NewInt(0).Sub(toBlock, e.lastCalledBlock).Cmp(big.NewInt(9999)) > 0 {
+		toBlock = big.NewInt(0).Add(toBlock, big.NewInt(9999))
+	}
+
+	if toBlock.Cmp(heightBigInt) > 0 {
+		toBlock = big.NewInt(0).Set(heightBigInt)
+	}
+
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{e.contractAddress},
 		FromBlock: e.lastCalledBlock,
-		ToBlock:   heightBigInt,
+		ToBlock:   toBlock,
 	}
 
 	logs, err := client.client.FilterLogs(ctx, query)
 	if err != nil {
-		return fmt.Errorf("failed to filter ethereum logs for contract %s: %w", e.contractAddressString, err)
+		return fmt.Errorf(
+			"failed to filter ethereum logs for contract %s for block <%s; %s>: %s",
+			e.contractAddressString,
+			e.lastCalledBlock.String(),
+			toBlock.String(),
+			err.Error(),
+		)
 	}
 
 	for _, vLog := range logs {
@@ -120,6 +136,7 @@ func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) e
 			continue
 		}
 	}
+	e.lastCalledBlock = big.NewInt(0).Set(heightBigInt)
 
 	return nil
 }
@@ -131,4 +148,8 @@ func (e EventsCounter) Count() map[string]uint64 {
 
 func (e EventsCounter) Name() string {
 	return e.name
+}
+
+func (e EventsCounter) ContractAddress() string {
+	return e.contractAddressString
 }

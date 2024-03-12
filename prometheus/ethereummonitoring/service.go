@@ -14,6 +14,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
+	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +64,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 
 		ethClient, err := ethutils.NewEthClient(chainConfig.RPCEndpoint, s.logger)
 		if err != nil {
-			s.logger.Errorf("failed to create ethereum client in the prometheus ethereum monitoring service for network id %s: %w", chainConfig.NetworkId, err)
+			s.logger.Errorf("failed to create ethereum client in the prometheus ethereum monitoring service for network id %s: %s", chainConfig.NetworkId, err.Error())
 			continue
 		}
 		if len(chainConfig.Accounts) > 0 {
@@ -79,7 +80,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %s: %w", chainConfig.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %s: %s", chainConfig.NetworkId, err.Error())
 					cancel()
 				}
 			}(&failure, s.cfg[idx])
@@ -98,7 +99,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					callCfg.Period,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %s: %w", callCfg.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %s: %s", callCfg.NetworkId, err.Error())
 					cancel()
 				}
 			}(&failure, s.cfg[idx])
@@ -116,7 +117,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					callCfg.Events,
 				); err != nil {
 					failure.Store(true)
-					s.logger.Errorf("failed to start monitoring ethereum events for network id %s: %w", callCfg.NetworkId, err)
+					s.logger.Errorf("failed to start monitoring ethereum events for network id %s: %s", callCfg.NetworkId, err.Error())
 				}
 			}(&failure, s.cfg[idx])
 		}
@@ -126,7 +127,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 	go func(failure *atomic.Bool) {
 		defer monitoringWg.Done()
 		if err := s.reportState(svcContext, time.Minute, statusPublisher); err != nil {
-			s.logger.Errorf("failed to report statuses: %w", err)
+			s.logger.Errorf("failed to report statuses: %s", err.Error())
 			failure.Store(true)
 			cancel()
 		}
@@ -273,7 +274,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 			balance, err := ethClient.BalanceWithoutZerosAt(callCtx, common.HexToAddress(accAddress))
 			if err != nil {
 				cancel()
-				s.logger.Errorf("failed to get balance for account %s: %w", accAddress, err)
+				s.logger.Errorf("failed to get balance for account %s: %s", accAddress, err.Error())
 				s.reportHealth(false, entities.ReasonEthereumGetBalancesFailure)
 				continue
 			}
@@ -301,7 +302,7 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 	networkId string,
 	cfg []config.EthEvents,
 ) error {
-	time.Sleep(13 * time.Second)
+	time.Sleep(18 * time.Second)
 
 	ticker := time.NewTicker(period)
 	defer ticker.Stop()
@@ -322,14 +323,28 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 		for _, event := range eventsCounters {
 			counterCallCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
 			if err := event.CallFilterLogs(counterCallCtx, ethClient); err != nil {
-				s.logger.Errorf("Failed to filter logs for the events counter(%s): %w", event.Name(), err)
+				s.logger.Errorf("Failed to filter logs for the events counter(%s): %s", event.Name(), err.Error())
 			}
 			cancel()
 		}
 
+		metrics := []types.EthereumContractsEvents{}
 		// Publish metrics to the prometheus
-		// s.collector
+		for _, event := range eventsCounters {
+			eventsCalls := event.Count()
+			for eventName, count := range eventsCalls {
+				metrics = append(metrics, types.EthereumContractsEvents{
+					ID:              event.Name(),
+					EventName:       eventName,
+					ContractAddress: event.ContractAddress(),
+					Count:           count,
+				})
+			}
+		}
+		// We need to submit updates for all contracts at the same time.
+		s.collector.UpdateEthereumContractEvents(metrics)
 
+		ticker.Reset(period)
 		s.reportHealth(true, entities.ReasonUnknown)
 		select {
 		case <-ctx.Done():

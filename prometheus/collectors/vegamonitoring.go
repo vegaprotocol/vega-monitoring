@@ -389,7 +389,7 @@ func (c *VegaMonitoringCollector) collectEthereumContractEvents(ch chan<- promet
 		ch <- prometheus.NewMetricWithTimestamp(
 			time.Now(),
 			prometheus.MustNewConstMetric(
-				desc.EthereumContractCallResponse, prometheus.CounterValue, float64(metric.Count),
+				desc.EthereumContractEvents, prometheus.CounterValue, float64(metric.Count),
 				// Labels
 				metric.ID, metric.ContractAddress, metric.EventName,
 			),

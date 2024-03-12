@@ -3,7 +3,6 @@ package ethnodescanner
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
@@ -19,7 +18,6 @@ type EthNodeScannerService struct {
 	collector *collectors.VegaMonitoringCollector
 	log       *logging.Logger
 
-	ethMutex   sync.Mutex
 	ethClients map[string]*ethutils.EthClient
 }
 
@@ -42,7 +40,9 @@ func (s *EthNodeScannerService) Start(ctx context.Context) error {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	s.initEthereumClients()
+	if err := s.initEthereumClients(); err != nil {
+		return fmt.Errorf("failed to initialize ethereum clients: %w", err)
+	}
 
 	for {
 		updateTime := time.Now()
