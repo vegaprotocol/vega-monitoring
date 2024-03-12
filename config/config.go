@@ -167,9 +167,10 @@ type EthereumChain struct {
 }
 
 type EthEvents struct {
-	Name            string `long:"Name"    comment:"Unique name to identify the metric in the prometheus metric endpoint"`
-	ContractAddress string `long:"ContractAddress" comment:"Address of the ethereum contract you want to listen events on"`
-	ABI             string `long:"ABI" comment:"ABI containing all the events you want to monitor as separated calls. Monitored event MUST be INDEXED, otherwise it cannot be deducted"`
+	Name                string `long:"Name"                 comment:"Unique name to identify the metric in the prometheus metric endpoint"`
+	ContractAddress     string `long:"ContractAddress"      comment:"Address of the ethereum contract you want to listen events on"`
+	ABI                 string `long:"ABI"                  comment:"ABI containing all the events you want to monitor as separated calls. Monitored event MUST be INDEXED, otherwise it cannot be deducted"`
+	InitialBlocksToScan uint64 `long:"InitialBlocksToScan"  comment:"Number of blocks to scan after vega-monitoring is started"`
 }
 
 type EthCall struct {
