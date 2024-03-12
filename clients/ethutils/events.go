@@ -17,7 +17,7 @@ const (
 	DefaultInitialCallPastBlocks = 32 // call X past blocks
 )
 
-type EventsCount struct {
+type EventsCounter struct {
 	name string
 
 	contractAddressString string
@@ -29,10 +29,11 @@ type EventsCount struct {
 	lastCalledBlock       *big.Int
 	initialCallPastBlocks uint64
 
+	// Result keeps information about all seen events since monitoring started
 	result map[string]uint64
 }
 
-func NewEventsCount(name string, address string, abiJSON string, initialCallPastBlocks uint64) (*EventsCount, error) {
+func NewEventsCounter(name string, address string, abiJSON string, initialCallPastBlocks uint64) (*EventsCounter, error) {
 	contractAbi, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ABI object from JSON: %w", err)
@@ -42,7 +43,7 @@ func NewEventsCount(name string, address string, abiJSON string, initialCallPast
 		return nil, fmt.Errorf("initialCallPastBlocks cannot be smaller than 0")
 	}
 
-	return &EventsCount{
+	return &EventsCounter{
 		name: name,
 
 		contractAddressString: address,
@@ -60,8 +61,8 @@ func NewEventsCount(name string, address string, abiJSON string, initialCallPast
 	}, nil
 }
 
-func NewEventsCountFromConfig(cfg config.EthEvents) (*EventsCount, error) {
-	return NewEventsCount(
+func NewEventsCounterFromConfig(cfg config.EthEvents) (*EventsCounter, error) {
+	return NewEventsCounter(
 		cfg.Name,
 		cfg.ContractAddress,
 		cfg.ABI,
@@ -69,7 +70,7 @@ func NewEventsCountFromConfig(cfg config.EthEvents) (*EventsCount, error) {
 	)
 }
 
-func (e *EventsCount) CallFilterLogs(ctx context.Context, client *EthClient) error {
+func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) error {
 	height, err := client.Height(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get ethereum height for initial call for the %s smart contract: %w", e.contractAddressString, err)
@@ -123,6 +124,11 @@ func (e *EventsCount) CallFilterLogs(ctx context.Context, client *EthClient) err
 	return nil
 }
 
-func (e EventsCount) Count() map[string]uint64 {
+// Count returns result
+func (e EventsCounter) Count() map[string]uint64 {
 	return e.result
+}
+
+func (e EventsCounter) Name() string {
+	return e.name
 }
