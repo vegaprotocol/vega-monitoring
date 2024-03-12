@@ -35,7 +35,7 @@ type VegaMonitoringCollector struct {
 	// Ethereum Node Statuses
 	ethNodeStatuses types.EthereumNodeStatuses
 	ethNodeHeights  map[string]types.EthereumNodeHeight
-	contractEvents  []types.EthereumContractsEvents
+	contractEvents  map[types.EntityHash]types.EthereumContractsEvents
 
 	accessMu sync.RWMutex
 }
@@ -48,6 +48,8 @@ func NewVegaMonitoringCollector() *VegaMonitoringCollector {
 		ethereumAccountBalances: map[string]AccountBalanceMetric{},
 		contractCallResponse:    map[string]ContractCallResponse{},
 		ethNodeHeights:          map[string]types.EthereumNodeHeight{},
+
+		contractEvents: map[types.EntityHash]types.EthereumContractsEvents{},
 	}
 }
 
@@ -132,7 +134,11 @@ func (c *VegaMonitoringCollector) UpdateEthereumNodeHeights(heights []types.Ethe
 func (c *VegaMonitoringCollector) UpdateEthereumContractEvents(events []types.EthereumContractsEvents) {
 	c.accessMu.Lock()
 	defer c.accessMu.Unlock()
-	c.contractEvents = events
+
+	for idx, event := range events {
+		// Make sure events are not duplicated in the /metrics page
+		c.contractEvents[event.Hash()] = events[idx]
+	}
 }
 
 // Describe returns all descriptions of the collector.
