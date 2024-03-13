@@ -1,6 +1,7 @@
 package comet
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -10,6 +11,11 @@ import (
 //
 //
 //
+
+var (
+	ErrMissingSubmitter = errors.New("missing submitter in the comet block")
+	ErrMissingCommand   = errors.New("missing command in the comet block")
+)
 
 type CometTx struct {
 	Code       int
@@ -132,10 +138,18 @@ func parseBlockResultsResponse(response blockResultsResponse) (result []CometTx,
 			result[i].Info = &info
 		}
 
-		result[i].Submitter, result[i].Command, result[i].Attributes, err = parseBlockResultsResponseTxEvent(tx.Events)
+		submitter, command, attrs, err := parseBlockResultsResponseTxEvent(tx.Events)
 		if err != nil {
+			if errors.Is(err, ErrMissingSubmitter) {
+				// Block may not contain transaction with submitter
+				continue
+			}
 			return nil, fmt.Errorf("failed to parse Tx Events for block %d, %w", height, err)
 		}
+
+		result[i].Submitter = submitter
+		result[i].Command = command
+		result[i].Attributes = attrs
 	}
 	return
 }
@@ -162,11 +176,11 @@ func parseBlockResultsResponseTxEvent(
 		attributes = nil
 	}
 	if len(submitter) == 0 {
-		err = fmt.Errorf("missing submitter in Comet Block Result tx: %+v", events)
+		err = fmt.Errorf("%w: %+v", ErrMissingSubmitter, events)
 		return
 	}
 	if len(command) == 0 {
-		err = fmt.Errorf("missing command in Comet Block Result tx: %+v", events)
+		err = fmt.Errorf("%w: %+v", ErrMissingCommand, events)
 		return
 	}
 	return

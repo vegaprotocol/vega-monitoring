@@ -123,6 +123,7 @@ type LocalNodeConfig struct {
 }
 
 type EthereumNodeConfig struct {
+	Name                        string `long:"Name"                         comment:"Unique name available in the prometheus"`
 	RPCEndpoint                 string `long:"RPCEndpoint"                  comment:"URL of the node"`
 	VegaCollateralBridgeAddress string `long:"VegaCollateralBridgeAddress"  comment:"HEX address of CollateralBridge for Vega network"`
 }
@@ -160,12 +161,17 @@ type EthereumChain struct {
 	RPCEndpoint string        `long:"RPCEndpoint" comment:"RPC endpoint for the archival node on the specific chain"`
 	Period      time.Duration `long:"Period"     comment:"Period how often We call RPC endpoint"`
 
-	Accounts []string  `group:"Accounts" namespace:"accounts" comment:"List of the accounts to check balance for"`
-	Calls    []EthCall `group:"Calls"    namespace:"calls"    comment:"List of the EthCalls we send to the chain and save results"`
+	Accounts []string    `group:"Accounts"  namespace:"accounts"  comment:"List of the accounts to check balance for"`
+	Calls    []EthCall   `group:"Calls"     namespace:"calls"     comment:"List of the EthCalls we send to the chain and save results"`
+	Events   []EthEvents `group:"Events"    namespace:"events"    comment:"Listen events on emitted on the given ethereum smart contract"`
 }
 
-// outputIndex int,
-// transformOutput string,
+type EthEvents struct {
+	Name                string `long:"Name"                 comment:"Unique name to identify the metric in the prometheus metric endpoint"`
+	ContractAddress     string `long:"ContractAddress"      comment:"Address of the ethereum contract you want to listen events on"`
+	ABI                 string `long:"ABI"                  comment:"ABI containing all the events you want to monitor as separated calls. Monitored event MUST be INDEXED, otherwise it cannot be deducted"`
+	InitialBlocksToScan uint64 `long:"InitialBlocksToScan"  comment:"Number of blocks to scan after vega-monitoring is started"`
+}
 
 type EthCall struct {
 	Name            string `long:"Name"    comment:"Unique name to identify the metric in the prometheus metric endpoint"`

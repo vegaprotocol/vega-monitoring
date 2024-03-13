@@ -15,6 +15,7 @@ import (
 )
 
 type healthcheckResult struct {
+	name     string
 	endpoint string
 	result   bool
 }
@@ -28,6 +29,7 @@ func CheckETHEndpointList(ctx context.Context, log *logging.Logger, endpoints []
 			defer wg.Done()
 			singleResult := CheckETHEndpoint(ctx, log, endpoint)
 			ch <- healthcheckResult{
+				name:     endpoint.Name,
 				endpoint: endpoint.RPCEndpoint,
 				result:   singleResult,
 			}

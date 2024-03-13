@@ -27,10 +27,11 @@ var desc = struct {
 		monitoringDatabaseHealthy *prometheus.Desc
 	}
 
-	EthereumNodeStatus *prometheus.Desc
-
+	EthereumNodeStatus           *prometheus.Desc
+	EthereumNodeHeight           *prometheus.Desc
 	EthereumAccountBalances      *prometheus.Desc
 	EthereumContractCallResponse *prometheus.Desc
+	EthereumContractEvents       *prometheus.Desc
 }{}
 
 func init() {
@@ -93,6 +94,9 @@ func init() {
 	desc.EthereumNodeStatus = prometheus.NewDesc(
 		"ethereum_node_status", "Status of an Ethereum Node. 1 good, 0 bad", []string{"rpc_endpoint"}, nil,
 	)
+	desc.EthereumNodeHeight = prometheus.NewDesc(
+		"ethereum_node_height", "Height of the ethereum node", []string{"name", "rpc_endpoint"}, nil,
+	)
 
 	//
 	// Ethereum chains
@@ -102,5 +106,8 @@ func init() {
 	)
 	desc.EthereumContractCallResponse = prometheus.NewDesc(
 		"contract_call_response", "Response from the defined in the config contract calls", []string{"id", "address", "method"}, nil,
+	)
+	desc.EthereumContractEvents = prometheus.NewDesc(
+		"contract_events", "Number of events since last monitoring program restart", []string{"id", "address", "event_name"}, nil,
 	)
 }

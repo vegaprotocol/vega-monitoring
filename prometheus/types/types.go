@@ -1,10 +1,13 @@
 package types
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"time"
 )
 
 type NodeType string
+type EntityHash [32]byte
 
 const (
 	CoreType          NodeType = "core"
@@ -103,4 +106,22 @@ func (s *DataNodeStatus) GetScore() uint64 {
 		score /= 2
 	}
 	return score
+}
+
+type EthereumNodeHeight struct {
+	RPCEndpoint string
+	Name        string
+	Height      uint64
+	UpdateTime  time.Time
+}
+
+type EthereumContractsEvents struct {
+	ID              string
+	EventName       string
+	ContractAddress string
+	Count           uint64
+}
+
+func (ece EthereumContractsEvents) Hash() EntityHash {
+	return sha256.Sum256([]byte(fmt.Sprintf("%s-%s-%s", ece.ID, ece.EventName, ece.ContractAddress)))
 }
