@@ -12,11 +12,15 @@ type NetworkBalances struct {
 	NetworkBalances []entities.NetworkBalance
 }
 
-var IgnoredWithdrawalIDs = []string{
+var ignoredWithdrawalIDs = []string{
 	// Exploit for LDO market
 	"cf3d77a9e5767132a4da41d534c28ae0f9749372cfb1b902cc3439d1649d1d33",
 	"664cece6d582e534f818002cd5d9fc84df9f66f040bcfec92929fd176ed8a6ec",
 	"3e1c058594bdd27a7b7b4670305c5b11480cb223e7a791b015e0411a5530564d",
+}
+
+var ignoredDepositsIDs = []string{
+	"8808d9ddd6c09593a519f4ad1c7117c247783a22c57cf6d73448ff9094552e07", // duplicated deposit will never be finalized.
 }
 
 func NewNetworkBalances(connectionSource *vega_sqlstore.ConnectionSource) *NetworkBalances {
@@ -106,7 +110,7 @@ func (nhs *NetworkBalances) UpsertPartiesTotalBalance(ctx context.Context) error
 }
 
 func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Context) error {
-	ignoredIDs := PrepareListForInCondition(IgnoredWithdrawalIDs)
+	ignoredIDs := PrepareListForInCondition(ignoredWithdrawalIDs)
 	sqlQuery := `
 	INSERT INTO metrics.network_balances (
 		balance_time,
@@ -128,6 +132,7 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 }
 
 func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error {
+	ignoredIDs := PrepareListForInCondition(ignoredDepositsIDs)
 	_, err := nhs.Connection.Exec(ctx, `
 		INSERT INTO metrics.network_balances (
 			balance_time,
@@ -136,7 +141,8 @@ func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error
 			balance)
 		SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNFINALIZED_DEPOSITS', COALESCE(SUM(d.amount), 0)
 			FROM assets_current a
-			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status <> 'STATUS_FINALIZED')
+			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status <> 'STATUS_FINALIZED') 
+				AND encode(d.id::bytea, 'hex') NOT IN (`+ignoredIDs+`)
 			GROUP BY a.id
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
