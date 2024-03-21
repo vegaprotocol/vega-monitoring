@@ -20,7 +20,13 @@ var ignoredWithdrawalIDs = []string{
 }
 
 var ignoredDepositsIDs = []string{
-	"8808d9ddd6c09593a519f4ad1c7117c247783a22c57cf6d73448ff9094552e07", // duplicated deposit will never be finalized.
+	// Duplicated deposits
+	"8808d9ddd6c09593a519f4ad1c7117c247783a22c57cf6d73448ff9094552e07", // USDT: 12000000000
+	"fdf81953b1c46b7bcac177d95ab849025a85bc3fbb664c5bcde64ccb7a63f24f", // USDC: 1000000000
+	"f8546c2e6b59d78603155d8f857b4ceefccb7330743398d677d7eb49c9ee08e5", // USDT: 186000000
+	"c759b728bd6b136c775dfc4eaf97ecb1ab78f0b08c91e76bef522004e6494dbd", // USDT: 87000000
+	"008b0e9738bd3eb84271149ba34426cc7e92f1649e4a4af689aa23f3362d37f6", // USDT: 462893962
+	"b461fed538c64a12a45e25b08b6da8e7f9edbe65af6d7418b4e97b4ebab8f753", // USDT: 12000000000
 }
 
 func NewNetworkBalances(connectionSource *vega_sqlstore.ConnectionSource) *NetworkBalances {
