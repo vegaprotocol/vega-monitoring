@@ -333,7 +333,7 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices, statusRepo
 
 	time.Sleep(25 * time.Second)
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
 	for {

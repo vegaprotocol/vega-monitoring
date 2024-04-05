@@ -2,6 +2,7 @@ package coingecko
 
 import (
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
@@ -16,6 +17,8 @@ type CoingeckoClient struct {
 	config      *config.CoingeckoConfig
 	rateLimiter *rate.Limiter
 	log         *logging.Logger
+
+	idx atomic.Int32
 }
 
 func NewCoingeckoClient(config *config.CoingeckoConfig, log *logging.Logger) *CoingeckoClient {

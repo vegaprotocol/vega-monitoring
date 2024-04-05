@@ -16,14 +16,26 @@ type PriceData struct {
 	Time        time.Time
 }
 
+func (c *CoingeckoClient) roundRobinApiKey() string {
+	if len(c.config.ApiKeys) < 1 {
+		return NoApiKey
+	}
+
+	n := int(c.idx.Load()) % len(c.config.ApiKeys)
+	c.idx.Add(1)
+
+	return c.config.ApiKeys[n]
+}
+
 func (c *CoingeckoClient) GetAssetPrices(assetIds []string) ([]PriceData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	response, err := c.requestSimplePrice(ctx, assetIds, c.config.ApiKey)
+	apiKey := c.roundRobinApiKey()
+	response, err := c.requestSimplePrice(ctx, assetIds, apiKey)
 	if err != nil {
 		// Retry without API Key if We initially tried with API key
-		if c.config.ApiKey != NoApiKey {
+		if apiKey != NoApiKey {
 			var err2 error
 			response, err2 = c.requestSimplePrice(ctx, assetIds, NoApiKey)
 			if err2 != nil {
