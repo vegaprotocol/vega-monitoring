@@ -153,6 +153,9 @@ type DataNodeDBExtensionConfig struct {
 	AssetPrices struct {
 		Enabled bool `long:"enabled"`
 	} `group:"AssetPrices"            namespace:"assetprices"`
+	DataNode struct {
+		Enabled bool `long:"enabled"`
+	} `group:"DataNode"            namespace:"datanode"`
 }
 
 type EthereumChain struct {
