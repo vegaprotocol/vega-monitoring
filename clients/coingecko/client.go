@@ -9,6 +9,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const SimplePriceURL = "%s/simple/price?vs_currencies=usd&include_last_updated_at=true&ids=%s"
+
 type CoingeckoClient struct {
 	httpClient  *http.Client
 	config      *config.CoingeckoConfig

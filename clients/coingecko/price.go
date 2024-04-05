@@ -1,10 +1,14 @@
 package coingecko
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/shopspring/decimal"
 )
+
+const timeout = 5 * time.Second
 
 type PriceData struct {
 	AssetSymbol string
@@ -13,9 +17,22 @@ type PriceData struct {
 }
 
 func (c *CoingeckoClient) GetAssetPrices(assetIds []string) ([]PriceData, error) {
-	response, err := c.requestSimplePrice(assetIds)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	response, err := c.requestSimplePrice(ctx, assetIds, c.config.ApiKey)
 	if err != nil {
-		return nil, err
+		// Retry without API Key if We initially tried with API key
+		if c.config.ApiKey != NoApiKey {
+			var err2 error
+			response, err2 = c.requestSimplePrice(ctx, assetIds, NoApiKey)
+			if err2 != nil {
+				return nil, errors.Join(err2, err)
+			}
+		} else {
+			// Return error, we did not provide API key, so retry makes no sense
+			return nil, err
+		}
 	}
 	result := []PriceData{}
 	for assetSymbol, data := range response {
