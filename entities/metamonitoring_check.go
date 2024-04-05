@@ -40,6 +40,7 @@ const (
 	ReasonMissingStatusFromService UnhealthyReason = 1
 	ReasonNodeIsNotUpToDate        UnhealthyReason = 2
 	ReasonTargetConnectionFailure  UnhealthyReason = 3
+	ReasonMissingOrInvalidResponse UnhealthyReason = 8
 
 	ReasonEthereumGetBalancesFailure          UnhealthyReason = 4
 	ReasonEthereumContractCallFailure         UnhealthyReason = 5
@@ -63,7 +64,7 @@ func UnHealthyReasonString(reason UnhealthyReason) string {
 	case ReasonMissingStatusFromService:
 		return "Missing status from the service"
 	case ReasonNodeIsNotUpToDate:
-		return "Network is not up to date"
+		return "Node is not up to date with rest of the network"
 	case ReasonTargetConnectionFailure:
 		return "Target connection failure"
 	case ReasonEthereumGetBalancesFailure:

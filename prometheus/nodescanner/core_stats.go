@@ -13,6 +13,7 @@ var (
 	timeout = 5 * time.Second
 )
 
+// TODO: Why the hell, We parse headers available only in the data-node? Core does not support headers. We should fix that mess
 func requestCoreStats(client *datanode.DataNodeClient, headers []string) (*types.CoreStatus, map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
