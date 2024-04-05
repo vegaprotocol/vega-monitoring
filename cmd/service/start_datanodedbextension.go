@@ -149,7 +149,9 @@ func runDataNodeHealthScraper(ctx context.Context, svc *cmd.AllServices, statusR
 		isHealthy, err := dataNodeClient.IsHealthy(callCtx)
 		cancel()
 		if isHealthy {
-			statusReporter.Publish(true)
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish status for the data node height", zap.Error(err))
+			}
 		} else {
 			svc.Log.Error("cannot check local data-node status", zap.Error(err))
 
@@ -163,7 +165,9 @@ func runDataNodeHealthScraper(ctx context.Context, svc *cmd.AllServices, statusR
 				failureReason = entities.ReasonMissingOrInvalidResponse
 			}
 
-			statusReporter.PublishWithReason(false, failureReason)
+			if err := statusReporter.PublishWithReason(false, failureReason); err != nil {
+				svc.Log.Error("failed to publish status for the data node height", zap.Error(err))
+			}
 		}
 
 		select {
