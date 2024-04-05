@@ -3,7 +3,6 @@ module github.com/vegaprotocol/vega-monitoring
 go 1.21
 
 require (
-	code.vegaprotocol.io/protos v0.53.0
 	code.vegaprotocol.io/vega v0.75.8
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/fsnotify/fsnotify v1.7.0

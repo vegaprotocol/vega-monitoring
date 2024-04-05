@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
-	api "code.vegaprotocol.io/protos/vega/api/v1"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
-func (c *Client) GetStatistics(ctx context.Context) (*api.Statistics, error) {
+func (c *Client) GetStatistics(ctx context.Context) (*entities.Statistics, error) {
 	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return nil, errors.Join(errWaitingForRateLimiter, fmt.Errorf("failed to get network history segments for %s: %w", c.apiURL, err))
 	}
@@ -34,7 +34,7 @@ func (c *Client) GetStatistics(ctx context.Context) (*api.Statistics, error) {
 	}
 
 	var payload struct {
-		Statistics api.Statistics `json:"statistics"`
+		Statistics entities.Statistics `json:"statistics"`
 	}
 	defer resp.Body.Close()
 	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {

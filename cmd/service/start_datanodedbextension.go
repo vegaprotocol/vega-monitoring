@@ -110,7 +110,7 @@ func startDataNodeDBExtension(
 		shutdownWg.Add(1)
 		go func() {
 			defer shutdownWg.Done()
-			runDataNodeHealthScraper(ctx, svc, svc.MonitoringService.AssetPricesStatusPublisher())
+			runDataNodeHealthScraper(ctx, svc, svc.MonitoringService.DataNodeStatusPublisher())
 		}()
 	} else {
 		svc.Log.Info("Not starting Asset Prices Service", zap.String("config", "Enabled=false"))
@@ -150,8 +150,9 @@ func runDataNodeHealthScraper(ctx context.Context, svc *cmd.AllServices, statusR
 		cancel()
 		if isHealthy {
 			statusReporter.Publish(true)
-
 		} else {
+			svc.Log.Error("cannot check local data-node status", zap.Error(err))
+
 			failureReason := entities.ReasonUnknown
 			// Map error from data node client to the Monitoring system
 			if errors.Is(err, datanode.ErrBlocksGapTooBig) || errors.Is(err, datanode.ErrTimeGapTooBig) {

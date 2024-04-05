@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	api "code.vegaprotocol.io/protos/vega/api/v1"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
 const DataNodeHeightHeader = "x-block-height"
@@ -58,13 +58,13 @@ func (c *DataNodeClient) IsHealthy(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (c *DataNodeClient) GetStatistics(ctx context.Context) (*api.Statistics, error) {
+func (c *DataNodeClient) GetStatistics(ctx context.Context) (*entities.Statistics, error) {
 	resp, _, err := c.GetStatisticsWithHeaders(ctx, nil)
 
 	return resp, err
 }
 
-func (c *DataNodeClient) GetStatisticsWithHeaders(ctx context.Context, wantedHeaders []string) (*api.Statistics, map[string]string, error) {
+func (c *DataNodeClient) GetStatisticsWithHeaders(ctx context.Context, wantedHeaders []string) (*entities.Statistics, map[string]string, error) {
 	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return nil, nil, errors.Join(errWaitingForRateLimiter, fmt.Errorf("failed to get network history segments for %s: %w", c.apiURL, err))
 	}
@@ -88,7 +88,7 @@ func (c *DataNodeClient) GetStatisticsWithHeaders(ctx context.Context, wantedHea
 	}
 
 	var payload struct {
-		Statistics api.Statistics `json:"statistics"`
+		Statistics entities.Statistics `json:"statistics"`
 	}
 	defer resp.Body.Close()
 	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {

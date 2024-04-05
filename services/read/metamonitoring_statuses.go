@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const expectedChecks = 7
+
 type MetaMonitoringStatuses struct {
 	AssetPricesData             *int32
 	BlockSignersData            *int32
@@ -149,8 +151,8 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 		}
 	}
 
-	if len(checks) != 6 {
-		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
+	if len(checks) != expectedChecks {
+		logger.Error("Wrong number of checks", zap.Int("expected", expectedChecks), zap.Int("actual", len(checks)), zap.Any("checks", checks))
 	}
 
 	return result, nil

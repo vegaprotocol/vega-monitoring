@@ -145,7 +145,7 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 	defer ticker.Stop()
 
 	dataNodeClients := map[string]*datanode.DataNodeClient{}
-	for _, node := range s.config.Core {
+	for _, node := range s.config.DataNode {
 		dataNodeClients[node.Name] = datanode.NewDataNodeClient(node.REST)
 	}
 
@@ -199,10 +199,10 @@ func (s *NodeScannerService) startScanningBlockExplorers(ctx context.Context) {
 
 	dataNodeClients := map[string]*datanode.DataNodeClient{}
 	beClients := map[string]*blockexplorer.Client{}
-	for _, node := range s.config.Core {
+	for _, node := range s.config.BlockExplorer {
 		dataNodeClients[node.Name] = datanode.NewDataNodeClient(node.REST)
 	}
-	for _, node := range s.config.Core {
+	for _, node := range s.config.BlockExplorer {
 		beClients[node.Name] = blockexplorer.NewBlockExplorerClient(node.REST)
 	}
 	for {

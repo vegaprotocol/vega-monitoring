@@ -20,11 +20,11 @@ func NewMonitoringStatusUpdateService(store MonitoringStore, vegaClient VegaClie
 }
 
 func (msus *MonitoringStatusUpdateService) DataNodeStatusPublisher() MonitoringStatusPublisher {
-	msus.activeServices = append(msus.activeServices, entities.BlockSignersSvc)
+	msus.activeServices = append(msus.activeServices, entities.DataNodeSvc)
 
 	return &monitoringStatusPublisherService{
 		store:   msus.monitoringStatusStore,
-		service: entities.BlockSignersSvc,
+		service: entities.DataNodeSvc,
 	}
 }
 
@@ -175,7 +175,7 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval
 		innerCtx, cancel := context.WithCancel(ctx)
 		// Upsert all the pending states
 		if _, err := monitoringStatusStore.FlushUpsert(innerCtx); err != nil {
-			msus.logger.Errorf("failed to flush upsert monitoring status updates: %w", err)
+			msus.logger.Error("failed to flush upsert monitoring status updates", zap.Error(err))
 		}
 
 		cancel()
