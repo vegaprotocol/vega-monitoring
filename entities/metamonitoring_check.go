@@ -8,6 +8,7 @@ type MonitoringServiceType string
 
 const (
 	BlockSignersSvc       MonitoringServiceType = "BLOCK_SIGNERS"
+	DataNodeSvc           MonitoringServiceType = "DATA_NODE"
 	SegmentsSvc           MonitoringServiceType = "SEGMENTS"
 	CometTxsSvc           MonitoringServiceType = "COMET_TXS"
 	NetworkBalancesSvc    MonitoringServiceType = "NETWORK_BALANCES"
@@ -37,7 +38,7 @@ type UnhealthyReason int
 const (
 	ReasonUnknown                  UnhealthyReason = 0
 	ReasonMissingStatusFromService UnhealthyReason = 1
-	ReasonNetworkIsNotUpToDate     UnhealthyReason = 2
+	ReasonNodeIsNotUpToDate        UnhealthyReason = 2
 	ReasonTargetConnectionFailure  UnhealthyReason = 3
 
 	ReasonEthereumGetBalancesFailure          UnhealthyReason = 4
@@ -61,7 +62,7 @@ func UnHealthyReasonString(reason UnhealthyReason) string {
 	switch reason {
 	case ReasonMissingStatusFromService:
 		return "Missing status from the service"
-	case ReasonNetworkIsNotUpToDate:
+	case ReasonNodeIsNotUpToDate:
 		return "Network is not up to date"
 	case ReasonTargetConnectionFailure:
 		return "Target connection failure"

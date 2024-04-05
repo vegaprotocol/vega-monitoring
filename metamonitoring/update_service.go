@@ -19,6 +19,15 @@ func NewMonitoringStatusUpdateService(store MonitoringStore, vegaClient VegaClie
 	}, nil
 }
 
+func (msus *MonitoringStatusUpdateService) DataNodeStatusPublisher() MonitoringStatusPublisher {
+	msus.activeServices = append(msus.activeServices, entities.BlockSignersSvc)
+
+	return &monitoringStatusPublisherService{
+		store:   msus.monitoringStatusStore,
+		service: entities.BlockSignersSvc,
+	}
+}
+
 func (msus *MonitoringStatusUpdateService) BlockSignersStatusPublisher() MonitoringStatusPublisher {
 	msus.activeServices = append(msus.activeServices, entities.BlockSignersSvc)
 
@@ -138,7 +147,7 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval
 						StatusTime:      time.Now(),
 						IsHealthy:       false,
 						Service:         service,
-						UnhealthyReason: entities.ReasonNetworkIsNotUpToDate,
+						UnhealthyReason: entities.ReasonNodeIsNotUpToDate,
 					})
 				}
 			}

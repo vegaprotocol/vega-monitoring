@@ -7,21 +7,6 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
-// type MetamonitoringService interface {
-// 	BlockSignersStatusPublisher() MonitoringStatusPublisher
-// 	SegmentsStatusPublisher() MonitoringStatusPublisher
-// 	CometTxsStatusPublisher() MonitoringStatusPublisher
-// 	NetworkBalancesStatusPublisher() MonitoringStatusPublisher
-// 	AssetPricesStatusPublisher() MonitoringStatusPublisher
-// 	PrometheusEthereumCalls() MonitoringStatusPublisher
-// 	Run(ctx context.Context, tickInterval time.Duration)
-// }
-
-// type MonitoringStatusPublisher interface {
-// 	Publish(isHealthy bool) error
-// 	PublishWithReason(isHealthy bool, reason entities.UnhealthyReason) error
-// }
-
 type nopPublisher struct{}
 
 func (*nopPublisher) Publish(bool) error {
@@ -36,6 +21,10 @@ type nopService struct{}
 
 func NewNopService() MetamonitoringService {
 	return &nopService{}
+}
+
+func (*nopService) DataNodeStatusPublisher() MonitoringStatusPublisher {
+	return &nopPublisher{}
 }
 
 func (*nopService) BlockSignersStatusPublisher() MonitoringStatusPublisher {
