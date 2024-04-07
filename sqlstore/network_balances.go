@@ -125,8 +125,12 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 		balance)
 	SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
 		FROM assets_current a
-		LEFT JOIN withdrawals_current w ON (w.asset = a.id AND w.withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz AND w.status = 'STATUS_FINALIZED')
-		WHERE encode(w.id::bytea, 'hex') NOT IN (` + ignoredIDs + `)
+		LEFT JOIN withdrawals_current w ON (
+				w.asset = a.id
+			AND w.withdrawn_timestamp = '1970-01-01 00:00:00'::timestamptz
+			AND w.status = 'STATUS_FINALIZED'
+			AND encode(w.id::bytea, 'hex') NOT IN (` + ignoredIDs + `)
+		)
 		GROUP BY a.id
 	ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 	SET
