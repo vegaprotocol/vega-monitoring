@@ -62,6 +62,7 @@ type VegaClient interface {
 }
 
 type MetamonitoringService interface {
+	DataNodeStatusPublisher() MonitoringStatusPublisher
 	BlockSignersStatusPublisher() MonitoringStatusPublisher
 	SegmentsStatusPublisher() MonitoringStatusPublisher
 	CometTxsStatusPublisher() MonitoringStatusPublisher

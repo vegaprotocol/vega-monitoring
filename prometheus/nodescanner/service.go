@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
+	"github.com/vegaprotocol/vega-monitoring/clients/blockexplorer"
+	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
@@ -101,12 +103,16 @@ func (s *NodeScannerService) startScanningCores(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	for {
+	dataNodeClients := map[string]*datanode.DataNodeClient{}
+	for _, node := range s.config.Core {
+		dataNodeClients[node.Name] = datanode.NewDataNodeClient(node.REST)
+	}
 
+	for {
 		// Go Cores one-by-one synchroniously
 		for _, node := range s.config.Core {
 			s.log.Debug("Scanning Core", zap.String("name", node.Name), zap.String("rest", node.REST))
-			coreStatus, _, err := requestCoreStats(node.REST, []string{})
+			coreStatus, _, err := requestCoreStats(dataNodeClients[node.Name], []string{})
 			if err != nil {
 				s.log.Error("Failed to scan Core", zap.String("node", node.Name), zap.Error(err))
 				coreStatus = getUnhealthyCoreStats()
@@ -138,12 +144,17 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
+	dataNodeClients := map[string]*datanode.DataNodeClient{}
+	for _, node := range s.config.DataNode {
+		dataNodeClients[node.Name] = datanode.NewDataNodeClient(node.REST)
+	}
+
 	for {
 		// Go DataNode one-by-one synchroniusly
 		start := time.Now()
 		for _, node := range s.config.DataNode {
 			s.log.Debug("Scanning Data Node", zap.String("name", node.Name), zap.String("rest", node.REST))
-			dataNodeStatus, err := requestDataNodeStats(node.REST)
+			dataNodeStatus, err := requestDataNodeStats(dataNodeClients[node.Name])
 			if err != nil {
 				// It was error initially, but it is not our error. The data-node scan failure is a valid state of the program - telling us
 				// the external data-node is not healthy
@@ -183,16 +194,25 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 }
 
 func (s *NodeScannerService) startScanningBlockExplorers(ctx context.Context) {
-
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
+	dataNodeClients := map[string]*datanode.DataNodeClient{}
+	beClients := map[string]*blockexplorer.Client{}
+	for _, node := range s.config.BlockExplorer {
+		dataNodeClients[node.Name] = datanode.NewDataNodeClient(node.REST)
+	}
+	for _, node := range s.config.BlockExplorer {
+		beClients[node.Name] = blockexplorer.NewBlockExplorerClient(node.REST)
+	}
 	for {
-
-		// Go BlockExplorer one-by-one synchroniously
+		// Go BlockExplorer one-by-one synchronously
 		for _, node := range s.config.BlockExplorer {
 			s.log.Debug("Scanning Block Explorer", zap.String("name", node.Name), zap.String("rest", node.REST))
-			blockExplorerStatus, err := requestBlockExplorerStats(node.REST)
+			blockExplorerStatus, err := requestBlockExplorerStats(
+				dataNodeClients[node.Name],
+				beClients[node.Name],
+			)
 			if err != nil {
 				s.log.Error("Failed to scan Block Explorer", zap.String("node", node.Name), zap.String("rest", node.REST), zap.Error(err))
 				blockExplorerStatus = getUnhealthyBlockExplorerStats()
@@ -231,13 +251,14 @@ func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
+	dataNodeClient := datanode.NewDataNodeClient(node.REST)
 	for {
 		s.log.Debug("Scanning Local Node", zap.String("name", node.Name), zap.String("type", node.Type), zap.String("rest", node.REST))
 		var err error
 
 		switch nodeType {
 		case types.CoreType:
-			coreStatus, _, err = requestCoreStats(node.REST, nil)
+			coreStatus, _, err = requestCoreStats(dataNodeClient, nil)
 			if err != nil {
 				coreStatus = getUnhealthyCoreStats()
 			}
@@ -253,7 +274,7 @@ func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 				zap.Any("status", *coreStatus),
 			)
 		case types.DataNodeType:
-			dataNodeStatus, err = requestDataNodeStats(node.REST)
+			dataNodeStatus, err = requestDataNodeStats(dataNodeClient)
 			if err != nil {
 				dataNodeStatus = getUnhealthyDataNodeStats()
 			}
@@ -269,7 +290,8 @@ func (s *NodeScannerService) startScanningLocalNode(ctx context.Context) {
 				zap.Any("status", *dataNodeStatus),
 			)
 		case types.BlockExplorerType:
-			blockExplorerStatus, err = requestBlockExplorerStats(node.REST)
+			beClient := blockexplorer.NewBlockExplorerClient(node.REST)
+			blockExplorerStatus, err = requestBlockExplorerStats(dataNodeClient, beClient)
 			if err != nil {
 				blockExplorerStatus = getUnhealthyBlockExplorerStats()
 			}

@@ -3,7 +3,7 @@ module github.com/vegaprotocol/vega-monitoring
 go 1.21
 
 require (
-	code.vegaprotocol.io/vega v0.74.3
+	code.vegaprotocol.io/vega v0.75.8
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/georgysavva/scany v1.0.0
@@ -40,7 +40,7 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/clbanning/mxj/v2 v2.3.3-0.20201214204241-e937bdee5a3e // indirect
-	github.com/cometbft/cometbft v0.38.5 // indirect
+	github.com/cometbft/cometbft v0.38.6 // indirect
 	github.com/cometbft/cometbft-db v0.7.0 // indirect
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/gogoproto v1.4.11 // indirect

@@ -51,6 +51,7 @@ type HealthCheckConfig struct {
 
 type CoingeckoConfig struct {
 	ApiURL   string            `long:"ApiURL"`
+	ApiKeys  []string          `long:"ApiKeys" comment:"List of API Keys for the CoinGecko: https://docs.coingecko.com/v3.0.1/reference/setting-up-your-api-key"`
 	AssetIds map[string]string `long:"AssetIds" comment:"use Vega Asset Symbol as key, and coingecko asset id as value, e.g. USDC = \"usd-coin\"\n Vega Assset symbols: https://api.vega.community/api/v2/assets\n Coingecko asset ids: https://api.coingecko.com/api/v3/coins/list"`
 }
 
@@ -153,6 +154,9 @@ type DataNodeDBExtensionConfig struct {
 	AssetPrices struct {
 		Enabled bool `long:"enabled"`
 	} `group:"AssetPrices"            namespace:"assetprices"`
+	DataNode struct {
+		Enabled bool `long:"enabled"`
+	} `group:"DataNode"            namespace:"datanode"`
 }
 
 type EthereumChain struct {

@@ -1,8 +1,13 @@
 package datanode
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
+	"time"
 )
 
 type NetworkHistorySegment struct {
@@ -36,4 +41,36 @@ func (c *DataNodeClient) GetNetworkHistorySegments(fromBlock, toBlock int64) ([]
 	}
 
 	return result, nil
+}
+
+type networkHistorySegmentsResponse struct {
+	Segments []struct {
+		FromHeight        string `json:"fromHeight"`
+		ToHeight          string `json:"toHeight"`
+		SegmentId         string `json:"historySegmentId"`
+		PreviousSegmentId string `json:"previousHistorySegmentId"`
+		DatabaseVersion   string `json:"databaseVersion"`
+		ChainId           string `json:"chainId"`
+	} `json:"segments"`
+}
+
+func (c *DataNodeClient) requestNetworkHistorySegmets() (networkHistorySegmentsResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // TODO: Pass parent context
+	defer cancel()
+
+	if err := c.rateLimiter.Wait(ctx); err != nil {
+		return networkHistorySegmentsResponse{}, errors.Join(errWaitingForRateLimiter, fmt.Errorf("failed to get network history segments for %s: %w", c.apiURL, err))
+	}
+	url := fmt.Sprintf(networkHistorySegmentURL, c.apiURL)
+	resp, err := http.Get(url)
+	if err != nil {
+		return networkHistorySegmentsResponse{}, fmt.Errorf("failed to call get for network history segments to %s: %w", c.apiURL, err)
+	}
+	defer resp.Body.Close()
+	var payload networkHistorySegmentsResponse
+	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return networkHistorySegmentsResponse{}, fmt.Errorf("failed to unmarshal http request for %s: %w", c.apiURL, err)
+	}
+
+	return payload, nil
 }

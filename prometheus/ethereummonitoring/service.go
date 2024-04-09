@@ -12,6 +12,7 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/entities"
+	"github.com/vegaprotocol/vega-monitoring/internal/retry"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
@@ -143,7 +144,6 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 }
 
 func (s *EthereumMonitoringService) reportState(ctx context.Context, period time.Duration, statusPublisher metamonitoring.MonitoringStatusPublisher) error {
-
 	time.Sleep(30 * 2)
 
 	ticker := time.NewTicker(period * 2)
@@ -208,15 +208,18 @@ func (s *EthereumMonitoringService) monitorCalls(
 
 	for {
 		for _, call := range calls {
-			callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
-			res, err := ethClient.Call(callCtx, call)
+			res, err := retry.RetryReturn(3, 2*time.Second, func() (interface{}, error) {
+				callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
+				defer cancel()
+				return ethClient.Call(callCtx, call)
+			})
+
 			if err != nil {
 				s.logger.Errorf("failed to call ethereum smart contract for ID %s: %s", call.ID(), err.Error())
 				s.reportHealth(false, entities.ReasonEthereumContractCallFailure)
-				cancel()
 				continue
 			}
-			cancel()
+
 			float64Res, ok := res.(float64)
 			if !ok {
 				s.logger.Errorf(
@@ -270,15 +273,18 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 		// balances := map[string]float64{}
 
 		for _, accAddress := range accounts {
-			callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
-			balance, err := ethClient.BalanceWithoutZerosAt(callCtx, common.HexToAddress(accAddress))
+			balance, err := retry.RetryReturn(3, 2*time.Second, func() (float64, error) {
+				callCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
+				defer cancel()
+
+				return ethClient.BalanceWithoutZerosAt(callCtx, common.HexToAddress(accAddress))
+			})
+
 			if err != nil {
-				cancel()
 				s.logger.Errorf("failed to get balance for account %s: %s", accAddress, err.Error())
 				s.reportHealth(false, entities.ReasonEthereumGetBalancesFailure)
 				continue
 			}
-			cancel()
 			s.collector.UpdateEthereumAccountBalance(accAddress, chainId, networkId, balance)
 			// fmt.Printf("Balance: %f\n", balance)
 			// balances[accAddress] = balance
@@ -321,11 +327,16 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 	for {
 
 		for _, event := range eventsCounters {
-			counterCallCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
-			if err := event.CallFilterLogs(counterCallCtx, ethClient); err != nil {
+			err := retry.RetryRun(3, 2*time.Second, func() error {
+				counterCallCtx, cancel := context.WithTimeout(ctx, defaultCallTimeout)
+				defer cancel()
+
+				return event.CallFilterLogs(counterCallCtx, ethClient)
+			})
+
+			if err != nil {
 				s.logger.Errorf("Failed to filter logs for the events counter(%s): %s", event.Name(), err.Error())
 			}
-			cancel()
 		}
 
 		metrics := []types.EthereumContractsEvents{}
@@ -341,6 +352,7 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 				})
 			}
 		}
+
 		// We need to submit updates for all contracts at the same time.
 		s.collector.UpdateEthereumContractEvents(metrics)
 

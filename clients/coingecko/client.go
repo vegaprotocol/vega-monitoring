@@ -2,6 +2,7 @@ package coingecko
 
 import (
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
@@ -9,11 +10,15 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const SimplePriceURL = "%s/simple/price?vs_currencies=usd&include_last_updated_at=true&ids=%s"
+
 type CoingeckoClient struct {
 	httpClient  *http.Client
 	config      *config.CoingeckoConfig
 	rateLimiter *rate.Limiter
 	log         *logging.Logger
+
+	idx atomic.Int32
 }
 
 func NewCoingeckoClient(config *config.CoingeckoConfig, log *logging.Logger) *CoingeckoClient {

@@ -2,23 +2,27 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"github.com/vegaprotocol/vega-monitoring/cmd"
+	"github.com/vegaprotocol/vega-monitoring/entities"
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/sqlstore"
 )
 
 const (
-	BlockSignersLoopInterval    = 30 * time.Second
-	NetworkHistoryLoopInterval  = 120 * time.Second
-	CometTxsLoopInterval        = 20 * time.Second
-	NetworkBalancesLoopInterval = 15 * time.Second
-	AssetPricesLoopInterval     = 25 * time.Second
+	BlockSignersLoopInterval       = 30 * time.Second
+	NetworkHistoryLoopInterval     = 120 * time.Second
+	CometTxsLoopInterval           = 20 * time.Second
+	NetworkBalancesLoopInterval    = 15 * time.Second
+	AssetPricesLoopInterval        = 25 * time.Second
+	DataNodeHealthScrapperInterval = 30 * time.Second
 )
 
 func startDataNodeDBExtension(
@@ -100,6 +104,19 @@ func startDataNodeDBExtension(
 	}
 
 	//
+	// start: Data Node
+	//
+	if svc.Config.DataNodeDBExtension.DataNode.Enabled {
+		shutdownWg.Add(1)
+		go func() {
+			defer shutdownWg.Done()
+			runDataNodeHealthScraper(ctx, svc, svc.MonitoringService.DataNodeStatusPublisher())
+		}()
+	} else {
+		svc.Log.Info("Not starting Asset Prices Service", zap.String("config", "Enabled=false"))
+	}
+
+	//
 	// start: Reporting the meta-monitoring statuses
 	//
 	shutdownWg.Add(1)
@@ -107,6 +124,60 @@ func startDataNodeDBExtension(
 		defer shutdownWg.Done()
 		svc.MonitoringService.Run(ctx, NetworkHistoryLoopInterval*2)
 	}()
+}
+
+// Data Node
+func runDataNodeHealthScraper(ctx context.Context, svc *cmd.AllServices, statusReporter metamonitoring.MonitoringStatusPublisher) {
+	time.Sleep(3 * time.Second)
+	ticker := time.NewTicker(DataNodeHealthScrapperInterval)
+	defer ticker.Stop()
+
+	localNodeConfig := svc.Config.Monitoring.LocalNode
+	if len(localNodeConfig.REST) < 1 {
+		panic("Data node health scraper is disabled but missing or invalid config for Local Node Config: missing rest endpoint")
+	}
+
+	if localNodeConfig.Type != "datanode" {
+		panic("Data node health scraper is disabled but missing or invalid config for Local Node Config: type must be data node")
+	}
+
+	dataNodeClient := datanode.NewDataNodeClient(localNodeConfig.REST)
+
+	for {
+		svc.Log.Debugf("runDataNodeHealthScraper tick")
+		callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+		isHealthy, err := dataNodeClient.IsHealthy(callCtx)
+		cancel()
+		if isHealthy {
+			if err := statusReporter.Publish(true); err != nil {
+				svc.Log.Error("failed to publish status for the data node height", zap.Error(err))
+			}
+		} else {
+			svc.Log.Error("cannot check local data-node status", zap.Error(err))
+
+			failureReason := entities.ReasonUnknown
+			// Map error from data node client to the Monitoring system
+			if errors.Is(err, datanode.ErrBlocksGapTooBig) || errors.Is(err, datanode.ErrTimeGapTooBig) {
+				failureReason = entities.ReasonNodeIsNotUpToDate
+			} else if errors.Is(err, datanode.ErrHttpCallError) {
+				failureReason = entities.ReasonTargetConnectionFailure
+			} else if errors.Is(err, datanode.ErrMissingOrInvalidResponse) {
+				failureReason = entities.ReasonMissingOrInvalidResponse
+			}
+
+			if err := statusReporter.PublishWithReason(false, failureReason); err != nil {
+				svc.Log.Error("failed to publish status for the data node height", zap.Error(err))
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			svc.Log.Info("Stopping update Block Singers Scraper")
+			return
+		case <-ticker.C:
+			continue
+		}
+	}
 }
 
 // Block Signers
@@ -266,7 +337,7 @@ func runAssetPricesScraper(ctx context.Context, svc *cmd.AllServices, statusRepo
 
 	time.Sleep(25 * time.Second)
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
 	for {

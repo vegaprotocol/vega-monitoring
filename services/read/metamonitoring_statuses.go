@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const expectedChecks = 7
+
 type MetaMonitoringStatuses struct {
 	AssetPricesData             *int32
 	BlockSignersData            *int32
@@ -106,8 +108,6 @@ func EmptyMetaMonitoringStatusesExtended() *MetaMonitoringStatusesExtended {
 func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonitoringStatuses, error) {
 	var permanentOne int32 = 1
 	result := MetaMonitoringStatuses{
-		DataNodeData: &permanentOne,
-
 		PrometheusEthNodeScanner: &permanentOne,
 		PrometheusNodeScanner:    &permanentOne,
 		PrometheusMetamonitoring: &permanentOne,
@@ -132,8 +132,8 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 			isHealthyMetricsValue = 1
 		}
 		switch check.Service {
-		// case "data_node":
-		// 	result.DataNodeData = &isHealthyMetricsValue
+		case entities.DataNodeSvc:
+			result.DataNodeData = &isHealthyMetricsValue
 		case entities.AssetPricesSvc:
 			result.AssetPricesData = &isHealthyMetricsValue
 		case entities.BlockSignersSvc:
@@ -151,8 +151,8 @@ func (s *ReadService) GetMetaMonitoringStatuses(ctx context.Context) (MetaMonito
 		}
 	}
 
-	if len(checks) != 6 {
-		logger.Error("Wrong number of checks", zap.Int("expected", 6), zap.Int("actual", len(checks)), zap.Any("checks", checks))
+	if len(checks) != expectedChecks {
+		logger.Error("Wrong number of checks", zap.Int("expected", expectedChecks), zap.Int("actual", len(checks)), zap.Any("checks", checks))
 	}
 
 	return result, nil

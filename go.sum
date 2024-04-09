@@ -1,5 +1,5 @@
-code.vegaprotocol.io/vega v0.74.3 h1:WwH8UNM0YlMCyGdgHbfz6vcE3Fpbkurqmob4nltFUIc=
-code.vegaprotocol.io/vega v0.74.3/go.mod h1:naS1364ETvPcidgqmK5TA37O6CsomlsLTOMmxSILZfs=
+code.vegaprotocol.io/vega v0.75.8 h1:S7wVzOvrnsQPWehJdU4jnp2xLjH7h4IPRdoyRviKppQ=
+code.vegaprotocol.io/vega v0.75.8/go.mod h1:BsCaA1w1yC5MOrsuGx8VJWih59sKmq1xCt6Gd1hsrbw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
@@ -74,8 +74,8 @@ github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 h1:ytcWPaNPhNoG
 github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811/go.mod h1:Nb5lgvnQ2+oGlE/EyZy4+2/CxRh9KfvCXnag1vtpxVM=
 github.com/cockroachdb/redact v1.1.3 h1:AKZds10rFSIj7qADf0g46UixK8NNLwWTNdCIGS5wfSQ=
 github.com/cockroachdb/redact v1.1.3/go.mod h1:BVNblN9mBWFyMyqK1k3AAiSxhvhfK2oOZZ2lK+dpvRg=
-github.com/cometbft/cometbft v0.38.5 h1:4lOcK5VTPrfbLOhNHmPYe6c7eDXHtBdMCQuKbAfFJdU=
-github.com/cometbft/cometbft v0.38.5/go.mod h1:0tqKin+KQs8zDwzYD8rPHzSBIDNPuB4NrwwGDNb/hUg=
+github.com/cometbft/cometbft v0.38.6 h1:QSgpCzrGWJ2KUq1qpw+FCfASRpE27T6LQbfEHscdyOk=
+github.com/cometbft/cometbft v0.38.6/go.mod h1:8rSPxzUJYquCN8uuBgbUHOMg2KAwvr7CyUw+6ukO4nw=
 github.com/cometbft/cometbft-db v0.7.0 h1:uBjbrBx4QzU0zOEnU8KxoDl18dMNgDh+zZRUE0ucsbo=
 github.com/cometbft/cometbft-db v0.7.0/go.mod h1:yiKJIm2WKrt6x8Cyxtq9YTEcIMPcEe4XPxhgX59Fzf0=
 github.com/confio/ics23/go v0.9.0 h1:cWs+wdbS2KRPZezoaaj+qBleXgUk5WOQFMP3CQFGTr4=

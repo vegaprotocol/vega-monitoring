@@ -1,4 +1,4 @@
-package datanode
+package core
 
 import (
 	"errors"
@@ -12,20 +12,17 @@ var (
 	errWaitingForRateLimiter = errors.New("failed waiting for rate limiter")
 )
 
-const (
-	statisticsURL            = "%s/statistics"
-	networkHistorySegmentURL = "%s/api/v2/networkhistory/segments"
-)
+const statisticsURL = "%s/statistics"
 
-type DataNodeClient struct {
+type Client struct {
 	httpClient  *http.Client
 	apiURL      string
 	rateLimiter *rate.Limiter
 }
 
-func NewDataNodeClient(apiURL string) *DataNodeClient {
-	return &DataNodeClient{
-		apiURL:      apiURL,
+func NewCoreClient(apiRestURL string) *Client {
+	return &Client{
+		apiURL:      apiRestURL,
 		rateLimiter: rate.NewLimiter(rate.Every(200*time.Millisecond), 1),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Second,
