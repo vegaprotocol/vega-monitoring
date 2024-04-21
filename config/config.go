@@ -89,7 +89,6 @@ type MonitoringConfig struct {
 	DataNode      []DataNodeConfig      `group:"DataNode"      namespace:"datanode"`
 	BlockExplorer []BlockExplorerConfig `group:"BlockExplorer" namespace:"blockexplorer"`
 	LocalNode     LocalNodeConfig       `group:"LocalNode"     namespace:"localhode"     comment:"Useful for machine with closed ports"`
-	EthereumNode  []EthereumNodeConfig  `group:"EthereumNode"  namespace:"ethereumnode"`
 	EthereumChain []EthereumChain       `group:"EthereumChain" namespace:"ethereumchain" comment:"Monitor various things on the ethereum chain"`
 	Level         string                `long:"Level"`
 }
@@ -123,12 +122,6 @@ type LocalNodeConfig struct {
 	Type        string `long:"Type"        comment:"One of: core, datanode, blockexplorer or leave empty"`
 }
 
-type EthereumNodeConfig struct {
-	Name                        string `long:"Name"                         comment:"Unique name available in the prometheus"`
-	RPCEndpoint                 string `long:"RPCEndpoint"                  comment:"URL of the node"`
-	VegaCollateralBridgeAddress string `long:"VegaCollateralBridgeAddress"  comment:"HEX address of CollateralBridge for Vega network"`
-}
-
 type RetentionPolicy struct {
 	TableName string `long:"TableName"`
 	Interval  string `long:"Interval"`
@@ -160,6 +153,7 @@ type DataNodeDBExtensionConfig struct {
 }
 
 type EthereumChain struct {
+	NodeName    string        `long:"NodeName"   comment:"Unique human friendly node name"`
 	NetworkId   string        `long:"NetworkId"   comment:"Network ID for the specific chain"`
 	ChainId     string        `long:"ChainId"     comment:"Chain ID for the specific chain"`
 	RPCEndpoint string        `long:"RPCEndpoint" comment:"RPC endpoint for the archival node on the specific chain"`
@@ -252,7 +246,6 @@ func NewDefaultConfig() Config {
 	config.Monitoring.Core = []CoreConfig{}
 	config.Monitoring.DataNode = []DataNodeConfig{}
 	config.Monitoring.BlockExplorer = []BlockExplorerConfig{}
-	config.Monitoring.EthereumNode = []EthereumNodeConfig{}
 	config.Monitoring.LocalNode.Enabled = false
 	config.Monitoring.LocalNode.Environment = ""
 	config.Monitoring.LocalNode.Name = ""

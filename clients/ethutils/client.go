@@ -49,3 +49,16 @@ func (c *EthClient) Call(ctx context.Context, call *EthCall) (interface{}, error
 func (c *EthClient) Height(ctx context.Context) (uint64, error) {
 	return c.client.BlockNumber(ctx)
 }
+
+func (c *EthClient) Ready(ctx context.Context) (bool, error) {
+	syncProcess, err := c.client.SyncProgress(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if node is syncing: %w", err)
+	}
+
+	if syncProcess != nil {
+		return false, fmt.Errorf("node is still syncing")
+	}
+
+	return true, nil
+}

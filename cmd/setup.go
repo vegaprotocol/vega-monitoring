@@ -10,7 +10,6 @@ import (
 	"github.com/vegaprotocol/vega-monitoring/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/ethereummonitoring"
-	"github.com/vegaprotocol/vega-monitoring/prometheus/ethnodescanner"
 	metamonitoringprom "github.com/vegaprotocol/vega-monitoring/prometheus/metamonitoring"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
 	"github.com/vegaprotocol/vega-monitoring/services"
@@ -28,7 +27,6 @@ type AllServices struct {
 	NodeScannerService          *nodescanner.NodeScannerService
 	EthereumMonitoringService   *ethereummonitoring.EthereumMonitoringService
 	MetaMonitoringStatusService *metamonitoringprom.MetaMonitoringStatusService
-	EthereumNodeScannerService  *ethnodescanner.EthNodeScannerService
 	MonitoringService           metamonitoring.MetamonitoringService
 }
 
@@ -76,10 +74,6 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 
 		svc.NodeScannerService = nodescanner.NewNodeScannerService(
 			&svc.Config.Monitoring, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
-		)
-
-		svc.EthereumNodeScannerService = ethnodescanner.NewEthNodeScannerService(
-			svc.Config.Monitoring.EthereumNode, svc.PrometheusService.VegaMonitoringCollector, svc.Log,
 		)
 
 		svc.EthereumMonitoringService = ethereummonitoring.NewEthereumMonitoringService(

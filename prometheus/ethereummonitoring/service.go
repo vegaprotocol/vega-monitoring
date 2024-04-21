@@ -48,6 +48,15 @@ func NewEthereumMonitoringService(
 	}
 }
 
+type ethNodeMonitoring struct {
+	ethClient *ethutils.EthClient
+
+	nodeName    string
+	chainId     string
+	networkId   string
+	rpcEndpoint string
+}
+
 func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher metamonitoring.MonitoringStatusPublisher) error {
 	var monitoringWg sync.WaitGroup
 
@@ -56,6 +65,8 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 
 	var failure atomic.Bool
 	failure.Store(false)
+
+	nodeClients := []ethNodeMonitoring{}
 
 	for idx, chainConfig := range s.cfg {
 		if len(chainConfig.RPCEndpoint) < 1 {
@@ -68,6 +79,16 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 			s.logger.Errorf("failed to create ethereum client in the prometheus ethereum monitoring service for network id %s: %s", chainConfig.NetworkId, err.Error())
 			continue
 		}
+
+		nodeClients = append(nodeClients, ethNodeMonitoring{
+			ethClient: ethClient,
+
+			nodeName:    chainConfig.NodeName,
+			chainId:     chainConfig.ChainId,
+			networkId:   chainConfig.NetworkId,
+			rpcEndpoint: chainConfig.RPCEndpoint,
+		})
+
 		if len(chainConfig.Accounts) > 0 {
 			monitoringWg.Add(1)
 			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
@@ -75,6 +96,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 				if err := s.monitorAccountBalances(
 					svcContext,
 					ethClient,
+					chainConfig.NodeName,
 					callCfg.ChainId,
 					callCfg.NetworkId,
 					callCfg.Accounts,
@@ -94,6 +116,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 				if err := s.monitorCalls(
 					svcContext,
 					ethClient,
+					chainConfig.NodeName,
 					callCfg.ChainId,
 					callCfg.NetworkId,
 					callCfg.Calls,
@@ -113,6 +136,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 				if err := s.monitorContractEvents(
 					svcContext,
 					ethClient,
+					chainConfig.NodeName,
 					callCfg.Period,
 					callCfg.NetworkId,
 					callCfg.Events,
@@ -123,6 +147,30 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 			}(&failure, s.cfg[idx])
 		}
 	}
+
+	monitoringWg.Add(1)
+	go func(failure *atomic.Bool) {
+		defer monitoringWg.Done()
+
+		// We pass Period to each endpoint but here We ignore it
+		if err := s.monitorNodeStatuses(svcContext, nodeClients, time.Minute); err != nil {
+			s.logger.Errorf("failed to monitor node statuses: %s", err.Error())
+			failure.Store(true)
+			cancel()
+		}
+	}(&failure)
+
+	monitoringWg.Add(1)
+	go func(failure *atomic.Bool) {
+		defer monitoringWg.Done()
+
+		// We pass Period to each endpoint but here We ignore it
+		if err := s.monitorNodeHeight(svcContext, nodeClients, time.Minute); err != nil {
+			s.logger.Errorf("failed to monitor nodes height: %s", err.Error())
+			failure.Store(true)
+			cancel()
+		}
+	}(&failure)
 
 	monitoringWg.Add(1)
 	go func(failure *atomic.Bool) {
@@ -186,6 +234,7 @@ func (s *EthereumMonitoringService) reportState(ctx context.Context, period time
 func (s *EthereumMonitoringService) monitorCalls(
 	ctx context.Context,
 	ethClient *ethutils.EthClient,
+	nodeName string,
 	chainId string,
 	networkId string,
 	cfg []config.EthCall,
@@ -232,7 +281,7 @@ func (s *EthereumMonitoringService) monitorCalls(
 				continue
 			}
 
-			s.collector.UpdateEthereumCallResponse(call.ID(), call.ContractAddress().String(), call.MethodName(), float64Res)
+			s.collector.UpdateEthereumCallResponse(nodeName, call.ID(), call.ContractAddress().String(), call.MethodName(), float64Res)
 		}
 
 		s.reportHealth(true, entities.ReasonUnknown)
@@ -259,6 +308,7 @@ func (s *EthereumMonitoringService) reportHealth(healthy bool, reason entities.U
 func (s *EthereumMonitoringService) monitorAccountBalances(
 	ctx context.Context,
 	ethClient *ethutils.EthClient,
+	nodeName string,
 	chainId string,
 	networkId string,
 	accounts []string,
@@ -285,7 +335,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 				s.reportHealth(false, entities.ReasonEthereumGetBalancesFailure)
 				continue
 			}
-			s.collector.UpdateEthereumAccountBalance(accAddress, chainId, networkId, balance)
+			s.collector.UpdateEthereumAccountBalance(nodeName, accAddress, chainId, networkId, balance)
 			// fmt.Printf("Balance: %f\n", balance)
 			// balances[accAddress] = balance
 		}
@@ -304,6 +354,7 @@ func (s *EthereumMonitoringService) monitorAccountBalances(
 func (s *EthereumMonitoringService) monitorContractEvents(
 	ctx context.Context,
 	ethClient *ethutils.EthClient,
+	nodeName string,
 	period time.Duration,
 	networkId string,
 	cfg []config.EthEvents,
@@ -345,6 +396,7 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 			eventsCalls := event.Count()
 			for eventName, count := range eventsCalls {
 				metrics = append(metrics, types.EthereumContractsEvents{
+					NodeName:        nodeName,
 					ID:              event.Name(),
 					EventName:       eventName,
 					ContractAddress: event.ContractAddress(),
@@ -361,6 +413,113 @@ func (s *EthereumMonitoringService) monitorContractEvents(
 		select {
 		case <-ctx.Done():
 			s.logger.Infof("Stopping filtering events for network id: %s", networkId)
+			return nil
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *EthereumMonitoringService) monitorNodeStatuses(
+	ctx context.Context,
+	nodes []ethNodeMonitoring,
+	period time.Duration,
+) error {
+	time.Sleep(18 * time.Second)
+
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	for {
+		statuses := []types.EthereumNodeStatus{}
+
+		for _, node := range nodes {
+			if node.ethClient == nil {
+				continue
+			}
+
+			calCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			nodeReady, err := node.ethClient.Ready(calCtx)
+			cancel()
+			if err != nil {
+				s.logger.Debug(
+					fmt.Sprintf("failed to check if node is ready for %s(%s)", node.nodeName, node.rpcEndpoint),
+					zap.Error(err),
+				)
+			}
+
+			statuses = append(statuses, types.EthereumNodeStatus{
+				ChainId:     node.chainId,
+				NodeName:    node.nodeName,
+				RPCEndpoint: node.rpcEndpoint,
+				Healthy:     nodeReady,
+				UpdateTime:  time.Now(),
+			})
+		}
+
+		if len(statuses) > 0 {
+			s.collector.UpdateEthereumNodeStatuses(statuses)
+		}
+
+		ticker.Reset(period)
+		s.reportHealth(true, entities.ReasonUnknown)
+		select {
+		case <-ctx.Done():
+			s.logger.Infof("Stopping ethereum node statuses monitoring")
+			return nil
+		case <-ticker.C:
+			continue
+		}
+	}
+}
+
+func (s *EthereumMonitoringService) monitorNodeHeight(
+	ctx context.Context,
+	nodes []ethNodeMonitoring,
+	period time.Duration,
+) error {
+	time.Sleep(28 * time.Second)
+
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	for {
+		heights := []types.EthereumNodeHeight{}
+
+		for _, node := range nodes {
+			if node.ethClient == nil {
+				continue
+			}
+
+			calCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			nodeHeight, err := node.ethClient.Height(calCtx)
+			cancel()
+			if err != nil {
+				nodeHeight = 0
+				s.logger.Debug(
+					fmt.Sprintf("failed to check node height for %s(%s)", node.nodeName, node.rpcEndpoint),
+					zap.Error(err),
+				)
+			}
+
+			heights = append(heights, types.EthereumNodeHeight{
+				ChainId:     node.chainId,
+				NodeName:    node.nodeName,
+				RPCEndpoint: node.rpcEndpoint,
+				Height:      nodeHeight,
+				UpdateTime:  time.Now(),
+			})
+		}
+
+		if len(heights) > 0 {
+			s.collector.UpdateEthereumNodeHeights(heights)
+		}
+
+		ticker.Reset(period)
+		s.reportHealth(true, entities.ReasonUnknown)
+		select {
+		case <-ctx.Done():
+			s.logger.Infof("Stopping ethereum node statuses monitoring")
 			return nil
 		case <-ticker.C:
 			continue

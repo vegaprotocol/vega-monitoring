@@ -74,8 +74,11 @@ type NodeDownStatus struct {
 	Type        NodeType
 }
 
-type EthereumNodeStatuses struct {
-	NodeHealthy map[string]bool
+type EthereumNodeStatus struct {
+	ChainId     string
+	NodeName    string
+	RPCEndpoint string
+	Healthy     bool
 
 	UpdateTime time.Time
 }
@@ -109,14 +112,16 @@ func (s *DataNodeStatus) GetScore() uint64 {
 }
 
 type EthereumNodeHeight struct {
+	NodeName    string
+	ChainId     string
 	RPCEndpoint string
-	Name        string
 	Height      uint64
 	UpdateTime  time.Time
 }
 
 type EthereumContractsEvents struct {
 	ID              string
+	NodeName        string
 	EventName       string
 	ContractAddress string
 	Count           uint64
