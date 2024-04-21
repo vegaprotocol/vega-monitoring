@@ -91,12 +91,12 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 
 		if len(chainConfig.Accounts) > 0 {
 			monitoringWg.Add(1)
-			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
+			go func(failure *atomic.Bool, callCfg config.EthereumChain, evmConf config.EthereumChain) {
 				defer monitoringWg.Done()
 				if err := s.monitorAccountBalances(
 					svcContext,
 					ethClient,
-					chainConfig.NodeName,
+					evmConf.NodeName,
 					callCfg.ChainId,
 					callCfg.NetworkId,
 					callCfg.Accounts,
@@ -106,17 +106,17 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					s.logger.Errorf("failed to start monitoring account balances in the prometheus ethereum monitoring for network id %s: %s", chainConfig.NetworkId, err.Error())
 					cancel()
 				}
-			}(&failure, s.cfg[idx])
+			}(&failure, s.cfg[idx], chainConfig)
 		}
 
 		if len(chainConfig.Calls) > 0 {
 			monitoringWg.Add(1)
-			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
+			go func(failure *atomic.Bool, callCfg config.EthereumChain, evmConf config.EthereumChain) {
 				defer monitoringWg.Done()
 				if err := s.monitorCalls(
 					svcContext,
 					ethClient,
-					chainConfig.NodeName,
+					evmConf.NodeName,
 					callCfg.ChainId,
 					callCfg.NetworkId,
 					callCfg.Calls,
@@ -126,17 +126,17 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					s.logger.Errorf("failed to start monitoring ethereum calls in the prometheus ethereum monitoring for network id %s: %s", callCfg.NetworkId, err.Error())
 					cancel()
 				}
-			}(&failure, s.cfg[idx])
+			}(&failure, s.cfg[idx], chainConfig)
 		}
 
 		if len(chainConfig.Events) > 0 {
 			monitoringWg.Add(1)
-			go func(failure *atomic.Bool, callCfg config.EthereumChain) {
+			go func(failure *atomic.Bool, callCfg config.EthereumChain, evmConf config.EthereumChain) {
 				defer monitoringWg.Done()
 				if err := s.monitorContractEvents(
 					svcContext,
 					ethClient,
-					chainConfig.NodeName,
+					evmConf.NodeName,
 					callCfg.Period,
 					callCfg.NetworkId,
 					callCfg.Events,
@@ -144,7 +144,7 @@ func (s *EthereumMonitoringService) Start(ctx context.Context, statusPublisher m
 					failure.Store(true)
 					s.logger.Errorf("failed to start monitoring ethereum events for network id %s: %s", callCfg.NetworkId, err.Error())
 				}
-			}(&failure, s.cfg[idx])
+			}(&failure, s.cfg[idx], chainConfig)
 		}
 	}
 
