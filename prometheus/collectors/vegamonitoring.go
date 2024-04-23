@@ -14,12 +14,14 @@ type AccountBalanceMetric struct {
 	Value     float64
 	ChainId   string
 	NetworkId string
+	NodeName  string
 }
 
 type ContractCallResponse struct {
 	Value           float64
 	ContractAddress string
 	MethodName      string
+	NodeName        string
 }
 
 type VegaMonitoringCollector struct {
@@ -33,7 +35,7 @@ type VegaMonitoringCollector struct {
 	monitoringDatabaseStatuses read.MetaMonitoringStatuses
 
 	// Ethereum Node Statuses
-	ethNodeStatuses types.EthereumNodeStatuses
+	ethNodeStatuses []types.EthereumNodeStatus
 	ethNodeHeights  map[string]types.EthereumNodeHeight
 	contractEvents  map[types.EntityHash]types.EthereumContractsEvents
 
@@ -60,11 +62,17 @@ func (c *VegaMonitoringCollector) UpdateCoreStatus(node string, newStatus *types
 	c.coreStatuses[node] = newStatus
 }
 
-func (c *VegaMonitoringCollector) UpdateEthereumAccountBalance(accountAddress string, chainId, networkId string, val float64) {
+func (c *VegaMonitoringCollector) UpdateEthereumAccountBalance(
+	nodeName string,
+	accountAddress string,
+	chainId, networkId string,
+	val float64,
+) {
 	c.accessMu.Lock()
 	defer c.accessMu.Unlock()
 
 	c.ethereumAccountBalances[accountAddress] = AccountBalanceMetric{
+		NodeName:  nodeName,
 		NetworkId: networkId,
 		ChainId:   chainId,
 		Value:     val,
@@ -72,6 +80,7 @@ func (c *VegaMonitoringCollector) UpdateEthereumAccountBalance(accountAddress st
 }
 
 func (c *VegaMonitoringCollector) UpdateEthereumCallResponse(
+	nodeName string,
 	id string,
 	contractAddress string,
 	methodName string,
@@ -84,6 +93,7 @@ func (c *VegaMonitoringCollector) UpdateEthereumCallResponse(
 		Value:           val,
 		ContractAddress: contractAddress,
 		MethodName:      methodName,
+		NodeName:        nodeName,
 	}
 }
 
@@ -113,13 +123,10 @@ func (c *VegaMonitoringCollector) UpdateMonitoringDBStatuses(newStatuses read.Me
 	c.monitoringDatabaseStatuses = newStatuses
 }
 
-func (c *VegaMonitoringCollector) UpdateEthereumNodeStatuses(nodeHealthy map[string]bool, updateTime time.Time) {
+func (c *VegaMonitoringCollector) UpdateEthereumNodeStatuses(nodeHealthy []types.EthereumNodeStatus) {
 	c.accessMu.Lock()
 	defer c.accessMu.Unlock()
-	c.ethNodeStatuses = types.EthereumNodeStatuses{
-		NodeHealthy: nodeHealthy,
-		UpdateTime:  updateTime,
-	}
+	c.ethNodeStatuses = nodeHealthy
 }
 
 func (c *VegaMonitoringCollector) UpdateEthereumNodeHeights(heights []types.EthereumNodeHeight) {
@@ -335,18 +342,18 @@ func (c *VegaMonitoringCollector) collectMonitoringDatabaseStatuses(ch chan<- pr
 }
 
 func (c *VegaMonitoringCollector) collectEthereumNodeStatuses(ch chan<- prometheus.Metric) {
-
-	for ethNodeName, ethNodeStatus := range c.ethNodeStatuses.NodeHealthy {
+	for _, ethNodeStatus := range c.ethNodeStatuses {
 		status := 1.0
-		if !ethNodeStatus {
+		if !ethNodeStatus.Healthy {
 			status = 0
 		}
+
 		ch <- prometheus.NewMetricWithTimestamp(
-			c.ethNodeStatuses.UpdateTime,
+			ethNodeStatus.UpdateTime,
 			prometheus.MustNewConstMetric(
 				desc.EthereumNodeStatus, prometheus.GaugeValue, status,
 				// Labels
-				ethNodeName,
+				ethNodeStatus.NodeName, ethNodeStatus.ChainId, ethNodeStatus.RPCEndpoint,
 			))
 	}
 }
@@ -358,7 +365,7 @@ func (c *VegaMonitoringCollector) collectEthereumNodesHeights(ch chan<- promethe
 			prometheus.MustNewConstMetric(
 				desc.EthereumNodeHeight, prometheus.CounterValue, float64(metric.Height),
 				// Labels
-				metric.Name, metric.RPCEndpoint,
+				metric.NodeName, metric.ChainId, metric.RPCEndpoint,
 			),
 		)
 	}
@@ -371,7 +378,7 @@ func (c *VegaMonitoringCollector) collectEthereumAccountBalances(ch chan<- prome
 			prometheus.MustNewConstMetric(
 				desc.EthereumAccountBalances, prometheus.GaugeValue, metric.Value,
 				// Labels
-				metric.NetworkId, metric.ChainId, accAddress,
+				metric.NodeName, metric.NetworkId, metric.ChainId, accAddress,
 			),
 		)
 	}
@@ -384,7 +391,7 @@ func (c *VegaMonitoringCollector) collectEthereumContractCallResponses(ch chan<-
 			prometheus.MustNewConstMetric(
 				desc.EthereumContractCallResponse, prometheus.GaugeValue, metric.Value,
 				// Labels
-				id, metric.ContractAddress, metric.MethodName,
+				metric.NodeName, id, metric.ContractAddress, metric.MethodName,
 			),
 		)
 	}
@@ -397,7 +404,7 @@ func (c *VegaMonitoringCollector) collectEthereumContractEvents(ch chan<- promet
 			prometheus.MustNewConstMetric(
 				desc.EthereumContractEvents, prometheus.CounterValue, float64(metric.Count),
 				// Labels
-				metric.ID, metric.ContractAddress, metric.EventName,
+				metric.NodeName, metric.ID, metric.ContractAddress, metric.EventName,
 			),
 		)
 	}

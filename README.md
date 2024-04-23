@@ -100,6 +100,7 @@ go run main.go grafana download-config --url [grafana base url] --api-token [ser
 
 ```toml
 [[Monitoring.EthereumChain]]
+NodeName = "Some-unique-node-name"
 Period = "1m15s"
 ChainId = 100
 NetworkId = 100
@@ -130,6 +131,7 @@ Accounts = [
     OutputTransform = "float_price:18"
     
 [[Monitoring.EthereumChain]]
+NodeName = "Some-unique-node-name"
 Period = "1m15s"
 ChainId = 5
 NetworkId = 5
