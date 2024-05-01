@@ -81,30 +81,31 @@ func NewEventsCounterFromConfig(cfg config.EthEvents) (*EventsCounter, error) {
 }
 
 func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) error {
-	height, err := client.Height(ctx)
+	currentHeight, err := client.Height(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get ethereum height for initial call for the %s smart contract: %w", e.contractAddressString, err)
 	}
 
-	heightBigInt := big.NewInt(0).SetUint64(height)
+	currentEvmBlockHeight := big.NewInt(0).SetUint64(currentHeight)
 
 	if e.lastCalledBlock == nil {
-		e.lastCalledBlock = big.NewInt(0).Sub(heightBigInt, big.NewInt(0).SetUint64(e.initialCallPastBlocks))
+		e.lastCalledBlock = big.NewInt(0).Sub(currentEvmBlockHeight, big.NewInt(0).SetUint64(e.initialCallPastBlocks))
 	}
 
-	if big.NewInt(0).Sub(heightBigInt, e.lastCalledBlock).Cmp(big.NewInt(1)) < 0 {
+	if big.NewInt(0).Sub(currentEvmBlockHeight, e.lastCalledBlock).Cmp(big.NewInt(1)) < 0 {
 		// Ethereum did not make any block
 		return nil
 	}
 
-	toBlock := big.NewInt(0).Set(heightBigInt)
+	toBlock := big.NewInt(0).Set(currentEvmBlockHeight)
 	// Lets call max 9999 blocks as some RPC providers limit filter to 10k blocks
 	if big.NewInt(0).Sub(toBlock, e.lastCalledBlock).Cmp(big.NewInt(int64(e.maxBlocks))) > 0 {
 		toBlock = big.NewInt(0).Add(e.lastCalledBlock, big.NewInt(int64(e.maxBlocks)))
 	}
 
-	if toBlock.Cmp(heightBigInt) > 0 {
-		toBlock = big.NewInt(0).Set(heightBigInt)
+	// toBlock is somehow higher than current ethereum block
+	if toBlock.Cmp(currentEvmBlockHeight) > 0 {
+		toBlock = big.NewInt(0).Set(currentEvmBlockHeight)
 	}
 
 	query := ethereum.FilterQuery{
@@ -146,7 +147,7 @@ func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) e
 			continue
 		}
 	}
-	e.lastCalledBlock = big.NewInt(0).Set(heightBigInt)
+	e.lastCalledBlock = big.NewInt(0).Set(toBlock)
 
 	return nil
 }
