@@ -15,6 +15,7 @@ import (
 const (
 	AllEvents                    = "*"
 	DefaultInitialCallPastBlocks = 128
+	DefaultMaxBlocks             = 9999
 )
 
 type EventsCounter struct {
@@ -28,12 +29,13 @@ type EventsCounter struct {
 
 	lastCalledBlock       *big.Int
 	initialCallPastBlocks uint64
+	maxBlocks             uint64
 
 	// Result keeps information about all seen events since monitoring started
 	result map[string]uint64
 }
 
-func NewEventsCounter(name string, address string, abiJSON string, initialCallPastBlocks uint64) (*EventsCounter, error) {
+func NewEventsCounter(name string, address string, abiJSON string, initialCallPastBlocks uint64, maxBlocks uint64) (*EventsCounter, error) {
 	contractAbi, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ABI object from JSON: %w", err)
@@ -49,6 +51,7 @@ func NewEventsCounter(name string, address string, abiJSON string, initialCallPa
 		abiObject: contractAbi,
 
 		initialCallPastBlocks: initialCallPastBlocks,
+		maxBlocks:             maxBlocks,
 		lastCalledBlock:       nil,
 
 		result: map[string]uint64{
@@ -62,39 +65,47 @@ func NewEventsCounterFromConfig(cfg config.EthEvents) (*EventsCounter, error) {
 	if pastBlocks < 1 {
 		pastBlocks = DefaultInitialCallPastBlocks
 	}
+
+	maxBlocks := cfg.MaxBlocksToFilter
+	if maxBlocks < 1 {
+		maxBlocks = DefaultMaxBlocks
+	}
+
 	return NewEventsCounter(
 		cfg.Name,
 		cfg.ContractAddress,
 		cfg.ABI,
 		pastBlocks,
+		uint64(maxBlocks),
 	)
 }
 
 func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) error {
-	height, err := client.Height(ctx)
+	currentHeight, err := client.Height(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get ethereum height for initial call for the %s smart contract: %w", e.contractAddressString, err)
 	}
 
-	heightBigInt := big.NewInt(0).SetUint64(height)
+	currentEvmBlockHeight := big.NewInt(0).SetUint64(currentHeight)
 
 	if e.lastCalledBlock == nil {
-		e.lastCalledBlock = big.NewInt(0).Sub(heightBigInt, big.NewInt(0).SetUint64(e.initialCallPastBlocks))
+		e.lastCalledBlock = big.NewInt(0).Sub(currentEvmBlockHeight, big.NewInt(0).SetUint64(e.initialCallPastBlocks))
 	}
 
-	if big.NewInt(0).Sub(heightBigInt, e.lastCalledBlock).Cmp(big.NewInt(1)) < 0 {
+	if big.NewInt(0).Sub(currentEvmBlockHeight, e.lastCalledBlock).Cmp(big.NewInt(1)) < 0 {
 		// Ethereum did not make any block
 		return nil
 	}
 
-	toBlock := big.NewInt(0).Set(heightBigInt)
+	toBlock := big.NewInt(0).Set(currentEvmBlockHeight)
 	// Lets call max 9999 blocks as some RPC providers limit filter to 10k blocks
-	if big.NewInt(0).Sub(toBlock, e.lastCalledBlock).Cmp(big.NewInt(9999)) > 0 {
-		toBlock = big.NewInt(0).Add(toBlock, big.NewInt(9999))
+	if big.NewInt(0).Sub(toBlock, e.lastCalledBlock).Cmp(big.NewInt(int64(e.maxBlocks))) > 0 {
+		toBlock = big.NewInt(0).Add(e.lastCalledBlock, big.NewInt(int64(e.maxBlocks)))
 	}
 
-	if toBlock.Cmp(heightBigInt) > 0 {
-		toBlock = big.NewInt(0).Set(heightBigInt)
+	// toBlock is somehow higher than current ethereum block
+	if toBlock.Cmp(currentEvmBlockHeight) > 0 {
+		toBlock = big.NewInt(0).Set(currentEvmBlockHeight)
 	}
 
 	query := ethereum.FilterQuery{
@@ -136,7 +147,7 @@ func (e *EventsCounter) CallFilterLogs(ctx context.Context, client *EthClient) e
 			continue
 		}
 	}
-	e.lastCalledBlock = big.NewInt(0).Set(heightBigInt)
+	e.lastCalledBlock = big.NewInt(0).Set(toBlock)
 
 	return nil
 }

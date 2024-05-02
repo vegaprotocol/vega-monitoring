@@ -169,6 +169,7 @@ type EthEvents struct {
 	ContractAddress     string `long:"ContractAddress"      comment:"Address of the ethereum contract you want to listen events on"`
 	ABI                 string `long:"ABI"                  comment:"ABI containing all the events you want to monitor as separated calls. Monitored event MUST be INDEXED, otherwise it cannot be deducted"`
 	InitialBlocksToScan uint64 `long:"InitialBlocksToScan"  comment:"Number of blocks to scan after vega-monitoring is started"`
+	MaxBlocksToFilter   uint64 `long:"MaxBlocksToFilter"    comment:"Number of blocks client may ask for when call FilterLogs"`
 }
 
 type EthCall struct {

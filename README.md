@@ -142,12 +142,14 @@ RPCEndpoint = "https://goerli.infura.io/v3/XXXXXXX" # infura daniel@vega.xyz
     ContractAddress = "0xB49281A7F7878Cdf5B6378d8c7dC211Ffc1b5B60"
     ABI = "[{\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Disputed\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": false, \"internalType\": \"bool\", \"name\": \"result\", \"type\": \"bool\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, { \"indexed\": true,\"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Resolved\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Submitted\", \"type\": \"event\"}]"
     InitialBlocksToScan = 40 # ~half hour
+    MaxBlocksToFilter   = 1000
 
 [[Monitoring.EthereumChain.Events]]
     Name = "UMA Termination on Goerli"
     ContractAddress = "0x8744F73A5b404ef843A76A927dF89FE20ab071CB"
     ABI = "[{\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Disputed\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": false, \"internalType\": \"bool\", \"name\": \"result\", \"type\": \"bool\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, { \"indexed\": true,\"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Resolved\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Submitted\", \"type\": \"event\"}]"
     InitialBlocksToScan = 40 # ~half hour
+    MaxBlocksToFilter   = 1000
 ```
 
 
@@ -240,12 +242,14 @@ vega_monitoring_contract_call_response{address="0x719AbD606155442c21b7d561426D42
     ContractAddress = "0xB49281A7F7878Cdf5B6378d8c7dC211Ffc1b5B60"
     ABI = "[{\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Disputed\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": false, \"internalType\": \"bool\", \"name\": \"result\", \"type\": \"bool\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, { \"indexed\": true,\"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Resolved\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Submitted\", \"type\": \"event\"}]"
     InitialBlocksToScan = 40 # ~half hour
+    MaxBlocksToFilter   = 1000
 
 [[Monitoring.EthereumChain.Events]]
     Name = "UMA Termination on Goerli"
     ContractAddress = "0x8744F73A5b404ef843A76A927dF89FE20ab071CB"
     ABI = "[{\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Disputed\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": false, \"internalType\": \"bool\", \"name\": \"result\", \"type\": \"bool\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, { \"indexed\": true,\"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Resolved\", \"type\": \"event\"}, {\"anonymous\": false, \"inputs\": [{\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"claimId\", \"type\": \"bytes32\"}, {\"indexed\": true, \"internalType\": \"bytes32\", \"name\": \"assertionId\", \"type\": \"bytes32\"}], \"name\": \"Submitted\", \"type\": \"event\"}]"
     InitialBlocksToScan = 40 # ~half hour
+    MaxBlocksToFilter   = 1000
 ```
 
 **Result:**
