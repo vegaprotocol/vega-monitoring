@@ -48,7 +48,7 @@ func (c *CometClient) requestBlockResults(ctx context.Context, block int64) (blo
 	}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return blockResultsResponse{}, fmt.Errorf("faailed to create request for %s: %w", url)
+		return blockResultsResponse{}, fmt.Errorf("faailed to create request for %s: %w", url, err)
 	}
 
 	resp, err := c.httpClient.Do(req)
