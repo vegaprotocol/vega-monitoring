@@ -27,7 +27,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 	// get Last Block
 	if toBlock <= 0 {
 		logger.Debug("getting network toBlock network height")
-		latestCometBlock, err := us.readService.GetNetworkLatestBlockHeight()
+		latestCometBlock, err := us.readService.GetNetworkLatestBlockHeight(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
 		}
@@ -47,7 +47,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 	// get First Block
 	if fromBlock <= 0 {
 		logger.Debug("getting network fromBlock network height")
-		lastProcessedBlock, err := blockSigner.GetLastestBlockInStore(context.Background())
+		lastProcessedBlock, err := blockSigner.GetLastestBlockInStore(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to Update Block Signers, %w", err)
 		}
@@ -90,7 +90,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 		if batchLastBlock > toBlock {
 			batchLastBlock = toBlock
 		}
-		count, err := UpdateBlockRange(batchFirstBlock, batchLastBlock, us.readService, blockSigner, logger)
+		count, err := UpdateBlockRange(ctx, batchFirstBlock, batchLastBlock, us.readService, blockSigner, logger)
 		if err != nil {
 			return fmt.Errorf("failed to update block range: %w", err)
 		}
@@ -107,6 +107,7 @@ func (us *UpdateService) UpdateBlockSigners(ctx context.Context, fromBlock int64
 }
 
 func UpdateBlockRange(
+	ctx context.Context,
 	fromBlock int64,
 	toBlock int64,
 	readService *read.ReadService,
@@ -114,7 +115,7 @@ func UpdateBlockRange(
 	logger *logging.Logger,
 ) (int, error) {
 
-	blocks, err := readService.GetBlockSigners(fromBlock, toBlock)
+	blocks, err := readService.GetBlockSigners(ctx, fromBlock, toBlock)
 	if err != nil {
 		return -1, fmt.Errorf("failed to get block signers: %w", err)
 	}
@@ -126,7 +127,7 @@ func UpdateBlockRange(
 	)
 
 	for _, block := range blocks {
-		valData, err := readService.GetValidatorForAddressAtBlock(block.ProposerAddress, block.Height)
+		valData, err := readService.GetValidatorForAddressAtBlock(ctx, block.ProposerAddress, block.Height)
 		if err != nil {
 			return 0, fmt.Errorf("failed to get validator for address at block(1): %w", err)
 		}
@@ -136,7 +137,7 @@ func UpdateBlockRange(
 			TmPubKey: valData.TmPubKey,
 		})
 		for _, signerAddress := range block.SignerAddresses {
-			valData, err := readService.GetValidatorForAddressAtBlock(signerAddress, block.Height)
+			valData, err := readService.GetValidatorForAddressAtBlock(ctx, signerAddress, block.Height)
 			if err != nil {
 				return 0, fmt.Errorf("failed to get validator for address at block(2): %w", err)
 			}
@@ -148,7 +149,7 @@ func UpdateBlockRange(
 		}
 	}
 
-	storedData, err := blockSignerStore.FlushUpsert(context.Background())
+	storedData, err := blockSignerStore.FlushUpsert(ctx)
 	storedCount := len(storedData)
 	if err != nil {
 		return storedCount, fmt.Errorf("failed to flush block signers: %w", err)

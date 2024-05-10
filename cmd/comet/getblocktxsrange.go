@@ -1,6 +1,7 @@
 package comet
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -58,7 +59,7 @@ func RunGetBlockTxsRange(args GetBlockTxsRangeArgs) error {
 		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}
 
-	txsList, err := client.GetTxsForBlockRange(args.FromBlock, args.ToBlock)
+	txsList, err := client.GetTxsForBlockRange(context.Background(), args.FromBlock, args.ToBlock)
 	if err != nil {
 		return err
 	}

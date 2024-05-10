@@ -1,6 +1,7 @@
 package comet
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -27,20 +28,20 @@ type CometTx struct {
 	HeightIdx  int
 }
 
-func (c *CometClient) GetLastBlockTxs() ([]CometTx, error) {
-	return c.GetTxsForBlock(0)
+func (c *CometClient) GetLastBlockTxs(ctx context.Context) ([]CometTx, error) {
+	return c.GetTxsForBlock(ctx, 0)
 }
 
-func (c *CometClient) GetTxsForBlock(block int64) ([]CometTx, error) {
-	txList, err := c.GetTxsForBlockNotFiltered(block)
+func (c *CometClient) GetTxsForBlock(ctx context.Context, block int64) ([]CometTx, error) {
+	txList, err := c.GetTxsForBlockNotFiltered(ctx, block)
 	if err != nil {
 		return nil, err
 	}
 	return RemoveExcludedTxTypes(txList), nil
 }
 
-func (c *CometClient) GetTxsForBlockRange(fromBlock int64, toBlock int64) ([]CometTx, error) {
-	txList, err := c.GetTxsForBlockRangeNotFiltered(fromBlock, toBlock)
+func (c *CometClient) GetTxsForBlockRange(ctx context.Context, fromBlock int64, toBlock int64) ([]CometTx, error) {
+	txList, err := c.GetTxsForBlockRangeNotFiltered(ctx, fromBlock, toBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +89,8 @@ func RemoveExcludedTxTypes(txs []CometTx) []CometTx {
 	return result
 }
 
-func (c *CometClient) GetTxsForBlockNotFiltered(block int64) ([]CometTx, error) {
-	response, err := c.requestBlockResults(block)
+func (c *CometClient) GetTxsForBlockNotFiltered(ctx context.Context, block int64) ([]CometTx, error) {
+	response, err := c.requestBlockResults(ctx, block)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +101,8 @@ func (c *CometClient) GetTxsForBlockNotFiltered(block int64) ([]CometTx, error) 
 	return txsList, nil
 }
 
-func (c *CometClient) GetTxsForBlockRangeNotFiltered(fromBlock int64, toBlock int64) ([]CometTx, error) {
-	responses, err := c.requestBlockResultsRange(fromBlock, toBlock)
+func (c *CometClient) GetTxsForBlockRangeNotFiltered(ctx context.Context, fromBlock int64, toBlock int64) ([]CometTx, error) {
+	responses, err := c.requestBlockResultsRange(ctx, fromBlock, toBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block result data for blocks from %d to %d, %w", fromBlock, toBlock, err)
 	}

@@ -33,7 +33,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		return fmt.Errorf("failed to get latest block height for data node: %w", err)
 	}
 
-	latestBlockHeightForTendermint, err := us.readService.GetNetworkLatestBlockHeight()
+	latestBlockHeightForTendermint, err := us.readService.GetNetworkLatestBlockHeight(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get latest block for tendermint: %w", err)
 	}
@@ -103,7 +103,7 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 		if batchLastBlock > toBlock {
 			batchLastBlock = toBlock
 		}
-		count, err := UpdateCometTxsRange(batchFirstBlock, batchLastBlock, us.readService, serviceStore, logger)
+		count, err := UpdateCometTxsRange(ctx, batchFirstBlock, batchLastBlock, us.readService, serviceStore, logger)
 		if err != nil {
 			return fmt.Errorf("failed to update comet txs range: %w", err)
 		}
@@ -120,13 +120,14 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 }
 
 func UpdateCometTxsRange(
+	ctx context.Context,
 	fromBlock int64,
 	toBlock int64,
 	readService *read.ReadService,
 	serviceStore *sqlstore.CometTxs,
 	logger *logging.Logger,
 ) (int, error) {
-	txs, err := readService.GetCometTxs(fromBlock, toBlock)
+	txs, err := readService.GetCometTxs(ctx, fromBlock, toBlock)
 	if err != nil {
 		return -1, err
 	}

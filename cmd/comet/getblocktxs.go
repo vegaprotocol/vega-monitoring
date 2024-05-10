@@ -1,6 +1,7 @@
 package comet
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -49,7 +50,7 @@ func RunGetBlockTxs(args GetBlockTxsArgs) error {
 		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}
 
-	txsList, err := client.GetTxsForBlockNotFiltered(args.Block)
+	txsList, err := client.GetTxsForBlockNotFiltered(context.Background(), args.Block)
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ func NewCometClient(config *config.CometBFTConfig) *CometClient {
 		config:      config,
 		rateLimiter: rate.NewLimiter(rate.Every(50*time.Millisecond), 1),
 		httpClient: &http.Client{
-			Timeout: 2 * time.Second,
+			Timeout: 8 * time.Second,
 		},
 		validatorByAddress: map[string]ValidatorData{},
 	}

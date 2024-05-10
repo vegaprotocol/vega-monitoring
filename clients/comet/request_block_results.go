@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type blockResultsResponse struct {
@@ -36,19 +37,26 @@ type blockResultsResponseTxEvent struct {
 	} `json:"attributes"`
 }
 
-func (c *CometClient) requestBlockResults(block int64) (blockResultsResponse, error) {
-	if err := c.rateLimiter.Wait(context.Background()); err != nil {
+func (c *CometClient) requestBlockResults(ctx context.Context, block int64) (blockResultsResponse, error) {
+	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return blockResultsResponse{}, fmt.Errorf("failed rate limiter for get block results for block: %d. %w", block, err)
 	}
+
 	url := fmt.Sprintf("%s/block_results", c.config.ApiURL)
 	if block > 0 {
 		url = fmt.Sprintf("%s/block_results?height=%d", c.config.ApiURL, block)
 	}
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return blockResultsResponse{}, fmt.Errorf("faailed to create request for %s: %w", url)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return blockResultsResponse{}, fmt.Errorf("failed to get block results for block: %d. %w", block, err)
 	}
 	defer resp.Body.Close()
+
 	var payload blockResultsResponse
 	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return blockResultsResponse{}, fmt.Errorf("failed to parse response for get block results for block: %d. %w", block, err)
@@ -57,26 +65,34 @@ func (c *CometClient) requestBlockResults(block int64) (blockResultsResponse, er
 	return payload, nil
 }
 
-func (c *CometClient) requestBlockResultsRange(startBlock int64, endBlock int64) (result []blockResultsResponse, err error) {
+func (c *CometClient) requestBlockResultsRange(ctx context.Context, startBlock int64, endBlock int64) ([]blockResultsResponse, error) {
+	var mut sync.Mutex
+	result := []blockResultsResponse{}
+	var merr *multierror.Error
+
 	var wg sync.WaitGroup
-	ch := make(chan blockResultsResponse, endBlock-startBlock+1)
 	for block := startBlock; block <= endBlock; block++ {
 		wg.Add(1)
 		go func(block int64) {
 			defer wg.Done()
-			response, err := c.requestBlockResults(block)
+			response, err := c.requestBlockResults(ctx, block)
+
+			mut.Lock()
+			defer mut.Unlock()
+
 			if err != nil {
-				fmt.Println(err)
-				response = blockResultsResponse{}
-				response.Result.Height = strconv.FormatInt(block, 10)
+				merr = multierror.Append(merr, fmt.Errorf("failed to request blocks results for block %d: %w", block, err))
+				return
 			}
-			ch <- response
+			result = append(result, response)
+
 		}(block)
 	}
 	wg.Wait()
-	close(ch)
-	for response := range ch {
-		result = append(result, response)
+
+	if merr != nil {
+		return nil, merr.ErrorOrNil()
 	}
-	return
+
+	return result, nil
 }

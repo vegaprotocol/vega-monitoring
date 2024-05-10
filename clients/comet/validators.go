@@ -1,17 +1,18 @@
 package comet
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	vega_entities "code.vegaprotocol.io/vega/datanode/entities"
 )
 
-func (c *CometClient) GetValidatorForAddressAtBlock(address string, block int64) (*ValidatorData, error) {
+func (c *CometClient) GetValidatorForAddressAtBlock(ctx context.Context, address string, block int64) (*ValidatorData, error) {
 	if val, ok := c.validatorByAddress[address]; ok {
 		return &val, nil
 	}
-	if err := c.pullMoreValidatorData(block); err != nil {
+	if err := c.pullMoreValidatorData(ctx, block); err != nil {
 		return nil, fmt.Errorf("failed to get validator data for %s address, failed to pull more validator data, %w", address, err)
 	}
 	if val, ok := c.validatorByAddress[address]; ok {
@@ -20,8 +21,8 @@ func (c *CometClient) GetValidatorForAddressAtBlock(address string, block int64)
 	return nil, fmt.Errorf("failed to get validator data for %s address", address)
 }
 
-func (c *CometClient) pullMoreValidatorData(block int64) error {
-	response, err := c.requestValidators(block)
+func (c *CometClient) pullMoreValidatorData(ctx context.Context, block int64) error {
+	response, err := c.requestValidators(ctx, block)
 	if err != nil {
 		return err
 	}
@@ -48,12 +49,12 @@ type CometValidators struct {
 	Height           int64
 }
 
-func (c *CometClient) GetValidators() ([]CometValidators, error) {
-	return c.GetValidatorsForBlock(0)
+func (c *CometClient) GetValidators(ctx context.Context) ([]CometValidators, error) {
+	return c.GetValidatorsForBlock(ctx, 0)
 }
 
-func (c *CometClient) GetValidatorsForBlock(block int64) ([]CometValidators, error) {
-	response, err := c.requestValidators(block)
+func (c *CometClient) GetValidatorsForBlock(ctx context.Context, block int64) ([]CometValidators, error) {
+	response, err := c.requestValidators(ctx, block)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/georgysavva/scany v1.0.0
 	github.com/google/uuid v1.4.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/pressly/goose/v3 v3.6.1
@@ -65,6 +66,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.9.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c // indirect
 	github.com/huandu/xstrings v1.3.1 // indirect
