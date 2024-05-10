@@ -1,15 +1,16 @@
 package comet
 
 import (
+	"context"
 	"fmt"
 )
 
-func (c *CometClient) GetLatestBlockSigners() (*BlockSignersData, error) {
-	return c.GetBlockSigners(-1)
+func (c *CometClient) GetLatestBlockSigners(ctx context.Context) (*BlockSignersData, error) {
+	return c.GetBlockSigners(ctx, -1)
 }
 
-func (c *CometClient) GetBlockSigners(block int64) (*BlockSignersData, error) {
-	response, err := c.requestCommit(block)
+func (c *CometClient) GetBlockSigners(ctx context.Context, block int64) (*BlockSignersData, error) {
+	response, err := c.requestCommit(ctx, block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit data for block %d, %w", block, err)
 	}
@@ -20,9 +21,9 @@ func (c *CometClient) GetBlockSigners(block int64) (*BlockSignersData, error) {
 	return &blockData, nil
 }
 
-func (c *CometClient) GetBlockSignersRange(fromBlock int64, toBlock int64) ([]BlockSignersData, error) {
+func (c *CometClient) GetBlockSignersRange(ctx context.Context, fromBlock int64, toBlock int64) ([]BlockSignersData, error) {
 
-	responses, err := c.requestCommitRange(fromBlock, toBlock)
+	responses, err := c.requestCommitRange(ctx, fromBlock, toBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit data for blocks from %d to %d, %w", fromBlock, toBlock, err)
 	}

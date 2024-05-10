@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type commitResponse struct {
@@ -28,15 +29,21 @@ type commitResponse struct {
 	} `json:"result"`
 }
 
-func (c *CometClient) requestCommit(block int64) (commitResponse, error) {
-	if err := c.rateLimiter.Wait(context.Background()); err != nil {
+func (c *CometClient) requestCommit(ctx context.Context, block int64) (commitResponse, error) {
+	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return commitResponse{}, fmt.Errorf("Failed rate limiter for Get Commit Data for block: %d. %w", block, err)
 	}
 	url := fmt.Sprintf("%s/commit", c.config.ApiURL)
 	if block > 0 {
 		url = fmt.Sprintf("%s/commit?height=%d", c.config.ApiURL, block)
 	}
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return commitResponse{}, fmt.Errorf("failed to create request for url %s: %w", url, err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return commitResponse{}, fmt.Errorf("Failed to Get Commit Data for block: %d. %w", block, err)
 	}
@@ -49,26 +56,33 @@ func (c *CometClient) requestCommit(block int64) (commitResponse, error) {
 	return payload, nil
 }
 
-func (c *CometClient) requestCommitRange(startBlock int64, endBlock int64) (result []commitResponse, err error) {
+func (c *CometClient) requestCommitRange(ctx context.Context, startBlock int64, endBlock int64) ([]commitResponse, error) {
+	var mut sync.Mutex
+	result := []commitResponse{}
+	var merr *multierror.Error
+
 	var wg sync.WaitGroup
-	ch := make(chan commitResponse, endBlock-startBlock+1)
 	for block := startBlock; block <= endBlock; block++ {
 		wg.Add(1)
 		go func(block int64) {
 			defer wg.Done()
-			response, err := c.requestCommit(block)
+			response, err := c.requestCommit(ctx, block)
+
+			mut.Lock()
+			defer mut.Unlock()
+
 			if err != nil {
-				fmt.Println(err)
-				response = commitResponse{}
-				response.Result.SignedHeader.Header.Height = strconv.FormatInt(block, 10)
+				merr = multierror.Append(merr, fmt.Errorf("failed to request comit range for block %d: %w", block, err))
+				return
 			}
-			ch <- response
+			result = append(result, response)
 		}(block)
 	}
 	wg.Wait()
-	close(ch)
-	for response := range ch {
-		result = append(result, response)
+
+	if merr != nil {
+		return nil, merr.ErrorOrNil()
 	}
-	return
+
+	return result, nil
 }

@@ -1,6 +1,7 @@
 package comet
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -57,7 +58,7 @@ func RunGetBlockSignersRange(args GetBlockSignersRangeArgs) error {
 		return fmt.Errorf("Required --api-url flag or config.toml file")
 	}
 
-	blockDataList, err := client.GetBlockSignersRange(args.FromBlock, args.ToBlock)
+	blockDataList, err := client.GetBlockSignersRange(context.Background(), args.FromBlock, args.ToBlock)
 	if err != nil {
 		return err
 	}

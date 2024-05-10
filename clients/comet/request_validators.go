@@ -24,7 +24,7 @@ type validatorsResponse struct {
 	} `json:"result"`
 }
 
-func (c *CometClient) requestValidators(block int64) (validatorsResponse, error) {
+func (c *CometClient) requestValidators(ctx context.Context, block int64) (validatorsResponse, error) {
 	if err := c.rateLimiter.Wait(context.Background()); err != nil {
 		return validatorsResponse{}, fmt.Errorf("Failed rate limiter for Get Validators for block: %d. %w", block, err)
 	}
@@ -32,7 +32,12 @@ func (c *CometClient) requestValidators(block int64) (validatorsResponse, error)
 	if block > 0 {
 		url = fmt.Sprintf("%s/validators?height=%d", c.config.ApiURL, block)
 	}
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return validatorsResponse{}, fmt.Errorf("failed to create validators request for %s url: %w", url, err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return validatorsResponse{}, fmt.Errorf("Failed to Get Validators for block: %d. %w", block, err)
 	}

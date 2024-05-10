@@ -34,7 +34,7 @@ func requestDataNodeStats(client *datanode.DataNodeClient) (*types.DataNodeStatu
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse x-block-timestamp response header to int %s, %w", strDataNodeTime, err)
 	}
-	dataNodeTime := time.Unix(intDataNodeTime, 0)
+	dataNodeTime := time.Unix(intDataNodeTime/1000_000_000, 0)
 
 	return &types.DataNodeStatus{
 		CoreStatus:          *coreStatus,
