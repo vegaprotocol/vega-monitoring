@@ -2,9 +2,11 @@ package sqlstore
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 )
 
@@ -43,7 +45,7 @@ func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.Pri
 		newAssetPrices.PriceUSD,
 	)
 
-	return err
+	return fmt.Errorf("could not get asset prices for %q: %w", newAssetPrices.AssetSymbol, err)
 }
 
 func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData, error) {

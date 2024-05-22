@@ -4,6 +4,7 @@ import (
 	"context"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+
 	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
@@ -44,20 +45,23 @@ func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance
 		INSERT INTO metrics.network_balances (
 			balance_time,
 			asset_id,
+		    chain_id,
 			balance_source,
 			balance)
 		VALUES
 			(
 				$1,
-				(SELECT id FROM assets_current WHERE erc20_contract = $2),
+				(SELECT id FROM assets_current WHERE erc20_contract = $2 AND chain_id = $3),
 				$3,
-				$4
+				$4,
+			 	$5
 			)
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
 		newBalance.BalanceTime,
 		newBalance.AssetEthereumHexAddress,
+		newBalance.ChainID,
 		newBalance.BalanceSource,
 		newBalance.Balance,
 	)
@@ -101,12 +105,13 @@ func (nhs *NetworkBalances) UpsertPartiesTotalBalance(ctx context.Context) error
 		INSERT INTO metrics.network_balances (
 			balance_time,
 			asset_id,
+			chain_id,
 			balance_source,
 			balance)
-		SELECT DATE_TRUNC('minute', NOW()), a.id, 'PARTIES_TOTAL', COALESCE(b.balance, 0)
+		SELECT DATE_TRUNC('minute', NOW()), a.id, a.chain_id, 'PARTIES_TOTAL', COALESCE(b.balance, 0)
 			FROM assets_current a
 			LEFT JOIN latest_balance b ON (b.asset_id = a.id)
-			GROUP BY a.id, b.balance
+			GROUP BY a.id, a.chain_id, b.balance
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
@@ -121,9 +126,10 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 	INSERT INTO metrics.network_balances (
 		balance_time,
 		asset_id,
+	    chain_id,
 		balance_source,
 		balance)
-	SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
+	SELECT DATE_TRUNC('minute', NOW()), a.id, a.chain_id, 'UNREALISED_WITHDRAWALS_TOTAL', COALESCE(SUM(w.amount), 0)
 		FROM assets_current a
 		LEFT JOIN withdrawals_current w ON (
 				w.asset = a.id
@@ -131,7 +137,7 @@ func (nhs *NetworkBalances) UpsertUnrealisedWithdrawalsBalance(ctx context.Conte
 			AND w.status = 'STATUS_FINALIZED'
 			AND encode(w.id::bytea, 'hex') NOT IN (` + ignoredIDs + `)
 		)
-		GROUP BY a.id
+		GROUP BY a.id, a.chain_id
 	ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 	SET
 		balance=EXCLUDED.balance`
@@ -147,13 +153,14 @@ func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error
 		INSERT INTO metrics.network_balances (
 			balance_time,
 			asset_id,
+		    chain_id,
 			balance_source,
 			balance)
-		SELECT DATE_TRUNC('minute', NOW()), a.id, 'UNFINALIZED_DEPOSITS', COALESCE(SUM(d.amount), 0)
+		SELECT DATE_TRUNC('minute', NOW()), a.id, a.chain_id, 'UNFINALIZED_DEPOSITS', COALESCE(SUM(d.amount), 0)
 			FROM assets_current a
 			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status <> 'STATUS_FINALIZED') 
 				AND encode(d.id::bytea, 'hex') NOT IN (`+ignoredIDs+`)
-			GROUP BY a.id
+			GROUP BY a.id, a.chain_id
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,

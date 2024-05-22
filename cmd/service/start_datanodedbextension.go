@@ -296,12 +296,13 @@ func runNetworkBalancesScraper(ctx context.Context, svc *cmd.AllServices, status
 		svc.Log.Debugf("runNetworkBalancesScraper tick")
 
 		success := true
-		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx, svc.Config.Ethereum.AssetPoolAddress); err != nil {
+		if err := svc.UpdateService.UpdateAssetPoolBalances(ctx, svc.Config.Ethereum, svc.Config.Arbitrum); err != nil {
 			svc.Log.Error("Failed to update Network Balances: Asset Pool", zap.Error(err))
 			success = false
 		}
+
 		if err := svc.UpdateService.UpdatePartiesTotalBalances(ctx); err != nil {
-			svc.Log.Error("Failed to update Network Balances: Partiest Total", zap.Error(err))
+			svc.Log.Error("Failed to update Network Balances: Parties Total", zap.Error(err))
 			success = false
 		}
 		if err := svc.UpdateService.UpdateUnrealisedWithdrawalsBalances(ctx); err != nil {

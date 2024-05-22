@@ -28,13 +28,14 @@ type NetworkBalance struct {
 	AssetEthereumHexAddress string
 	BalanceSource           BalanceSourceType
 	Balance                 decimal.Decimal
-	//Balance                 *big.Int
+	ChainID                 string
 }
 
-func NewAssetPoolBalance(time time.Time, assetHexAddress string, balance decimal.Decimal) NetworkBalance {
+func NewAssetPoolBalance(time time.Time, assetHexAddress, chainID string, balance decimal.Decimal) NetworkBalance {
 	return NetworkBalance{
 		BalanceTime:             time,
 		AssetEthereumHexAddress: assetHexAddress,
+		ChainID:                 chainID,
 		BalanceSource:           AssetPoolBalanceType,
 		Balance:                 balance,
 	}

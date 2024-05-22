@@ -50,6 +50,14 @@ func (c *EthClient) Height(ctx context.Context) (uint64, error) {
 	return c.client.BlockNumber(ctx)
 }
 
+func (c *EthClient) ChainID(ctx context.Context) (string, error) {
+	chainID, err := c.client.ChainID(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get chain id, %w", err)
+	}
+	return chainID.String(), nil
+}
+
 func (c *EthClient) Ready(ctx context.Context) (bool, error) {
 	syncProcess, err := c.client.SyncProgress(ctx)
 	if err != nil {
