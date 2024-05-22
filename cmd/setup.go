@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"code.vegaprotocol.io/vega/logging"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
@@ -41,7 +42,13 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 
 	if svc.Config.DataNodeDBExtension.Enabled {
 		var ethClient *ethutils.EthClient
-		ethClient, err = ethutils.NewEthClient(svc.Config.Ethereum.RPCEndpoint, svc.Log)
+		ethClient, err = ethutils.NewEthClient(svc.Config.Ethereum.RPCEndpoint, svc.Log.Named("ethereum-client"))
+		if err != nil {
+			return
+		}
+
+		var arbitrumClient *ethutils.EthClient
+		arbitrumClient, err = ethutils.NewEthClient(svc.Config.Arbitrum.RPCEndpoint, svc.Log.Named("arbitrum-client"))
 		if err != nil {
 			return
 		}
@@ -51,7 +58,7 @@ func SetupServices(configFilePath string, forceDebug bool) (svc AllServices, err
 			return
 		}
 
-		svc.ReadService, err = read.NewReadService(coingeckoClient, cometClient, ethClient, svc.StoreService, svc.Log)
+		svc.ReadService, err = read.NewReadService(coingeckoClient, cometClient, ethClient, arbitrumClient, svc.StoreService, svc.Log)
 		if err != nil {
 			return
 		}

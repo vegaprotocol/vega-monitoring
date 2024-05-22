@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/vegaprotocol/vega-monitoring/cmd"
 )
 
@@ -51,7 +52,7 @@ func RunNetworkBalances(args NetworkBalancesArgs) error {
 	}
 
 	if args.All || args.AssetPool {
-		if err := svc.UpdateService.UpdateAssetPoolBalances(context.Background(), svc.Config.Ethereum.AssetPoolAddress); err != nil {
+		if err := svc.UpdateService.UpdateAssetPoolBalances(context.Background(), svc.Config.Ethereum, svc.Config.Arbitrum); err != nil {
 			return err
 		}
 	}

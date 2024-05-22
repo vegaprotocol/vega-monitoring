@@ -2,9 +2,11 @@ package sqlstore
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 )
 
@@ -27,23 +29,26 @@ func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.Pri
 	_, err := ap.Connection.Exec(ctx, `
 		INSERT INTO metrics.asset_prices (
 			price_time,
-			asset_id,
-			price)
-		VALUES
-			(
-				$1,
-				(SELECT id FROM assets_current WHERE LOWER(symbol) = $2),
-				$3
+		    price,
+			asset_id
 			)
+		SELECT price_time, price, asset_id
+		    FROM (
+				SELECT $1::timestamptz as price_time, $2::numeric(16,8) as price, id as asset_id FROM assets_current WHERE LOWER(symbol) = $3
+			) as assets_prices
 		ON CONFLICT (price_time, asset_id) DO UPDATE
 		SET
 			price=EXCLUDED.price`,
 		newAssetPrices.Time,
-		strings.ToLower(newAssetPrices.AssetSymbol),
 		newAssetPrices.PriceUSD,
+		strings.ToLower(newAssetPrices.AssetSymbol),
 	)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("could not get asset prices for %q: %w", newAssetPrices.AssetSymbol, err)
+	}
+
+	return nil
 }
 
 func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData, error) {

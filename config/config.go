@@ -24,6 +24,8 @@ type Config struct {
 	CometBFT CometBFTConfig `group:"CometBFT" namespace:"cometbft" comment:"used to collect info about block proposers and signers and also collect comet txs\n stores data in DataNode database in metrics.block_signers and metrics.comet_txs tables\n endpoint needs to have discard_abci_responses set to false"`
 
 	Ethereum EthereumConfig `group:"Ethereum" namespace:"ethereum"`
+	
+	Arbitrum EthereumConfig `group:"Arbitrum" namespace:"arbitrum"`
 
 	HealthCheck HealthCheckConfig `group:"HealthCheck" namespace:"healthcheck"`
 
