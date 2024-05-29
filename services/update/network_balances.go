@@ -19,6 +19,7 @@ func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context, ethConfig,
 
 	logger.Debug("Update Asset Pool Balances: start")
 
+	// TODO: :et's think about passing clients to this function because now they are created over and over again.
 	ethClient, err := ethutils.NewEthClient(ethConfig.RPCEndpoint, logger.Named("ethereum"))
 	if err != nil {
 		return err
