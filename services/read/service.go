@@ -2,6 +2,7 @@ package read
 
 import (
 	"code.vegaprotocol.io/vega/logging"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/coingecko"
 	"github.com/vegaprotocol/vega-monitoring/clients/comet"
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
@@ -11,9 +12,10 @@ import (
 type ReadService struct {
 	coingeckoClient  *coingecko.CoingeckoClient
 	cometClient      *comet.CometClient
-	ethClient        *ethutils.EthClient
 	storeReadService StoreReadService
 	log              *logging.Logger
+	ethClient        *ethutils.EthClient
+	arbitrumClient   *ethutils.EthClient
 }
 
 type StoreReadService interface {
@@ -21,17 +23,12 @@ type StoreReadService interface {
 	NewMonitoringStatus() *sqlstore.MonitoringStatus
 }
 
-func NewReadService(
-	coingeckoClient *coingecko.CoingeckoClient,
-	cometClient *comet.CometClient,
-	ethClient *ethutils.EthClient,
-	storeReadService StoreReadService,
-	log *logging.Logger,
-) (*ReadService, error) {
+func NewReadService(coingeckoClient *coingecko.CoingeckoClient, cometClient *comet.CometClient, ethClient *ethutils.EthClient, arbitrumClient *ethutils.EthClient, storeReadService StoreReadService, log *logging.Logger) (*ReadService, error) {
 	return &ReadService{
 		coingeckoClient:  coingeckoClient,
 		cometClient:      cometClient,
 		ethClient:        ethClient,
+		arbitrumClient:   arbitrumClient,
 		storeReadService: storeReadService,
 		log:              log,
 	}, nil
