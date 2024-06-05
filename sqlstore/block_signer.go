@@ -8,6 +8,7 @@ import (
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4"
+
 	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
@@ -27,6 +28,12 @@ func (bs *BlockSigner) Add(data *entities.BlockSigner) {
 }
 
 func (bs *BlockSigner) Flush(ctx context.Context) ([]*entities.BlockSigner, error) {
+	defer func() {
+		// We cannot keep those rows in memory because they will be added again
+		// and at some point program hangs
+		bs.blockSigner = nil
+	}()
+
 	rows := make([][]interface{}, 0, len(bs.blockSigner))
 	for _, data := range bs.blockSigner {
 		rows = append(rows, []interface{}{
@@ -50,7 +57,6 @@ func (bs *BlockSigner) Flush(ctx context.Context) ([]*entities.BlockSigner, erro
 	}
 
 	flushed := bs.blockSigner
-	bs.blockSigner = nil
 
 	return flushed, nil
 }
@@ -124,4 +130,4 @@ func (bs *BlockSigner) GetLastestBlockInStore(ctx context.Context) (int64, error
 // LEFT OUTER JOIN m_block_signers ON (m_block_signers.height = s.i)
 // WHERE m_block_signers.height IS NULL;
 
-//SELECT MAX(height) FROM m_block_signers;
+// SELECT MAX(height) FROM m_block_signers;

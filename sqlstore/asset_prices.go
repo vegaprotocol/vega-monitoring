@@ -53,7 +53,12 @@ func (ap *AssetPrices) Upsert(ctx context.Context, newAssetPrices *coingecko.Pri
 
 func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData, error) {
 	blockCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+		// We cannot keep those rows in memory because they will be added again
+		// and at some point program hangs
+		ap.assetPrices = nil
+	}()
 
 	blockCtx, err := ap.WithTransaction(blockCtx)
 	if err != nil {
@@ -71,7 +76,6 @@ func (ap *AssetPrices) FlushUpsert(ctx context.Context) ([]*coingecko.PriceData,
 	}
 
 	flushed := ap.assetPrices
-	ap.assetPrices = nil
 
 	return flushed, nil
 }

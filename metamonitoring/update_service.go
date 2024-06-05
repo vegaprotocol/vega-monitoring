@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
-	"github.com/vegaprotocol/vega-monitoring/entities"
 	"go.uber.org/zap"
+
+	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
 func NewMonitoringStatusUpdateService(store MonitoringStore, vegaClient VegaClient, logger *logging.Logger) (MetamonitoringService, error) {
@@ -136,8 +137,7 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval
 		// correct error
 		if !isUpToDate {
 			msus.logger.Warningf("The local vega node is not up to date. Failing all the checks.")
-			_, err := monitoringStatusStore.FlushClear(ctx)
-			if err != nil {
+			if err := monitoringStatusStore.Clear(); err != nil {
 				msus.logger.Error("failed to flush clear all actual health checks when node is not up to date", zap.Error(err))
 			}
 
@@ -151,34 +151,32 @@ func (msus *MonitoringStatusUpdateService) Run(ctx context.Context, tickInterval
 					})
 				}
 			}
-		}
+		} else {
+			// Check if all of the monitoring services provided any status update
+			// if not add failed state
+			for _, service := range msus.activeServices {
+				if !monitoringStatusStore.IsPendingFor(service) {
+					monitoringStatusStore.Add(entities.MonitoringStatus{
+						StatusTime:      time.Now(),
+						IsHealthy:       false,
+						Service:         service,
+						UnhealthyReason: entities.ReasonMissingStatusFromService,
+					})
 
-		// Check if all of the monitoring services provided any status update
-		// if not add failed state
-		for _, service := range msus.activeServices {
-			if !monitoringStatusStore.IsPendingFor(service) {
-				monitoringStatusStore.Add(entities.MonitoringStatus{
-					StatusTime:      time.Now(),
-					IsHealthy:       false,
-					Service:         service,
-					UnhealthyReason: entities.ReasonMissingStatusFromService,
-				})
-
-				msus.logger.Debugf(
-					"Service %s did not published status update for last 5 min. Marking it as unhealthy with the %s reason",
-					service,
-					entities.ReasonMissingStatusFromService,
-				)
+					msus.logger.Debugf(
+						"Service %s did not published status update for last 5 min. Marking it as unhealthy with the %s reason",
+						service,
+						entities.ReasonMissingStatusFromService,
+					)
+				}
 			}
 		}
 
-		innerCtx, cancel := context.WithCancel(ctx)
 		// Upsert all the pending states
-		if _, err := monitoringStatusStore.FlushUpsert(innerCtx); err != nil {
+		if _, err := monitoringStatusStore.FlushUpsert(ctx); err != nil {
 			msus.logger.Error("failed to flush upsert monitoring status updates", zap.Error(err))
 		}
 
-		cancel()
 		select {
 		case <-ticker.C:
 			continue
