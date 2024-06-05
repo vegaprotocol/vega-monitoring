@@ -64,7 +64,10 @@ func (nhs *NetworkBalances) Upsert(ctx context.Context, newBalance entities.Netw
 
 func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBalance, error) {
 	blockCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+		c.NetworkBalances = nil
+	}()
 
 	blockCtx, err := c.WithTransaction(blockCtx)
 	if err != nil {
@@ -82,7 +85,6 @@ func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBa
 	}
 
 	flushed := c.NetworkBalances
-	c.NetworkBalances = nil
 
 	return flushed, nil
 }
