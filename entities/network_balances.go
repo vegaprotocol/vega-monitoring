@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"code.vegaprotocol.io/vega/datanode/entities"
 	"github.com/shopspring/decimal"
 )
 
@@ -24,6 +25,7 @@ func (n BalanceSourceType) IsValid() error {
 }
 
 type NetworkBalance struct {
+	AssetID                 entities.AssetID
 	BalanceTime             time.Time
 	AssetEthereumHexAddress string
 	BalanceSource           BalanceSourceType
@@ -31,8 +33,9 @@ type NetworkBalance struct {
 	ChainID                 string
 }
 
-func NewAssetPoolBalance(time time.Time, assetHexAddress, chainID string, balance decimal.Decimal) NetworkBalance {
+func NewAssetPoolBalance(assetID entities.AssetID, time time.Time, assetHexAddress, chainID string, balance decimal.Decimal) NetworkBalance {
 	return NetworkBalance{
+		AssetID:                 assetID,
 		BalanceTime:             time,
 		AssetEthereumHexAddress: assetHexAddress,
 		ChainID:                 chainID,
