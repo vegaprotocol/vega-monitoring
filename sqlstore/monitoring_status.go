@@ -7,6 +7,7 @@ import (
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/georgysavva/scany/pgxscan"
+
 	"github.com/vegaprotocol/vega-monitoring/entities"
 )
 
@@ -65,15 +66,12 @@ func (ms *MonitoringStatus) UpsertSingle(ctx context.Context, entity entities.Mo
 	return err
 }
 
-// FlushClear does not flush the events, it just clear the buffer up and return all the events to
-// the caller
-func (ms *MonitoringStatus) FlushClear(ctx context.Context) ([]entities.MonitoringStatus, error) {
+func (ms *MonitoringStatus) Clear() error {
 	ms.mutex.Lock()
-	flushed := ms.statuses
 	ms.statuses = []entities.MonitoringStatus{}
 	ms.mutex.Unlock()
 
-	return flushed, nil
+	return nil
 }
 
 func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.MonitoringStatus, error) {
@@ -82,7 +80,12 @@ func (ms *MonitoringStatus) FlushUpsert(ctx context.Context) ([]entities.Monitor
 	}
 
 	blockCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+		ms.mutex.Lock()
+		ms.statuses = []entities.MonitoringStatus{}
+		ms.mutex.Unlock()
+	}()
 
 	blockCtx, err := ms.WithTransaction(blockCtx)
 	if err != nil {

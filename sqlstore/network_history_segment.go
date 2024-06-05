@@ -6,6 +6,7 @@ import (
 
 	vega_sqlstore "code.vegaprotocol.io/vega/datanode/sqlstore"
 	"github.com/georgysavva/scany/pgxscan"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 )
 
@@ -71,7 +72,12 @@ func (nhs *NetworkHistorySegment) GetLatestSegmentsPerDataNode(ctx context.Conte
 
 func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([]*datanode.NetworkHistorySegment, error) {
 	blockCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+		// We cannot keep those rows in memory because they will be added again
+		// and at some point program hangs
+		nhs.segments = nil
+	}()
 
 	blockCtx, err := nhs.WithTransaction(blockCtx)
 	if err != nil {
@@ -95,7 +101,6 @@ func (nhs *NetworkHistorySegment) FlushUpsertWithoutTime(ctx context.Context) ([
 	}
 
 	flushed := nhs.segments
-	nhs.segments = nil
 
 	return flushed, nil
 }
