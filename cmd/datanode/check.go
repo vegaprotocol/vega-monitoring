@@ -1,10 +1,12 @@
 package datanode
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/vegaprotocol/vega-monitoring/prometheus/nodescanner"
 )
 
@@ -64,7 +66,7 @@ func RunCheck(args CheckArgs) error {
 		}
 
 		fmt.Printf("- Data Deepth check: ")
-		data1DayScore, data1WeekScore, dataArchivalScore, err := nodescanner.CheckDataDepth(args.REST)
+		data1DayScore, data1WeekScore, dataArchivalScore, err := nodescanner.CheckDataDepth(context.Background(), args.REST)
 		if err != nil {
 			fmt.Printf("failed, %v\n", err)
 		} else {

@@ -16,8 +16,8 @@ type NetworkHistorySegment struct {
 	DataNode  string `db:"data_node"`
 }
 
-func (c *DataNodeClient) GetNetworkHistorySegments(fromBlock, toBlock int64) ([]*NetworkHistorySegment, error) {
-	response, err := c.requestNetworkHistorySegmets()
+func (c *DataNodeClient) GetNetworkHistorySegments(ctx context.Context, fromBlock, toBlock int64) ([]*NetworkHistorySegment, error) {
+	response, err := c.requestNetworkHistorySegments(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,11 +54,11 @@ type networkHistorySegmentsResponse struct {
 	} `json:"segments"`
 }
 
-func (c *DataNodeClient) requestNetworkHistorySegmets() (networkHistorySegmentsResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // TODO: Pass parent context
+func (c *DataNodeClient) requestNetworkHistorySegments(ctx context.Context) (networkHistorySegmentsResponse, error) {
+	innerCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	if err := c.rateLimiter.Wait(ctx); err != nil {
+	if err := c.rateLimiter.Wait(innerCtx); err != nil {
 		return networkHistorySegmentsResponse{}, errors.Join(errWaitingForRateLimiter, fmt.Errorf("failed to get network history segments for %s: %w", c.apiURL, err))
 	}
 	url := fmt.Sprintf(networkHistorySegmentURL, c.apiURL)
@@ -68,7 +68,7 @@ func (c *DataNodeClient) requestNetworkHistorySegmets() (networkHistorySegmentsR
 	}
 	defer resp.Body.Close()
 	var payload networkHistorySegmentsResponse
-	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return networkHistorySegmentsResponse{}, fmt.Errorf("failed to unmarshal http request for %s: %w", c.apiURL, err)
 	}
 

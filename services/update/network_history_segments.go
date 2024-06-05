@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"go.uber.org/zap"
+
+	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 )
 
 func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiURLs []string) error {
@@ -67,7 +68,7 @@ func (us *UpdateService) UpdateNetworkHistorySegments(ctx context.Context, apiUR
 		logger.Debug("fetching network history segments", zap.String("url", apiURL))
 		dataNodeClient := datanode.NewDataNodeClient(apiURL)
 		// We are not interested in the segments outside of the range we are replaying
-		segments, err := dataNodeClient.GetNetworkHistorySegments(latestFlushedSegmentHeight, latestLocalBlock)
+		segments, err := dataNodeClient.GetNetworkHistorySegments(ctx, latestFlushedSegmentHeight, latestLocalBlock)
 		if err != nil {
 			// Below line is not error of our program. It is one of the expected states in the external data-nodes.
 			// Failure of external data-node is valid state and we log in in the data base. We MUST NOT report it as an error
