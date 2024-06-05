@@ -40,7 +40,7 @@ func (nhs *NetworkBalances) Add(newBalance entities.NetworkBalance) {
 	nhs.NetworkBalances = append(nhs.NetworkBalances, newBalance)
 }
 
-func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance entities.NetworkBalance) error {
+func (nhs *NetworkBalances) Upsert(ctx context.Context, newBalance entities.NetworkBalance) error {
 	_, err := nhs.Connection.Exec(ctx, `
 		INSERT INTO metrics.network_balances (
 			balance_time,
@@ -48,19 +48,12 @@ func (nhs *NetworkBalances) UpsertWithoutAssetId(ctx context.Context, newBalance
 		    chain_id,
 			balance_source,
 			balance)
-		VALUES
-			(
-				$1,
-				(SELECT id FROM assets_current WHERE erc20_contract = $2 AND chain_id = $3),
-				$3,
-				$4,
-			 	$5
-			)
+		VALUES ( $1, $2, $3, $4, $5 )
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
 		SET
 			balance=EXCLUDED.balance`,
 		newBalance.BalanceTime,
-		newBalance.AssetEthereumHexAddress,
+		newBalance.AssetID,
 		newBalance.ChainID,
 		newBalance.BalanceSource,
 		newBalance.Balance,
@@ -79,7 +72,7 @@ func (c *NetworkBalances) FlushUpsert(ctx context.Context) ([]entities.NetworkBa
 	}
 
 	for _, tx := range c.NetworkBalances {
-		if err := c.UpsertWithoutAssetId(blockCtx, tx); err != nil {
+		if err := c.Upsert(blockCtx, tx); err != nil {
 			return nil, NewUpsertErr(StoreNetworkBalances, ErrUpsertSingle, err)
 		}
 	}

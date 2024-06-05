@@ -9,6 +9,8 @@ import (
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 
+	dnentities "code.vegaprotocol.io/vega/datanode/entities"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/ethutils"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/entities"
@@ -53,8 +55,7 @@ func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context, ethConfig,
 	networkBalancesStore := us.storeService.NewNetworkBalances()
 
 	for _, asset := range assets {
-		if asset.ERC20Contract == "" {
-			// Skipping if not an ERC20 token.
+		if asset.ERC20Contract == "" || asset.Status != dnentities.AssetStatusEnabled {
 			continue
 		}
 
@@ -80,7 +81,7 @@ func (us *UpdateService) UpdateAssetPoolBalances(ctx context.Context, ethConfig,
 
 		logger.Debug("Got balance on the asset-pool", zap.String("asset", asset.Name), zap.String("balance", balance.String()))
 		decimalBalance := decimal.NewFromBigInt(balance, 0)
-		networkBalancesStore.Add(entities.NewAssetPoolBalance(now, asset.ERC20Contract, asset.ChainID, decimalBalance))
+		networkBalancesStore.Add(entities.NewAssetPoolBalance(asset.ID, now, asset.ERC20Contract, asset.ChainID, decimalBalance))
 	}
 
 	logger.Debug("Flushing balances to store")
