@@ -109,20 +109,20 @@ func CheckGRPC(address string) (time.Duration, uint64, error) {
 	return time.Since(now), score, err
 }
 
-func CheckDataDepth(address string) (uint64, uint64, uint64, error) {
+func CheckDataDepth(ctx context.Context, address string) (uint64, uint64, uint64, error) {
 	dayAgo := time.Now().Add(-24 * time.Hour)
 	weekAgo := time.Now().Add(-6.5 * 24 * time.Hour)
 	firstTrade := time.Date(2023, 5, 23, 16, 0, 0, 0, time.UTC)
 
-	count, err := GetTradesCount(address, dayAgo)
+	count, err := GetTradesCount(ctx, address, dayAgo)
 	if err != nil || count == 0 {
 		return 0, 0, 0, err
 	}
-	count, err = GetTradesCount(address, weekAgo)
+	count, err = GetTradesCount(ctx, address, weekAgo)
 	if err != nil || count == 0 {
 		return 1, 0, 0, err
 	}
-	count, err = GetTradesCount(address, firstTrade)
+	count, err = GetTradesCount(ctx, address, firstTrade)
 	if err != nil || count == 0 {
 		return 1, 1, 0, err
 	}
@@ -130,13 +130,13 @@ func CheckDataDepth(address string) (uint64, uint64, uint64, error) {
 	return 1, 1, 1, nil
 }
 
-func GetTradesCount(address string, dateRangeEnd time.Time) (uint64, error) {
+func GetTradesCount(ctx context.Context, address string, dateRangeEnd time.Time) (uint64, error) {
 	s, err := url.JoinPath(address, "api/v2/trades")
 	if err != nil {
 		return 0, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s, nil)
@@ -145,21 +145,27 @@ func GetTradesCount(address string, dateRangeEnd time.Time) (uint64, error) {
 	}
 	q := req.URL.Query()
 	q.Add("dateRange.endTimestamp", strconv.FormatInt(dateRangeEnd.UTC().UnixNano(), 10))
+	q.Add("pagination.first", "1")
 	req.URL.RawQuery = q.Encode()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
+	defer func() {
+		if resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("unexpected http status code: %v", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 	payload := struct {
 		Trades struct {
-			Edges []struct{}
+			Edges []json.RawMessage
 		}
 	}{}
-	if err = json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	decoder := json.NewDecoder(resp.Body)
+	if err = decoder.Decode(&payload); err != nil {
 		return 0, fmt.Errorf("failed to parse trades response: %w", err)
 	}
 	return uint64(len(payload.Trades.Edges)), nil

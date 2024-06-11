@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"code.vegaprotocol.io/vega/logging"
+	"go.uber.org/zap"
+
 	"github.com/vegaprotocol/vega-monitoring/clients/blockexplorer"
 	"github.com/vegaprotocol/vega-monitoring/clients/datanode"
 	"github.com/vegaprotocol/vega-monitoring/config"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/collectors"
 	"github.com/vegaprotocol/vega-monitoring/prometheus/types"
-	"go.uber.org/zap"
 )
 
 type NodeScannerService struct {
@@ -167,7 +168,7 @@ func (s *NodeScannerService) startScanningDataNodes(ctx context.Context) {
 				dataNodeStatus.RESTReqDuration, dataNodeStatus.RESTScore, _ = CheckREST(node.REST)
 				dataNodeStatus.GQLReqDuration, dataNodeStatus.GQLScore, _ = CheckGQL(node.GraphQL)
 				dataNodeStatus.GRPCReqDuration, dataNodeStatus.GRPCScore, _ = CheckGRPC(node.GRPC)
-				dataNodeStatus.Data1DayScore, dataNodeStatus.Data1WeekScore, dataNodeStatus.DataArchivalScore, _ = CheckDataDepth(node.REST)
+				dataNodeStatus.Data1DayScore, dataNodeStatus.Data1WeekScore, dataNodeStatus.DataArchivalScore, _ = CheckDataDepth(ctx, node.REST)
 			}
 			dataNodeStatus.Environment = node.Environment
 			dataNodeStatus.Internal = node.Internal
