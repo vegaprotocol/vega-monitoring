@@ -153,7 +153,7 @@ func (nhs *NetworkBalances) UpsertUnfinalizedDeposits(ctx context.Context) error
 			balance)
 		SELECT DATE_TRUNC('minute', NOW()), a.id, a.chain_id, 'UNFINALIZED_DEPOSITS', COALESCE(SUM(d.amount), 0)
 			FROM assets_current a
-			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status <> 'STATUS_FINALIZED') 
+			LEFT JOIN deposits_current d ON (d.asset = a.id AND d.status  NOT IN ('STATUS_FINALIZED', 'STATUS_DUPLICATE_REJECTED')) 
 				AND encode(d.id::bytea, 'hex') NOT IN (`+ignoredIDs+`)
 			GROUP BY a.id, a.chain_id
 		ON CONFLICT (balance_time, asset_id, balance_source) DO UPDATE
