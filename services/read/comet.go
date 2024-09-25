@@ -33,3 +33,7 @@ func (s *ReadService) GetEarliestBlockHeight(ctx context.Context) (int64, error)
 func (s *ReadService) GetLatestLocalBlockHeight(ctx context.Context) (int64, error) {
 	return s.cometClient.LatestLocalBlockHeight(ctx)
 }
+
+func (s *ReadService) GetTxsFromBlock(ctx context.Context, block int64) ([]comet.CometTx, error) {
+	return s.cometClient.GetTxsForBlockNotFiltered(ctx, block)
+}

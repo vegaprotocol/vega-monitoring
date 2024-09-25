@@ -16,7 +16,7 @@ Network History is a way of storing Data Node state in segments created every X 
 
 #### 3. CometBFT Txs
 
-Subest of CometBFT Txs that otherwise can't be found in Data Node DB.
+Subset of CometBFT Txs that otherwise can't be found in Data Node DB.
 
 #### 4. Network Balances
 
@@ -36,6 +36,19 @@ Prices in USD of all assets traded on Vega Network. [table](sqlstore/migrations/
 ## Setup
 
 ## Setup Service
+
+### Run the postgresql database if needed
+
+```bash
+docker run \
+    -d \
+    --name timescaledb \
+    -p 5432:5432 \
+    -e POSTGRES_PASSWORD=vega \
+    -e POSTGRES_USER=vega \
+    -e POSTGRES_DB=vega \
+    timescale/timescaledb:2.15.3-pg16
+```
 
 ### Compile
 
