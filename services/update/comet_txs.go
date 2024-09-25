@@ -73,11 +73,11 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 	}
 
 	if earliestBlock.Load() == 0 {
-		earliestBlockHeight, err := blockStore.GetEarliestBlockHeight(ctx)
+		earliestBlockHeight, err := findEarliestABCIResponse(ctx, fromBlock, toBlock, us.readService)
 		if err != nil {
 			return fmt.Errorf("failed to get earliest blocks: %w", err)
 		}
-		earliestBlock.Store(*earliestBlockHeight)
+		earliestBlock.Store(earliestBlockHeight)
 	}
 
 	if fromBlock < earliestBlock.Load() {
@@ -119,6 +119,46 @@ func (us *UpdateService) UpdateCometTxs(ctx context.Context, fromBlock int64, to
 	return nil
 }
 
+func findFirstExistingBlock(rangeStart int64, rangeEnd int64, blockExist func(blockNum int64) bool) int64 {
+	end := rangeEnd
+
+	// Block does not exist in given range
+	if !blockExist(rangeEnd) {
+		return -2
+	}
+
+	for start := rangeStart; start <= end; {
+		if blockExist(start) && (start <= 1 || start == rangeStart || !blockExist(start-1)) {
+			return start
+		}
+		middle := start + (end-start)/2
+
+		if !blockExist(middle) {
+			start = middle + 1
+		} else {
+			end = middle
+		}
+	}
+
+	return -1
+}
+
+// There is situation when you started node with tendermint setting `discard_abci_responses = true` and then enabled it at some point
+// then tendermint does not have information about the transactions. We use the `/block_results?height=` endpoint of the tendermint API,
+// and for discarded abci responses this endpoint returns "could not find results for height #XYZ" error.
+func findEarliestABCIResponse(ctx context.Context, rangeStart, rangeEnd int64, readService *read.ReadService) (int64, error) {
+	firstExistingBlock := findFirstExistingBlock(rangeStart, rangeEnd, func(blockNum int64) bool {
+		_, err := readService.GetTxsFromBlock(ctx, blockNum)
+
+		return err == nil
+	})
+	if firstExistingBlock > 0 {
+		return firstExistingBlock, nil
+	}
+
+	return -1, fmt.Errorf("there is no ABCI response in the comet storage")
+}
+
 func UpdateCometTxsRange(
 	ctx context.Context,
 	fromBlock int64,
@@ -131,6 +171,7 @@ func UpdateCometTxsRange(
 	if err != nil {
 		return -1, err
 	}
+
 	logger.Debug(
 		"fetched data from CometBFT",
 		zap.Int64("from-block", fromBlock),
